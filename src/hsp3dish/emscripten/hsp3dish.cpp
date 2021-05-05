@@ -456,6 +456,12 @@ void hsp3dish_msgfunc( HSPCTX *hspctx )
 			return;
 		}
 
+#if defined(HSPEMSCRIPTEN_ASYNCIFY)
+		if ( handleEvent() ) {
+			hspctx->runmode = RUNMODE_END;
+		}
+#endif
+
 		switch( hspctx->runmode ) {
 		case RUNMODE_STOP:
 			// while(1) {
@@ -471,6 +477,25 @@ void hsp3dish_msgfunc( HSPCTX *hspctx )
 			hspctx->runmode = code_exec_wait( tick );
 		case RUNMODE_AWAIT:
 			tick = hgio_gettick();
+#if defined(HSPEMSCRIPTEN_ASYNCIFY)
+			if ( code_exec_await( tick ) != RUNMODE_RUN ) {
+				emscripten_sleep((hspctx->waittick - tick) / 2);
+			} else {
+				tick = hgio_gettick();
+				while( tick < hspctx->waittick ) {	// 細かいwaitを取る
+					emscripten_sleep(hspctx->waittick - tick);
+					//emscripten_sleep(1);
+					tick = hgio_gettick();
+				}
+				hspctx->lasttick = tick;
+				hspctx->runmode = RUNMODE_RUN;
+#ifndef HSPDEBUG
+				if ( ctx->hspstat & HSPSTAT_SSAVER ) {
+					if ( hsp_sscnt ) hsp_sscnt--;
+				}
+#endif
+			}
+#else
 			if ( code_exec_await( tick ) != RUNMODE_RUN ) {
 				//MsgWaitForMultipleObjects(0, NULL, FALSE, hspctx->waittick - tick, QS_ALLINPUT );
 				//printf("AWAIT WAIT %d < %d\n", tick, ctx->waittick);
@@ -484,6 +509,7 @@ void hsp3dish_msgfunc( HSPCTX *hspctx )
 #endif
 			}
 				return;
+#endif
 			break;
 //		case RUNMODE_END:
 //			throw HSPERR_NONE;
@@ -969,9 +995,29 @@ int hsp3dish_exec( void )
 
 	//		実行の開始
 	//
+#if defined(HSPEMSCRIPTEN_ASYNCIFY)
+	int runmode;
+	int endcode;
+
+	runmode = code_execcmd();
+	if ( runmode == RUNMODE_ERROR ) {
+		try {
+			hsp3dish_error();
+		}
+		catch( ... ) {
+		}
+		hsp3dish_bye();
+		return -1;
+	}
+
+	endcode = ctx->endcode;
+	hsp3dish_bye();
+	return endcode;
+#else
 	emscripten_set_main_loop(hsp3dish_exec_one, hsp_fps, 1);
 
 	return 0;
+#endif
 }
 
 

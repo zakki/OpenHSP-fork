@@ -1323,7 +1323,7 @@ void cmdfunc_return( void )
 	StackPop();
 }
 
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && !defined(HSPEMSCRIPTEN_ASYNCIFY)
 static void cmdfunc_gosub( unsigned short *subr, unsigned short *retpc )
 {
 	//		gosub execute
@@ -1964,7 +1964,7 @@ static int cmdfunc_prog( int cmd )
 		break;
 
 	case 0x01:								// gosub
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && !defined(HSPEMSCRIPTEN_ASYNCIFY)
 		{
 		unsigned short *sbr;
 		sbr = code_getlb();
@@ -1979,7 +1979,7 @@ static int cmdfunc_prog( int cmd )
 		}
 #endif
 	case 0x02:								// return
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && !defined(HSPEMSCRIPTEN_ASYNCIFY)
 		if ( hspctx->prmstack != NULL ) cmdfunc_return_setval();
 #else
 		if ( exflg == 0 ) cmdfunc_return_setval();
@@ -2577,7 +2577,7 @@ void code_call( const unsigned short *pc )
 	//		サブルーチンジャンプを行なう
 	//
 	mcs = mcsbak;
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && !defined(HSPEMSCRIPTEN_ASYNCIFY)
 	cmdfunc_gosub( (unsigned short *)pc, mcs );
 #else
 	cmdfunc_gosub( (unsigned short *)pc );
@@ -2592,7 +2592,7 @@ void code_callback(const unsigned short *pc)
 	//
 	mcs = mcsbak;
 	hspctx->callback_flag = 1;
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && !defined(HSPEMSCRIPTEN_ASYNCIFY)
 	cmdfunc_gosub((unsigned short *)pc, mcs);
 #else
 	cmdfunc_gosub((unsigned short *)pc);
@@ -3018,7 +3018,7 @@ rerun:
 #ifdef HSPERR_HANDLE
 	try {
 #endif
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && !defined(HSPEMSCRIPTEN_ASYNCIFY)
 		{
 #else
 		while(1) {
@@ -3044,7 +3044,7 @@ rerun:
 					return hspctx->runmode;
 				}
 			}
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && !defined(HSPEMSCRIPTEN_ASYNCIFY)
 			return RUNMODE_RUN;
 #else
 #endif
@@ -3080,7 +3080,7 @@ rerun:
 	return i;
 }
 
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && !defined(HSPEMSCRIPTEN_ASYNCIFY)
 int code_execcmd_one( int& prev )
 {
 	//		命令実行メイン
@@ -3493,7 +3493,7 @@ void code_execirq( IRQDAT *irq, int wparam, int lparam )
 	}
 	if ( irq->opt == IRQ_OPT_GOSUB ) {
 		mcs = mcsbak;
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && !defined(HSPEMSCRIPTEN_ASYNCIFY)
 		code_call( irq->ptr );
 #else
 		//code_callback( (unsigned short *)irq->ptr );

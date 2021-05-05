@@ -10,6 +10,10 @@
 #include <ctype.h>
 #include <locale.h>
 
+#if defined(HSPEMSCRIPTEN)
+#include <emscripten.h>
+#endif
+
 #include "../hsp3config.h"
 #include "../hsp3code.h"
 #include "../hsp3debug.h"
