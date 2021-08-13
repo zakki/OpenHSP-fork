@@ -55,7 +55,19 @@ extern SDL_Window *window;
 
 #endif
 
-#if defined(HSPLINUX)
+
+#if defined(__APPLE__)
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_image.h"
+#include <SDL2/SDL_ttf.h>
+#define TTF_FONTFILE "/ipaexg.ttf"
+
+extern bool get_key_state(int sym);
+extern SDL_Window *window;
+
+#elif defined(HSPLINUX)
 #include <unistd.h>
 #include <GL/gl.h>
 #include "SDL2/SDL.h"

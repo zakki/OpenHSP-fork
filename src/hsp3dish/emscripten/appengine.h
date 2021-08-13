@@ -3,9 +3,12 @@
 
 #include <errno.h>
 
+#if defined(__APPLE__)
+#else
 #include <EGL/egl.h>
 //#include <GLES/gl.h>
 //#include <GLES/glext.h>
+#endif
 #include <math.h>
 
 //#include <android/log.h>
@@ -32,9 +35,12 @@ struct engine
 //    ASensorEventQueue* sensorEventQueue;
 
     int animating;
+#if defined(__APPLE__)
+#else
     EGLDisplay display;
     EGLSurface surface;
     EGLContext context;
+#endif
     int32_t width;
     int32_t height;
     void *hspctx;
