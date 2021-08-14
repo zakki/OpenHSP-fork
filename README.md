@@ -80,6 +80,14 @@ Execute the make command in the directory where the contents of the archive are 
 * For Raspberry Pi 4 or later, please install with make in the same way as Linux.
 * Raspberry Pi 4 or later does not support full-screen execution
 
+# macOS installation
+
+It runs on macOS.
+
+	git clone http://github.com/onitama/OpenHSP
+	cd OpenHSP
+	brew install glew glfw sdl2 sdl2_image sdl2_mixer sdl2_ttf gtk+
+	make -f makefile.macos
 
 # Usage
 
