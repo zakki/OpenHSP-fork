@@ -98,6 +98,7 @@ static std::string gplog;
 extern "C" {
 	static void logfunc( gameplay::Logger::Level level, const char *msg )
 	{
+	  std::cerr << msg << std::endl;
 		if (GetSysReq(SYSREQ_LOGWRITE)) gplog += msg;
 	}
 }
@@ -616,7 +617,21 @@ int hsp3dish_init_sub( int sx, int sy, int autoscale )
 		hsp3dish_savelog();
 		return 1;
 	}
+        gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s ok\n", __FUNCTION__);
+
+#ifdef __APPLE__
+       Alertf( "---enterMessagePump OK\n" );
+       if (Game::getInstance()->getState() == Game::UNINITIALIZED) {
+               gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s run\n", __FUNCTION__);
+	       Game::getInstance()->run();
+       } else {
+               gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s resume\n", __FUNCTION__);
+	       Game::getInstance()->resume();
+       }
+#else
+       gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s enterMessagePump\n", __FUNCTION__);
 	platform->enterMessagePump();
+#endif
 	game->frame();
 #endif
 

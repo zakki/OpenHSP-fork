@@ -17,6 +17,19 @@
 #import <Availability.h>
 #import <GameKit/GameKit.h>
 
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_video.h"
+#include "SDL2/SDL_syswm.h"
+
+#if defined(SDL_VIDEO_DRIVER_COCOA)
+#else
+#error "NO COCOA"
+#endif
+
+extern SDL_Window *window;
+static SDL_SysWMinfo syswminfo;
+
+
 // These should probably be moved to a platform common file
 #define SONY_USB_VENDOR_ID              0x054c
 #define SONY_USB_PS3_PRODUCT_ID         0x0268
@@ -54,7 +67,7 @@ static bool __mouseCapturedFirstPass = false;
 static CGPoint __mouseCapturePoint;
 static bool __multiSampling = false;
 static bool __cursorVisible = true;
-static View* __view = NULL;
+//static View* __view = NULL;
 
 static NSMutableDictionary *__activeGamepads = NULL;
 static NSMutableArray *__gamepads = NULL;
@@ -708,6 +721,7 @@ double getMachTimeInMilliseconds()
 @end
 
 
+#if 0
 @interface View : NSOpenGLView <NSWindowDelegate>
 {
 @public
@@ -736,16 +750,19 @@ double getMachTimeInMilliseconds()
 - (void)reshape
 {
     [gameLock lock];
-    
-    NSSize size = [ [ _window contentView ] frame ].size;
+    #error
+    NSWindow* window = syswminfo.info.cocoa.window;
+    NSSize size = [ [ window contentView ] frame ].size;
     __width = size.width;
     __height = size.height;
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s => %dx%d\n", __FUNCTION__,  __width, __height);
     CGLContextObj cglContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
     GLint dim[2] = {__width, __height};
     CGLSetParameter(cglContext, kCGLCPSurfaceBackingSize, dim);
     CGLEnable(cglContext, kCGLCESurfaceBackingSize);
     
     gameplay::Platform::resizeEventInternal((unsigned int)__width, (unsigned int)__height);
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s => %dx%d\n", __FUNCTION__,  __width, __height);
     
     [gameLock unlock];
 }
@@ -971,14 +988,15 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTime
     [gameLock unlock];
 }
 
+#if 0
 - (void) mouse: (Mouse::MouseEvent) mouseEvent orTouchEvent: (Touch::TouchEvent) touchEvent x: (float) x y: (float) y s: (int) s 
 {
-    [__view->gameLock lock];
+//    [__view->gameLock lock];
     if (!gameplay::Platform::mouseEventInternal(mouseEvent, x, y, s))
     {
         gameplay::Platform::touchEventInternal(touchEvent, x, y, 0);
     }
-    [__view->gameLock unlock];
+//    [__view->gameLock unlock];
 }
 
 - (void) mouseDown: (NSEvent*) event
@@ -1012,7 +1030,8 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
         point.x = [event deltaX];
         point.y = [event deltaY];
         
-        NSWindow* window = __view.window;
+        //NSWindow* window = __view.window;
+	NSWindow* window = syswminfo.info.cocoa.window;
         NSRect rect = window.frame;
         CGPoint centerPoint;
         centerPoint.x = rect.origin.x + (rect.size.width / 2);
@@ -1036,9 +1055,9 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
         return;
     }
 
-    [__view->gameLock lock];
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_MOVE, point.x, point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
 - (void) mouseDragged: (NSEvent*) event
@@ -1053,9 +1072,9 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
                 return;
             }
             
-            [__view->gameLock lock];
+            //[__view->gameLock lock];
             gameplay::Platform::mouseEventInternal(Mouse::MOUSE_MOVE, point.x, point.y, 0);
-            [__view->gameLock unlock];
+            //[__view->gameLock unlock];
         }
         else
         {
@@ -1069,9 +1088,9 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
     __rightMouseDown = true;
      NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
     
-    [__view->gameLock lock];
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_PRESS_RIGHT_BUTTON, point.x, __height - point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
 - (void) rightMouseUp: (NSEvent*) event
@@ -1079,9 +1098,9 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
     __rightMouseDown = false;
     NSPoint point = [event locationInWindow];
     
-    [__view->gameLock lock];
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_RELEASE_RIGHT_BUTTON, point.x, __height - point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
 - (void) rightMouseDragged: (NSEvent*) event
@@ -1095,9 +1114,9 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
     
     // In right-mouse case, whether __rightMouseDown is true or false
     // this should not matter, mouse move is still occuring
-    [__view->gameLock lock];
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_MOVE, point.x, point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
 - (void)otherMouseDown: (NSEvent*) event 
@@ -1105,9 +1124,9 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
     __otherMouseDown = true;
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 
-    [__view->gameLock lock];
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_PRESS_MIDDLE_BUTTON, point.x, __height - point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
 - (void)otherMouseUp: (NSEvent*) event 
@@ -1573,7 +1592,7 @@ int getUnicode(int key)
     gameplay::Platform::gesturePinchEventInternal((int)xavg, (int)yavg, [event magnification]);
     [gameLock unlock];
 }
-
+#endif
 
 @end
 
@@ -1596,6 +1615,7 @@ int getUnicode(int key)
     [sdc dismiss: self];
 }
 @end
+#endif
 
 
 namespace gameplay
@@ -1660,15 +1680,27 @@ Platform::~Platform()
 }
 
     
-Platform* Platform::create(Game* game)
+Platform* Platform::create(Game* game, void* attachToWindow, int sizex, int sizey, bool fullscreen)
 {
-    Platform* platform = new Platform(game);
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "Create GamePlay platform %dx%d\n", sizex, sizey);
+    if (SDL_GetWindowWMInfo(window, &syswminfo)) {
+        __width = sizex;
+	__height = sizey;
+	gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "Create GamePlay platform => %dx%d\n", __width, __height);
+	
+        Platform* platform = new Platform(game);
+	gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "Create GamePlay platform => %dx%d\n", __width, __height);
     
-    return platform;
+        return platform;
+    } else {
+        return NULL;
+    }
 }
 
 int Platform::enterMessagePump()
 {
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s => %dx%d\n", __FUNCTION__,  __width, __height);
+#if 0
     NSString* bundlePath = [[NSBundle mainBundle] bundlePath];
     NSString* path = [bundlePath stringByAppendingString:@"/Contents/Resources/"];
     FileSystem::setResourcePath([path cStringUsingEncoding:NSASCIIStringEncoding]);
@@ -1747,12 +1779,14 @@ int Platform::enterMessagePump()
     [app run];
     
     [pool release];
+#endif
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s => %dx%d\n", __FUNCTION__,  __width, __height);
     return EXIT_SUCCESS;
 }
 
 void Platform::signalShutdown() 
 {
-    [__view haltDisplayRenderer];
+    //[__view haltDisplayRenderer];
 
     // Don't perform terminate right away, enqueue to give game object
     // a chance to cleanup
@@ -1793,15 +1827,19 @@ bool Platform::isVsync()
 
 void Platform::setVsync(bool enable)
 {
+#if 0
     __vsync = enable;
     GLint swapInt = enable ? 1 : 0;
     [[__view openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+#endif
 }
 
 void Platform::swapBuffers()
 {
-    if (__view)
-        CGLFlushDrawable((CGLContextObj)[[__view openGLContext] CGLContextObj]);
+    //NSWindow* window = syswminfo.info.cocoa.window;
+    SDL_GL_SwapWindow(window);
+    //    if (__view)
+    //        CGLFlushDrawable((CGLContextObj)[[__view openGLContext] CGLContextObj]);
 }
 
 void Platform::sleep(long ms)
@@ -1903,7 +1941,8 @@ void Platform::setMouseCaptured(bool captured)
         {   
             [NSCursor unhide];
         }
-        NSWindow* window = __view.window;
+	NSWindow* window = syswminfo.info.cocoa.window;
+        //NSWindow* window = __view.window;
         NSRect rect = window.frame;
         CGPoint centerPoint;
         centerPoint.x = rect.origin.x + (rect.size.width / 2);
@@ -1968,17 +2007,18 @@ bool Platform::isGestureSupported(Gesture::GestureEvent evt)
 
 void Platform::registerGesture(Gesture::GestureEvent evt)
 {
-    [__view registerGesture:evt];   
+  //[__view registerGesture:evt];   
 }
 
 void Platform::unregisterGesture(Gesture::GestureEvent evt)
 {
-    [__view unregisterGesture:evt];        
+  //[__view unregisterGesture:evt];        
 }
   
 bool Platform::isGestureRegistered(Gesture::GestureEvent evt)
 {
-     return [__view isGestureRegistered:evt];
+  //return [__view isGestureRegistered:evt];
+  return false;
 }
 
 void Platform::pollGamepadState(Gamepad* gamepad)

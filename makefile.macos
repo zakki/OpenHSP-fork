@@ -4,14 +4,14 @@ CC = clang
 CXX = clang++
 AR = ar
 #CFLAGS_DISH = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ
-CFLAGS_DISH = -Wno-write-strings -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DGL_SILENCE_DEPRECATION
+CFLAGS_DISH = -Wno-write-strings -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DGL_SILENCE_DEPRECATION -DHAVE_UNISTD_H -g -D_DEBUG
 #CFLAGS_GP = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11
-CFLAGS_GP = -Wno-write-strings -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src
-CXXFLAGS_GP = -Wno-write-strings -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11
+CFLAGS_GP = -Wno-write-strings -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -DGL_SILENCE_DEPRECATION -DHAVE_UNISTD_H -g -D_DEBUG
+CXXFLAGS_GP = -Wno-write-strings -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11 -DGL_SILENCE_DEPRECATION -g -D_DEBUG
 #CFLAGS_CL = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG
-CFLAGS_CL = -Wno-write-strings -std=c++11 -DHSPLINUX -DHSPDEBUG
+CFLAGS_CL = -Wno-write-strings -std=c++11 -DHSPLINUX -DHSPDEBUG -g -D_DEBUG
 #CFLAGS_CMP = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG
-CFLAGS_CMP = -Wno-write-strings -std=c++11 -DHSPLINUX -DHSPDEBUG
+CFLAGS_CMP = -Wno-write-strings -std=c++11 -DHSPLINUX -DHSPDEBUG -g
 
 OBJS = \
 	src/hsp3/dpmread.do \
@@ -211,7 +211,7 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/PhysicsVehicleWheel.gpo \
 	src/hsp3dish/gameplay/src/Plane.gpo \
 	src/hsp3dish/gameplay/src/Platform.gpo \
-	src/hsp3dish/gameplay/src/PlatformEmscripten.gpo \
+	src/hsp3dish/gameplay/src/PlatformMacOSX.gpo \
 	src/hsp3dish/gameplay/src/Properties.gpo \
 	src/hsp3dish/gameplay/src/Quaternion.gpo \
 	src/hsp3dish/gameplay/src/RadioButton.gpo \
@@ -418,7 +418,7 @@ TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed
 #LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++
 LIBS1 = -lm -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -framework OpenGL
 #LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++
-LIBS2 = -lm -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -framework OpenGL
+LIBS2 = -lm -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -framework OpenGL -framework Foundation -framework GameKit -framework IOKit -framework QuartzCore -framework Cocoa
 LIBS_GP = \
 	libgameplay.a \
 	libBulletDynamics.a \
@@ -441,6 +441,8 @@ hsp3gp: $(OBJS_GP) $(LIBS_GP)
 	$(CC) $(CFLAGS_GP) -c $< -o $*.gpo
 %.gpo: %.cpp
 	$(CXX) $(CXXFLAGS_GP) -c $< -o $*.gpo
+%.gpo: %.mm
+	$(CC) $(CFLAGS_GP) -c $< -o $*.gpo
 
 hspcmp: $(OBJS_CMP)
 	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -s -o $@
