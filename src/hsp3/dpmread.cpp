@@ -22,6 +22,9 @@ extern HINSTANCE hDllInstance;
 #include "hsp3config.h"
 #include "dpmread.h"
 #include "supio.h"
+#ifdef HSPEMSCRIPTEN
+#include "emscripten/supio_emscripten.h"
+#endif
 
 #if (defined HSPUTF8 && defined HSPWIN)
 #pragma execution_character_set("utf-8")
@@ -110,6 +113,9 @@ static int dpmchk( char *fname )
 	fp=_wfopen( dpm_file,L"rb");freehac(&hactmp1);
 	if (fp==NULL) return -1;
 #else
+#if defined HSPEMSCRIPTEN
+	FetchFileSync( dpm_file );
+#endif
 	fp=fopen( dpm_file,"rb" );if (fp==NULL) return -1;
 #endif
 
@@ -170,6 +176,9 @@ FILE *dpm_open( char *fname )
 	fp=_wfopen( chartoapichar(fname,&hactmp1),L"rb" );
 	freehac(&hactmp1);//
 #else
+#if defined HSPEMSCRIPTEN
+	FetchFileSync( fname );
+#endif
 	fp=fopen( fname,"rb" );
 #endif
 	return fp;
@@ -252,6 +261,9 @@ int dpm_ini( char *fname, long dpmofs, int chksum, int deckey )
 #if (defined HSPUTF8 && defined HSPWIN)
 	fp=_wfopen( dpmfile,L"rb" );
 #else
+#if defined HSPEMSCRIPTEN
+	FetchFileSync( dpmfile );
+#endif
 	fp=fopen( dpmfile,"rb" );
 #endif
 	if (fp==NULL) return -1;
@@ -279,6 +291,9 @@ int dpm_ini( char *fname, long dpmofs, int chksum, int deckey )
 	fp=_wfopen( dpmfile,L"rb" );
 
 #else
+#if defined HSPEMSCRIPTEN
+	FetchFileSync( dpmfile );
+#endif
 	fp=fopen( dpmfile,"rb" );
 #endif
 	if (dpmofs>0) fseek(fp, dpmofs, SEEK_SET);
@@ -293,6 +308,9 @@ int dpm_ini( char *fname, long dpmofs, int chksum, int deckey )
 #if (defined HSPUTF8 && defined HSPWIN)
 		fp=_wfopen( dpmfile,L"rb" );
 #else
+#if defined HSPEMSCRIPTEN
+		FetchFileSync( dpmfile );
+#endif
 		fp=fopen( dpmfile,"rb" );
 #endif
 		if (dpmofs>0) fseek( fp, dpmofs, SEEK_SET );
@@ -363,6 +381,9 @@ int dpm_read( char *fname, void *readmem, int rlen, int seekofs )
 #if (defined HSPUTF8 && defined HSPWIN)
 			ff = _wfopen( dpm_file,L"rb" );
 #else
+#if defined HSPEMSCRIPTEN
+			FetchFileSync( dpm_file );
+#endif
 			ff = fopen( dpm_file,"rb" );
 #endif
 			if ( ff == NULL ) return -1;
@@ -379,6 +400,9 @@ int dpm_read( char *fname, void *readmem, int rlen, int seekofs )
 	ff = _wfopen( chartoapichar(fname,&hactmp1),L"rb" );
 	freehac(&hactmp1);
 #else
+#if defined HSPEMSCRIPTEN
+	FetchFileSync( fname );
+#endif
 	ff = fopen( fname, "rb" );
 #endif
 	if ( ff == NULL ) {
@@ -434,6 +458,9 @@ int dpm_exist( char *fname )
 	ff=_wfopen( chartoapichar(fname,&hactmp1),L"rb" );
 	freehac(&hactmp1);
 #else
+#if defined HSPEMSCRIPTEN
+	FetchFileSync( fname );
+#endif
 	ff=fopen( fname,"rb" );
 #endif
 	if (ff==NULL) {
@@ -487,6 +514,9 @@ int dpm_filebase( char *fname )
 #if (defined HSPUTF8 && defined HSPWIN)
 	ff=_wfopen( chartoapichar(fname,&hactmp1),L"rb" );
 #else
+#if defined HSPEMSCRIPTEN
+	FetchFileSync( fname );
+#endif
 	ff=fopen( fname,"rb" );
 #endif
 	if (ff==NULL) return -1;

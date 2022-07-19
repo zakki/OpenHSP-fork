@@ -31,6 +31,7 @@
 #include "../../hsp3/strbuf.h"
 #include "../hgio.h"
 #include <emscripten.h>
+#include <emscripten/fetch.h>
 
 #ifndef _MAX_PATH
 #define _MAX_PATH	256
@@ -852,4 +853,54 @@ void Alertf( const char *format, ... )
 			console.log(UTF8ToString($0));
 			//alert(UTF8ToString($0));
 		}, textbf );
+}
+
+static void downloadSucceeded(emscripten_fetch_t *fetch) {
+	printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
+    auto fp = fopen(fetch->url, "wb");
+    if (fp) {
+      printf("Write file to %s.\n", fetch->url);
+      fwrite(fetch->data, 1, fetch->numBytes, fp);
+      fclose(fp);
+    }
+	emscripten_fetch_close(fetch);
+}
+
+static volatile bool fetchLoading = false;
+
+static void FetchOnLoaded(const char* file) {
+	printf("onLoaded %s\n", file);
+    fetchLoading = false;
+}
+
+static void FetchOnError(const char* file) {
+	printf("onError %s\n", file);
+    fetchLoading = false;
+}
+
+int FetchFileSync(const char *path) {
+	auto fp=fopen( path,"rb" );
+	if (fp!=NULL) {
+		fclose(fp);
+		return 0;
+	}
+
+	printf("Fetch %s\n", path);
+#if 1
+    emscripten_wget(path, path);
+#else
+    fetchLoading = true;
+    emscripten_async_wget(path, path, FetchOnLoaded, FetchOnError);
+    while (fetchLoading) {
+		auto fp=fopen( path,"rb" );
+		if (fp!=NULL) {
+			fclose(fp);
+			printf("%s exists %d\n", path, fetchLoading);
+			return 0;
+		}
+		printf("Fetch %s waiting\n", path);
+		emscripten_sleep(1000);
+    }
+#endif
+    return 0;
 }

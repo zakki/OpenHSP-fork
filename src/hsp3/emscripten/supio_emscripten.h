@@ -53,4 +53,4 @@ HSPAPICHAR *ansichartoapichar(const char *, HSPAPICHAR **);
 char *apichartoansichar(const HSPAPICHAR *, char **);
 void freeac(char **);
 
-
+int FetchFileSync(const char *path);
