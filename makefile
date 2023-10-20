@@ -27,6 +27,8 @@ OBJS = \
 	src/hsp3/hspvar_label.do \
 	src/hsp3/hspvar_str.do \
 	src/hsp3/hspvar_struct.do \
+	src/hsp3/hspvar_float.do \
+	src/hsp3/hspvar_int64.do \
 	src/hsp3dish/hspwnd_dish.do \
 	src/hsp3dish/hspwnd_obj.do \
 	src/hsp3dish/hspwnd_edit.do \
@@ -87,6 +89,8 @@ OBJS_CL = \
 	src/hsp3/hspvar_label.o \
 	src/hsp3/hspvar_str.o \
 	src/hsp3/hspvar_struct.o \
+	src/hsp3/hspvar_float.o \
+	src/hsp3/hspvar_int64.o \
 	src/hsp3/stack.o \
 	src/hsp3/strbuf.o \
 	src/hsp3/strnote.o \
@@ -119,6 +123,8 @@ OBJS_GP = \
 	src/hsp3/hspvar_label.gpo \
 	src/hsp3/hspvar_str.gpo \
 	src/hsp3/hspvar_struct.gpo \
+	src/hsp3/hspvar_float.gpo \
+	src/hsp3/hspvar_int64.gpo \
 	src/hsp3dish/hspwnd_dish.gpo \
 	src/hsp3dish/hspwnd_obj.gpo \
 	src/hsp3dish/hspwnd_edit.gpo \
