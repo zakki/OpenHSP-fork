@@ -44,6 +44,7 @@
 //#define HSPDISHGP		// HSP3Dish(HGIMG4) flag
 //#define HSPEMBED		// HSP3 Embed runtime flag
 //#define HSPEMSCRIPTEN	// EMSCRIPTEN version flag
+//#define HSPRPIPICO	// Raspberry Pi Pico
 //#define HSP64			// 64bit compile flag
 //#define HSPUTF8		// UTF8使用フラグ
 
@@ -59,7 +60,7 @@
 //
 //		gcc使用のチェック
 //
-#if defined(HSPMAC)|defined(HSPIOS)|defined(HSPNDK)|defined(HSPLINUX)|defined(HSPEMSCRIPTEN)
+#if defined(HSPMAC)||defined(HSPIOS)||defined(HSPNDK)||defined(HSPLINUX)||defined(HSPEMSCRIPTEN)||defined(HSPRPIPICO)
 #define HSPGCC			// GCC使用フラグ
 #define HSPUTF8			// UTF8使用フラグ
 #endif
@@ -68,7 +69,7 @@
 #define HSPRANDMT // Use std::mt19937
 #endif
 
-#if defined(HSPLINUX)|defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX)|defined(HSPEMSCRIPTEN)|defined(HSPRPIPICO)
 #define HSP_ALIGN_DOUBLE __attribute__ ((aligned (8)))
 #else
 #define HSP_ALIGN_DOUBLE
@@ -87,6 +88,11 @@
 #endif
 #ifdef HSPLINUX
 #undef JPNMSG
+#endif
+#ifdef HSPRPIPICO
+#define HSP_MAX_PATH	256
+#define HSP_PATH_SEPARATOR '/'
+#define HSP_HEADLESS
 #endif
 
 #endif

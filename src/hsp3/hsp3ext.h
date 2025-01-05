@@ -25,5 +25,9 @@
 #include "emscripten/hsp3ext_emscripten.h"
 #endif
 
+#ifdef HSPRPIPICO
+#include "rpipico/hsp3ext_rpipico.h"
+#endif
+
 
 #endif

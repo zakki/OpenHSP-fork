@@ -327,9 +327,21 @@ void dpm_bye( void )
 	dpm_flag=0;
 }
 
+#include "../hsp3dish/rpipico/data.h"
 
 int dpm_read( char *fname, void *readmem, int rlen, int seekofs )
 {
+	printf("dpm_read %s\n", fname);
+	if (strcmp(fname, "START.AX") == 0) {
+		char* lpRd=(char *)readmem;	
+		int seeksize=seekofs;
+		if (seeksize<0) seeksize=0;	
+		int a1 = 0;
+		for (; a1 < rlen && a1 + seeksize < start_ax_len; a1++) {
+			lpRd[a1] = start_ax[a1+seeksize];
+		}
+		return a1;
+	}
 	char *lpRd;
 	FILE *ff;
 	int a1;
@@ -411,6 +423,10 @@ int dpm_read( char *fname, void *readmem, int rlen, int seekofs )
 
 int dpm_exist( char *fname )
 {
+	printf("dpm_exist %s\n", fname);
+	if (strcmp(fname, "START.AX") == 0) {
+		return start_ax_len;
+	}
 	FILE *ff;
 	int length;
 #if (defined HSPUTF8 && defined HSPWIN)

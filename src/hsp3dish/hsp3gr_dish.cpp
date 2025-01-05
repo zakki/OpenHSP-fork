@@ -51,9 +51,13 @@ char *hsp3dish_getlog(void);		// for gameplay3d log
 #include "win32/dxsnd.h"
 #endif
 
+#ifdef HSPRPIPICO
+// Not implemented
+#else
 #define USE_WEBTASK
 #define USE_MMAN
 #define USE_ESSPRITE
+#endif
 
 /*------------------------------------------------------------*/
 /*
@@ -1159,7 +1163,7 @@ static int cmdfunc_extcmd( int cmd )
 		code_setva( p_pval, p_aptr, HSPVAR_FLAG_INT, &p2 );
 		break;
 		}
-
+#ifdef USE_MMAN
 	case 0x42:								// mmvol
 		p1 = code_getdi( 0 );
 		p2 = code_getdi( 0 );
@@ -1181,6 +1185,7 @@ static int cmdfunc_extcmd( int cmd )
 		code_setva( p_pval, p_aptr, HSPVAR_FLAG_INT, &p3 );
 		break;
 		}
+#endif
 	case 0x45:								// mtlist
 		{
 		int *p_ptr;
@@ -3971,6 +3976,8 @@ void hsp3extcmd_sysvars(int inst, int hwnd, int hdc)
 	sys_hwnd = hwnd;
 	sys_hdc = hdc;
 	bmscr = wnd->GetBmscr(0);
+#ifdef USE_ESSPRITE
 	sprite->setResolution(wnd, bmscr->sx, bmscr->sy);
+#endif
 }
 

@@ -5,7 +5,7 @@
 #ifndef __hgio_h
 #define __hgio_h
 
-#if defined(HSPWIN) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPWIN) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPRPIPICO)
 #include "../hsp3/hsp3config.h"
 #else
 #include "hsp3config.h"

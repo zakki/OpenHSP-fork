@@ -27,6 +27,8 @@
 #include "emscripten/supio_emscripten.h"
 #endif
 
-
+#ifdef HSPRPIPICO
+#include "rpipico/supio_rpipico.h"
 #endif
 
+#endif
