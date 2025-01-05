@@ -11,6 +11,14 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <string>
+
+#include <bsp/board.h>
+#include <pico/stdlib.h>
+#include <tusb.h>
+#include <ff.h>
+
+#include "../../hsp3/rpipico/usbflash/flash.h"
+
 #include "hsp3dish.h"
 
 /*----------------------------------------------------------*/
@@ -21,6 +29,9 @@
 #include "hardware/timer.h"
 #include "hardware/clocks.h"
 #include "pico/cyw43_arch.h"
+
+// hgiox.cpp
+extern void test_and_init_filesystem(void);
 
 
 // SPI Defines
@@ -44,9 +55,26 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
     return 0;
 }
 
+int hsp_main() {
+	int res;
+	char *p = nullptr;
+
+	int st = 0;
+
+	hsp3dish_cmdline((char *)"");
+	hsp3dish_modname((char *)"");
+
+	res = hsp3dish_init( p );
+	if ( res ) return res;
+	hsp3dish_option( st );
+	res = hsp3dish_exec();
+
+	return res;
+}
 
 int main()
 {
+    tud_init(BOARD_TUD_RHPORT);
     stdio_init_all();
 
     // Initialise the Wi-Fi chip
@@ -87,39 +115,29 @@ int main()
     // Example to turn on the Pico W LED
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
 
-    for (int i = 0; i < 10; i++) {
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-        sleep_ms(200);
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-        sleep_ms(200);
-    }
+    test_and_init_filesystem();
 
-	/*
-    while (true) {
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-        sleep_ms(2000);
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-        sleep_ms(2000);
-    }
-	*/
+	for (int i = 0; i < 1000; i++) {
+		printf("waiting %d\n", i);
+		cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, i / 10 % 2);
+		tud_task();
+		sleep_ms(10);
+	}
 
 	/*----------------------------------------------------------*/
 
-	int res;
-	char *p = nullptr;
+	hsp_main();
 
-	int st = 0;
+	int led = 0;
+	for (int i = 0;; i++) {
+		tud_task();
+		sleep_ms(10);
 
-	hsp3dish_cmdline((char *)"");
-	hsp3dish_modname((char *)"");
-
-	res = hsp3dish_init( p );
-	if ( res ) return res;
-	hsp3dish_option( st );
-	res = hsp3dish_exec();
-
-	return res;
+		if (i >= 100) {
+			printf("hsp ended. usb mode.\n");
+			cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, led);
+			led = !led;
+			i = 0;
+		}
+	}
 }
-
-
-

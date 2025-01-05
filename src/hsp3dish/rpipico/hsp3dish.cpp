@@ -19,7 +19,7 @@
 #include <stdbool.h>
 
 #include <pico/time.h>
-
+#include <tusb.h>
 
 #if defined( __GNUC__ )
 #include <ctype.h>
@@ -247,6 +247,9 @@ void hsp3dish_msgfunc( HSPCTX *hspctx )
 #endif
 
 	while(1) {
+		// TinyUSB処理
+		tud_task();
+
 		// logmes なら先に処理する
 		if ( hspctx->runmode == RUNMODE_LOGMES ) {
 			hspctx->runmode = RUNMODE_RUN;

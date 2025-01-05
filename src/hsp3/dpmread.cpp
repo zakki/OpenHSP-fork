@@ -23,6 +23,10 @@ extern HINSTANCE hDllInstance;
 #include "dpmread.h"
 #include "supio.h"
 
+#ifdef HSPRPIPICO
+#include "../hsp3dish/rpipico/hgiox.h"
+#endif
+
 #if (defined HSPUTF8 && defined HSPWIN)
 #pragma execution_character_set("utf-8")
 #endif
@@ -327,21 +331,12 @@ void dpm_bye( void )
 	dpm_flag=0;
 }
 
-#include "../hsp3dish/rpipico/data.h"
-
 int dpm_read( char *fname, void *readmem, int rlen, int seekofs )
 {
+#ifdef HSPRPIPICO
 	printf("dpm_read %s\n", fname);
-	if (strcmp(fname, "START.AX") == 0) {
-		char* lpRd=(char *)readmem;	
-		int seeksize=seekofs;
-		if (seeksize<0) seeksize=0;	
-		int a1 = 0;
-		for (; a1 < rlen && a1 + seeksize < start_ax_len; a1++) {
-			lpRd[a1] = start_ax[a1+seeksize];
-		}
-		return a1;
-	}
+	return hgio_file_read(fname, readmem, rlen, seekofs);
+#else
 	char *lpRd;
 	FILE *ff;
 	int a1;
@@ -418,15 +413,16 @@ int dpm_read( char *fname, void *readmem, int rlen, int seekofs )
 	a1 = (int)fread( lpRd, 1, rlen, ff );
 	fclose( ff );
 	return a1;
+#endif
 }
 
 
 int dpm_exist( char *fname )
 {
+#ifdef HSPRPIPICO
 	printf("dpm_exist %s\n", fname);
-	if (strcmp(fname, "START.AX") == 0) {
-		return start_ax_len;
-	}
+	return hgio_file_exist(fname);
+#else
 	FILE *ff;
 	int length;
 #if (defined HSPUTF8 && defined HSPWIN)
@@ -478,6 +474,7 @@ int dpm_exist( char *fname )
 	fclose(ff);
 
 	return length;
+#endif
 }
 
 
