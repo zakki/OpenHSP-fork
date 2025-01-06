@@ -1,0 +1,15 @@
+mes "start"
+repeat
+	mes "Hello HSP " + cnt
+
+	repeat 50
+		devcontrol "gpio", 15, 1
+		wait 1
+		devcontrol "gpio", 15, 0
+		wait 1
+	loop
+	devcontrol "gpio", 15, 1
+	wait 200
+	devcontrol "gpio", 15, 0
+	wait 200
+loop
