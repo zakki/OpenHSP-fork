@@ -1,0 +1,132 @@
+#module LCD
+// Port of pico-example
+// https://github.com/raspberrypi/pico-examples/blob/master/i2c/lcd_1602_i2c/lcd_1602_i2c.c
+
+// commands
+#define LCD_CLEARDISPLAY 0x01
+#define LCD_RETURNHOME 0x02
+#define LCD_ENTRYMODESET 0x04
+#define LCD_DISPLAYCONTROL 0x08
+#define LCD_CURSORSHIFT 0x10
+#define LCD_FUNCTIONSET 0x20
+#define LCD_SETCGRAMADDR 0x40
+#define LCD_SETDDRAMADDR 0x80
+
+// flags for display entry mode
+#define LCD_ENTRYSHIFTINCREMENT 0x01
+#define LCD_ENTRYLEFT 0x02
+
+// flags for display and cursor control
+#define LCD_BLINKON 0x01
+#define LCD_CURSORON 0x02
+#define LCD_DISPLAYON 0x04
+
+// flags for display and cursor shift
+#define LCD_MOVERIGHT 0x04
+#define LCD_DISPLAYMOVE 0x08
+
+// flags for function set
+#define LCD_5x10DOTS 0x04
+#define LCD_2LINE 0x08
+#define LCD_8BITMODE 0x10
+
+// flag for backlight control
+#define LCD_BACKLIGHT 0x08
+
+#define LCD_ENABLE_BIT 0x04
+#define LCD_ENABLE_BIT2 0x0b
+
+// By default these LCD display drivers are on bus address 0x27
+#define lcd_addr 0x27
+
+// Modes for lcd_send_byte
+#define LCD_CHARACTER  1
+#define LCD_COMMAND    0
+
+#define MAX_LINES      2
+#define MAX_CHARS      16
+
+#deffunc lcd_toggle_enable int val
+    // Toggle enable pin on LCD display
+    // We cannot do this too quickly or things don't work
+    //#define DELAY_US 600
+    // 600us is enough, but 1ms
+    await 1
+    devcontrol "i2cwrite", val | LCD_ENABLE_BIT, 1, 0
+    await 1
+    devcontrol "i2cwrite", val & LCD_ENABLE_BIT2, 1, 0
+    await 1
+    return
+
+
+// The display is sent a byte as two separate nibble transfers
+#deffunc lcd_send_byte int val, int mode, local high, local low
+    high = mode | (val & 0xF0) | LCD_BACKLIGHT
+    low = mode | ((val << 4) & 0xF0) | LCD_BACKLIGHT
+
+    devcontrol "i2cwrite", high, 1, 0
+    lcd_toggle_enable high
+    devcontrol "i2cwrite", low, 1, 0
+    lcd_toggle_enable low
+    return
+
+#deffunc lcd_clear
+    lcd_send_byte LCD_CLEARDISPLAY, LCD_COMMAND
+    return
+
+// go to location on LCD
+#deffunc lcd_set_cursor int row, int col, local val
+    if row == 0 {
+        val = 0x80 + col
+    } else {
+        val = 0xC0 + col
+    }
+    lcd_send_byte val, LCD_COMMAND
+    return
+
+#deffunc lcd_char int val
+    lcd_send_byte val, LCD_CHARACTER
+    return
+
+#deffunc lcd_string str s, local len
+    tmp = s
+    len = strlen(tmp)
+    repeat len
+        lcd_char peek(tmp, cnt)
+    loop
+    return
+
+#deffunc lcd_init
+    devcontrol "i2copen", lcd_addr, 0
+
+    lcd_send_byte 0x03, LCD_COMMAND
+    lcd_send_byte 0x03, LCD_COMMAND
+    lcd_send_byte 0x03, LCD_COMMAND
+    lcd_send_byte 0x02, LCD_COMMAND
+
+    lcd_send_byte LCD_ENTRYMODESET | LCD_ENTRYLEFT, LCD_COMMAND
+    lcd_send_byte LCD_FUNCTIONSET | LCD_2LINE, LCD_COMMAND
+    lcd_send_byte LCD_DISPLAYCONTROL | LCD_DISPLAYON, LCD_COMMAND
+    lcd_clear
+    return
+
+#global
+
+mes "start"
+
+lcd_init
+s = "                "
+repeat
+    mes "set cursor"
+    lcd_set_cursor 0, 0
+    mes "Hello HSP " + cnt
+    lcd_string "Hello HSP " + cnt
+    lcd_set_cursor 1, 0
+    c = cnt \ 255 + 1
+    poke s, cnt \ 16, c
+    mes s
+    lcd_string s
+
+    devcontrol "gpio", 15, cnt / 100 \ 2
+    wait 10
+loop

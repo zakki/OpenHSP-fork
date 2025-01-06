@@ -6,23 +6,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-//#include <fcntl.h>
+// #include <fcntl.h>
 #include <math.h>
 #include <assert.h>
-//#include <unistd.h>
-//#include <termios.h>
+// #include <unistd.h>
+// #include <termios.h>
 
-//#include <errno.h>
-//#include <regex.h>
-//#include <dirent.h>
-//#include <linux/input.h>
+// #include <errno.h>
+// #include <regex.h>
+// #include <dirent.h>
+// #include <linux/input.h>
 #include <stdbool.h>
 
-#if defined( __GNUC__ )
+#if defined(__GNUC__)
 #include <ctype.h>
 #endif
 
 #include "pico/stdlib.h"
+#include "hardware/i2c.h"
 
 #include "../hsp3config.h"
 #include "../hsp3struct.h"
@@ -34,111 +35,111 @@ extern char *hsp_mainpath;
 /*----------------------------------------------------------*/
 //					Raspberry Pi I2C support
 /*----------------------------------------------------------*/
-#if 0
-#include <sys/ioctl.h>
-#include <linux/i2c-dev.h>
-
 #define HSPI2C_CHMAX 16
-#define HSPI2C_DEVNAME "/dev/i2c-1"
 
 static int i2cfd_ch[HSPI2C_CHMAX];
 
-static void I2C_Init( void )
+static void I2C_Init(void)
 {
 	int i;
-	for(i=0;i<HSPI2C_CHMAX;i++) {
-		i2cfd_ch[i] = 0;
+	for (i = 0; i < HSPI2C_CHMAX; i++)
+	{
+		i2cfd_ch[i] = -1;
 	}
 }
 
-static void I2C_Close( int ch )
+static void I2C_Close(int ch)
 {
-	if ( ( ch<0 )||( ch>=HSPI2C_CHMAX ) ) return;
-	if ( i2cfd_ch[ch] == 0 ) return;
+	if ((ch < 0) || (ch >= HSPI2C_CHMAX))
+		return;
+	if (i2cfd_ch[ch] == -1)
+		return;
 
-	close( i2cfd_ch[ch] );
-	i2cfd_ch[ch] = 0;
+	i2cfd_ch[ch] = -1;
 }
 
-static void I2C_Term( void )
+static void I2C_Term(void)
 {
 	int i;
-	for(i=0;i<HSPI2C_CHMAX;i++) {
+	for (i = 0; i < HSPI2C_CHMAX; i++)
+	{
 		I2C_Close(i);
 	}
 }
 
-static int I2C_Open( int ch, int adr )
+static int I2C_Open(int ch, int adr)
 {
 	int fd;
 	unsigned char i2cAddress;
 
-	if ( ( ch<0 )||( ch>=HSPI2C_CHMAX ) ) return -1;
-	if ( i2cfd_ch[ch] ) I2C_Close( ch );
+	if ((ch < 0) || (ch >= HSPI2C_CHMAX))
+		return -1;
+	if (i2cfd_ch[ch] >= 0)
+		I2C_Close(ch);
 
-	if((fd = open( HSPI2C_DEVNAME, O_RDWR )) < 0){
-        return 1;
-    }
-    i2cAddress = (unsigned char)(adr & 0x7f);
-    if (ioctl(fd, I2C_SLAVE, i2cAddress) < 0) {
-		close( fd );
-        return 2;
-    }
-
-	i2cfd_ch[ch] = fd;
+	i2cfd_ch[ch] = (unsigned char)(adr & 0x7f);
 	return 0;
 }
 
-static int I2C_ReadByte( int ch )
+static int I2C_ReadByte(int ch)
 {
 	int res;
 	unsigned char data[8];
 
-	if ( ( ch<0 )||( ch>=HSPI2C_CHMAX ) ) return -1;
-	if ( i2cfd_ch[ch] == 0 ) return -1;
+	if ((ch < 0) || (ch >= HSPI2C_CHMAX))
+		return -1;
+	if (i2cfd_ch[ch] < 0)
+		return -1;
 
-	res = read( i2cfd_ch[ch], data, 1 );
-	if ( res < 0 ) return -1;
+	uint8_t buf;
+	res = i2c_read_blocking(i2c_default, i2cfd_ch[ch], &buf, 1, false);
 
-	res = (int)data[0];
-	return res;
+	if (res < 0)
+		return -1;
+
+	return buf;
 }
 
-static int I2C_ReadWord( int ch )
+static int I2C_ReadWord(int ch)
 {
 	int res;
-	unsigned char data[8];
 
-	if ( ( ch<0 )||( ch>=HSPI2C_CHMAX ) ) return -1;
-	if ( i2cfd_ch[ch] == 0 ) return -1;
+	if ((ch < 0) || (ch >= HSPI2C_CHMAX))
+		return -1;
+	if (i2cfd_ch[ch] < 0)
+		return -1;
 
-	res = read( i2cfd_ch[ch], data, 2 );
-	if ( res < 0 ) return -1;
+	uint8_t buf[8];
+	res = i2c_read_blocking(i2c_default, i2cfd_ch[ch], buf, 2, false);
+	if (res < 0)
+		return -1;
 
-	res = ((int)data[1]) << 8;
-	res += (int)data[0];
+	res = (((int)buf[1]) << 8) | ((int)buf[0]);
 	return res;
 }
 
-static int I2C_WriteByte( int ch, int value, int length )
+static int I2C_WriteByte(int ch, int value, int length)
 {
 	int res;
 	int len;
-	unsigned char *data;
 
-	if ( ( ch<0 )||( ch>=HSPI2C_CHMAX ) ) return -1;
-	if ( i2cfd_ch[ch] == 0 ) return -1;
-	if ( ( length<0 )||( length>4 ) ) return -1;
+	if ((ch < 0) || (ch >= HSPI2C_CHMAX))
+		return -1;
+	if (i2cfd_ch[ch] < 0)
+		return -1;
+	if ((length < 0) || (length > 4))
+		return -1;
 
 	len = length;
-	if ( len == 0 ) len = 1;
-	data = (unsigned char *)(&value);
-	res = write( i2cfd_ch[ch], data, len );
-	if ( res < 0 ) return -1;
+	if (len == 0)
+		len = 1;
+	uint8_t *data = (uint8_t *)(&value);
+	res = i2c_write_blocking(i2c_default, i2cfd_ch[ch], data, length, false);
+	if (res < 0)
+		return -1;
 
 	return 0;
 }
-#endif
 
 /*----------------------------------------------------------*/
 //					Raspberry Pi SPI support
@@ -449,7 +450,6 @@ int SPI_Setting(int ch, int mode, int lsb_first){
 }
 #endif
 
-
 /*----------------------------------------------------------*/
 //		GPIOデバイスコントロール関連
 /*----------------------------------------------------------*/
@@ -459,71 +459,53 @@ int SPI_Setting(int ch, int mode, int lsb_first){
 #define GPIO_TYPE_IN 2
 #define GPIO_MAX 32
 
-//#define GPIO_CLASS "/sys/class/gpio/"
-
 static int gpio_type[GPIO_MAX];
 static int gpio_value[GPIO_MAX];
 
-/*
-static int echo_file( char *name, char *value )
+static int gpio_delport(int port)
 {
-	//	echo value > name を行なう
-	//printf( "[%s]<-%s\n",name,value );
-	int fd;
-	fd = open( name, O_WRONLY );
-	if (fd < 0) {
+	if ((port < 0) || (port >= GPIO_MAX))
 		return -1;
-	}
-	write( fd, value, strlen(value)+1 );
-	close(fd);
+
+	if (gpio_type[port] == GPIO_TYPE_NONE)
+		return 0;
+	// echo_file2( GPIO_CLASS "unexport", port );
+	// usleep(100000);		//0.1秒待つ(念のため)
+	gpio_type[port] = GPIO_TYPE_NONE;
 	return 0;
 }
 
-static int echo_file2( char *name, int value )
+static int gpio_setport(int port, int type)
 {
-	char vstr[64];
-	sprintf( vstr, "%d", value );
-	return echo_file( name, vstr );
-}
-*/
+	if ((port < 0) || (port >= GPIO_MAX))
+		return -1;
 
-static int gpio_delport( int port )
-{
-	if ((port<0)||(port>=GPIO_MAX)) return -1;
-
-	if ( gpio_type[port]==GPIO_TYPE_NONE ) return 0;
-	//echo_file2( GPIO_CLASS "unexport", port );
-	//usleep(100000);		//0.1秒待つ(念のため)
-	gpio_type[port]=GPIO_TYPE_NONE;
-	return 0;
-}
-
-static int gpio_setport( int port, int type )
-{
-	if ((port<0)||(port>=GPIO_MAX)) return -1;
-
-	if ( gpio_type[port]==GPIO_TYPE_NONE ) {
-		//echo_file2( GPIO_CLASS "export", port );
+	if (gpio_type[port] == GPIO_TYPE_NONE)
+	{
+		// echo_file2( GPIO_CLASS "export", port );
 		gpio_set_function(port, GPIO_FUNC_SIO);
-		sleep_ms(100);		//0.1秒待つ(念のため)
+		sleep_ms(100); // 0.1秒待つ(念のため)
 	}
 
-	if ( gpio_type[port] == type ) return 0;
+	if (gpio_type[port] == type)
+		return 0;
 
 	int res = 0;
 
-	switch( type ) {
+	switch (type)
+	{
 	case GPIO_TYPE_OUT:
-		//res = echo_file( vstr, "out" );
+		// res = echo_file( vstr, "out" );
 		gpio_set_dir(port, GPIO_OUT);
 		break;
 	case GPIO_TYPE_IN:
-		//res = echo_file( vstr, "in" );
+		// res = echo_file( vstr, "in" );
 		gpio_set_dir(port, GPIO_IN);
 		break;
 	}
 
-	if ( res ) {
+	if (res)
+	{
 		gpio_type[port] = GPIO_TYPE_NONE;
 		return res;
 	}
@@ -533,15 +515,19 @@ static int gpio_setport( int port, int type )
 	return 0;
 }
 
-static int gpio_out( int port, int value )
+static int gpio_out(int port, int value)
 {
-	if ((port<0)||(port>=GPIO_MAX)) return -1;
-	if ( gpio_type[port]!=GPIO_TYPE_OUT ) {
-		int res = gpio_setport( port, GPIO_TYPE_OUT );
-		if ( res ) return res;
+	if ((port < 0) || (port >= GPIO_MAX))
+		return -1;
+	if (gpio_type[port] != GPIO_TYPE_OUT)
+	{
+		int res = gpio_setport(port, GPIO_TYPE_OUT);
+		if (res)
+			return res;
 	}
 
-	if ( value == 0 ) {
+	if (value == 0)
+	{
 		gpio_value[port] = 0;
 		gpio_put(port, 0);
 		return 0;
@@ -551,12 +537,15 @@ static int gpio_out( int port, int value )
 	return 0;
 }
 
-static int gpio_in( int port, int *value )
+static int gpio_in(int port, int *value)
 {
-	if ((port<0)||(port>=GPIO_MAX)) return -1;
-	if ( gpio_type[port]!=GPIO_TYPE_IN ) {
-		int res = gpio_setport( port, GPIO_TYPE_IN );
-		if ( res ) return res;
+	if ((port < 0) || (port >= GPIO_MAX))
+		return -1;
+	if (gpio_type[port] != GPIO_TYPE_IN)
+	{
+		int res = gpio_setport(port, GPIO_TYPE_IN);
+		if (res)
+			return res;
 	}
 
 	gpio_value[port] = gpio_get(port) ? 1 : 0;
@@ -565,58 +554,68 @@ static int gpio_in( int port, int *value )
 	return 0;
 }
 
-static void gpio_init( void )
+static void gpio_init(void)
 {
 	int i;
-	for(i=0;i<GPIO_MAX;i++) {
+	for (i = 0; i < GPIO_MAX; i++)
+	{
 		gpio_type[i] = GPIO_TYPE_NONE;
 	}
 }
 
-static void gpio_bye( void )
+static void gpio_bye(void)
 {
 	int i;
-	for(i=0;i<GPIO_MAX;i++) {
+	for (i = 0; i < GPIO_MAX; i++)
+	{
 		gpio_delport(i);
 	}
 }
 
 //--------------------------------------------------------------
 
-static int hsp3dish_devprm( char *name, char *value )
+static int hsp3dish_devprm(char *name, char *value)
 {
-	//return echo_file( name, value );
+	// return echo_file( name, value );
 	return -1;
 }
 
-static int hsp3dish_devcontrol( char *cmd, int p1, int p2, int p3 )
+static int hsp3dish_devcontrol(char *cmd, int p1, int p2, int p3)
 {
-	if (( strcmp( cmd, "gpio" )==0 )||( strcmp( cmd, "GPIO" )==0 )) {
-		return gpio_out( p1, p2 );
+	if ((strcmp(cmd, "gpio") == 0) || (strcmp(cmd, "GPIO") == 0))
+	{
+		return gpio_out(p1, p2);
 	}
-	if (( strcmp( cmd, "gpioin" )==0 )||( strcmp( cmd, "GPIOIN" )==0 )) {
-		int res,val;
-		res = gpio_in( p1, &val );
-		if ( res == 0 ) return val;
+	if ((strcmp(cmd, "gpioin") == 0) || (strcmp(cmd, "GPIOIN") == 0))
+	{
+		int res, val;
+		res = gpio_in(p1, &val);
+		if (res == 0)
+			return val;
 		return res;
 	}
-#if 0
-	if (( strcmp( cmd, "i2creadw" )==0 )||( strcmp( cmd, "I2CREADW" )==0 )) {
-		return I2C_ReadWord( p1 );
+	if ((strcmp(cmd, "i2creadw") == 0) || (strcmp(cmd, "I2CREADW") == 0))
+	{
+		return I2C_ReadWord(p1);
 	}
-	if (( strcmp( cmd, "i2cread" )==0 )||( strcmp( cmd, "I2CREAD" )==0 )) {
-		return I2C_ReadByte( p1 );
+	if ((strcmp(cmd, "i2cread") == 0) || (strcmp(cmd, "I2CREAD") == 0))
+	{
+		return I2C_ReadByte(p1);
 	}
-	if (( strcmp( cmd, "i2cwrite" )==0 )||( strcmp( cmd, "I2CWRITE" )==0 )) {
-		return I2C_WriteByte( p3, p1, p2 );
+	if ((strcmp(cmd, "i2cwrite") == 0) || (strcmp(cmd, "I2CWRITE") == 0))
+	{
+		return I2C_WriteByte(p3, p1, p2);
 	}
-	if (( strcmp( cmd, "i2copen" )==0 )||( strcmp( cmd, "I2COPEN" )==0 )) {
-		return I2C_Open( p2, p1 );
+	if ((strcmp(cmd, "i2copen") == 0) || (strcmp(cmd, "I2COPEN") == 0))
+	{
+		return I2C_Open(p2, p1);
 	}
-	if (( strcmp( cmd, "i2close" )==0 )||( strcmp( cmd, "I2CCLOSE" )==0 )) {
-		I2C_Close( p1 );
+	if ((strcmp(cmd, "i2close") == 0) || (strcmp(cmd, "I2CCLOSE") == 0))
+	{
+		I2C_Close(p1);
 		return 0;
 	}
+#if 0
 	if (( strcmp( cmd, "spireadw" )==0 )||( strcmp( cmd, "SPIREADW" )==0 )) {
 		return SPI_ReadWord( p1 );
 	}
@@ -688,26 +687,28 @@ static int hsp3dish_devcontrol( char *cmd, int p1, int p2, int p3 )
 static HSP3DEVINFO *mem_devinfo;
 static int devinfo_dummy;
 
-static int *hsp3dish_devinfoi( char *name, int *size )
+static int *hsp3dish_devinfoi(char *name, int *size)
 {
 	devinfo_dummy = 0;
 	*size = -1;
 	return NULL;
-//	return &devinfo_dummy;
+	//	return &devinfo_dummy;
 }
 
-static char *hsp3dish_devinfo( char *name )
+static char *hsp3dish_devinfo(char *name)
 {
-	if ( strcmp( name, "name" )==0 ) {
+	if (strcmp(name, "name") == 0)
+	{
 		return mem_devinfo->devname;
 	}
-	if ( strcmp( name, "error" )==0 ) {
+	if (strcmp(name, "error") == 0)
+	{
 		return mem_devinfo->error;
 	}
 	return NULL;
 }
 
-void hsp3dish_setdevinfo_io( HSP3DEVINFO *devinfo )
+void hsp3dish_setdevinfo_io(HSP3DEVINFO *devinfo)
 {
 	//		Initalize DEVINFO
 	mem_devinfo = devinfo;
@@ -723,17 +724,15 @@ void hsp3dish_setdevinfo_io( HSP3DEVINFO *devinfo )
 	devinfo->devinfoi = hsp3dish_devinfoi;
 
 	gpio_init();
-	//I2C_Init();
-	//SPI_Init();
+	I2C_Init();
+	// SPI_Init();
 }
 
-void hsp3dish_termdevinfo_io( void )
+void hsp3dish_termdevinfo_io(void)
 {
-	//SPI_Term();
-	//I2C_Term();
+	// SPI_Term();
+	I2C_Term();
 	gpio_bye();
 }
 
-
 /*----------------------------------------------------------*/
-
