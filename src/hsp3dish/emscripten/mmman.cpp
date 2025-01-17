@@ -54,6 +54,9 @@ int MusicLoad( char *fname )
 {
 	MusicTerm();
 	m_music=Mix_LoadMUS((const char *)fname);
+#ifndef NDEBUG
+	printf("Mix_LoadMUS: %s %p\n", fname, m_music);
+#endif
 	if (m_music==NULL) return -1;
 	return 0;
 }
@@ -63,7 +66,10 @@ void MusicPlay( int num, int mode )
 	if (m_music==NULL) return;
 	curmusic = num;
 	Mix_HaltMusic();
-	Mix_PlayMusic(m_music,mode);
+	int ret = Mix_PlayMusic(m_music,mode);
+#ifndef NDEBUG
+	printf("Mix_PlayMusic: %d\n", ret);
+#endif
 }
 
 void MusicStop( void )
@@ -141,10 +147,32 @@ MMMan::MMMan()
 	engine_flag = false;
 	MusicInit();
 
-	Mix_Init(MIX_INIT_OGG|MIX_INIT_MP3);
+	int result = Mix_Init(MIX_INIT_OGG|MIX_INIT_MP3);
+#ifndef NDEBUG
+	printf("Mix_Init: %d OGG:%d MP3:%d\n", result, result & MIX_INIT_OGG, result & MIX_INIT_MP3);
+#endif
 
-	Mix_ReserveChannels(16);
 	int ret = Mix_OpenAudio(0, 0, 0, 0);
+#ifndef NDEBUG
+	printf("Mix_OpenAudio: %d\n", ret);
+#endif
+
+	int curren_channels = Mix_AllocateChannels(-1);
+#ifndef NDEBUG
+	printf("Mix_AllocateChannels: %d\n", curren_channels);
+#endif
+
+	int allocated_channels = Mix_AllocateChannels(MIX_MAX_CHANNEL);
+#ifndef NDEBUG
+	printf("Mix_AllocateChannels: %d\n", allocated_channels);
+#endif
+
+	/* 明示的にチャンネル管理せずにMix_PlayChannel(-1, **)を使うので予約しない。
+	int reserved = Mix_ReserveChannels(16);
+#ifndef NDEBUG
+	printf("Mix_ReserveChannels: %d\n", reserved);
+#endif
+	*/
 	//assert(ret == 0);
 	engine_flag = ret == 0;
 }
@@ -155,9 +183,10 @@ MMMan::~MMMan()
 	ClearAllBank();
 	MusicTerm();
 
+	Mix_CloseAudio();
+
 	while(Mix_Init(0))
 		Mix_Quit();
-	Mix_CloseAudio();
 }
 
 void MMMan::DeleteBank( int bank )
@@ -318,6 +347,9 @@ int MMMan::BankLoad( MMM *mmm, char *fname )
 	}
 
 	mmm->chunk = Mix_LoadWAV( fname );
+#ifndef NDEBUG
+	printf("Mix_LoadWAV: %s %p\n", fname, mmm->chunk);
+#endif
 	if (mmm->chunk==NULL) return 1;
 	mmm->flag = MMDATA_INTWAVE;
 	return 0;
@@ -356,8 +388,14 @@ int MMMan::Play( int num, int ch )
 	int bank;
 	MMM *m;
 	bank = SearchBank(num);
+#ifndef NDEBUG
+	printf("[MMMan] Play %d %d %d\n", num, ch, bank);
+#endif
 	if ( bank < 0 ) return 1;
 	m = &(mem_snd[bank]);
+#ifndef NDEBUG
+	printf("[MMMan] Play bank %p\n", m);
+#endif
 	if ( m == NULL ) {
 		return -1;
 	}
@@ -371,6 +409,9 @@ int MMMan::Play( int num, int ch )
 		m->channel = Mix_PlayChannel( ch, m->chunk, loop ? -1 : 0 , m->start, m->end );
 #else
 		m->channel = Mix_PlayChannel( ch, m->chunk, loop ? -1 : 0 );
+#endif
+#ifndef NDEBUG
+		printf("Mix_PlayChannel: %d %d %d\n", ch, m->channel, loop);
 #endif
 		if (m->vol>=0) {
 			Mix_Volume( m->channel, m->vol );
