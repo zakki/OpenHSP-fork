@@ -75,6 +75,8 @@ int hgio_fontsystem_get_texid(void);
 #include "SDL2/SDL.h"
 
 
+#elif defined(__APPLE__)
+#include <OpenGL/gl.h>
 #else
 
 //#include <GLES2/gl2.h>

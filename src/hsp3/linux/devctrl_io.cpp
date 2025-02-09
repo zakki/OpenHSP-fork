@@ -15,7 +15,10 @@
 #include <errno.h>
 #include <regex.h>
 #include <dirent.h>
+#if defined(__APPLE__)
+#else
 #include <linux/input.h>
+#endif
 #include <stdbool.h>
 
 
@@ -30,6 +33,7 @@
 
 extern char *hsp_mainpath;
 
+#if !defined(__APPLE__)
 /*----------------------------------------------------------*/
 //					Raspberry Pi I2C support
 /*----------------------------------------------------------*/
@@ -697,6 +701,7 @@ static void gpio_bye( void )
 		gpio_delport(i);
 	}
 }
+#endif
 
 #endif
 
@@ -704,11 +709,16 @@ static void gpio_bye( void )
 
 static int hsp3dish_devprm( char *name, char *value )
 {
+#if !defined(__APPLE__)
 	return echo_file( name, value );
+#else
+	return 0;
+#endif
 }
 
 static int hsp3dish_devcontrol( char *cmd, int p1, int p2, int p3 )
 {
+#if !defined(__APPLE__)
 	if (( strcmp( cmd, "gpio" )==0 )||( strcmp( cmd, "GPIO" )==0 )) {
 		return gpio_out( p1, p2 );
 	}
@@ -812,6 +822,7 @@ static int hsp3dish_devcontrol( char *cmd, int p1, int p2, int p3 )
 	if (( strcmp( cmd, "spitransceive" )==0 )||( strcmp( cmd, "SPITRANSCEIVE" )==0 )) {
 		return SPI_Transceive(p3, p1, p2);
 	}
+#endif
 	return -1;
 }
 
@@ -846,6 +857,8 @@ void hsp3dish_setdevinfo_io( HSP3DEVINFO *devinfo )
 	mem_devinfo = devinfo;
 #ifdef HSPRASPBIAN
 	devinfo->devname = "RaspberryPi";
+#elseif defined(__APPLE__)
+	devinfo->devname = "mac";
 #else
 	devinfo->devname = "linux";
 #endif
@@ -855,16 +868,20 @@ void hsp3dish_setdevinfo_io( HSP3DEVINFO *devinfo )
 	devinfo->devinfo = hsp3dish_devinfo;
 	devinfo->devinfoi = hsp3dish_devinfoi;
 
+#if !defined(__APPLE__)
 	gpio_init();
 	I2C_Init();
 	SPI_Init();
+#endif
 }
 
 void hsp3dish_termdevinfo_io( void )
 {
+#if !defined(__APPLE__)
 	SPI_Term();
 	I2C_Term();
 	gpio_bye();
+#endif
 }
 
 

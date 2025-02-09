@@ -17,6 +17,19 @@
 #import <Availability.h>
 #import <GameKit/GameKit.h>
 
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_video.h"
+#include "SDL2/SDL_syswm.h"
+
+#if defined(SDL_VIDEO_DRIVER_COCOA)
+#else
+#error "NO COCOA"
+#endif
+
+extern SDL_Window *window;
+static SDL_SysWMinfo syswminfo;
+
+
 // These should probably be moved to a platform common file
 #define SONY_USB_VENDOR_ID              0x054c
 #define SONY_USB_PS3_PRODUCT_ID         0x0268
@@ -54,7 +67,7 @@ static bool __mouseCapturedFirstPass = false;
 static CGPoint __mouseCapturePoint;
 static bool __multiSampling = false;
 static bool __cursorVisible = true;
-static View* __view = NULL;
+//static View* __view = NULL;
 
 static NSMutableDictionary *__activeGamepads = NULL;
 static NSMutableArray *__gamepads = NULL;
@@ -80,10 +93,10 @@ double getMachTimeInMilliseconds()
 {
     static const double kOneMillion = 1000 * 1000;
     static mach_timebase_info_data_t s_timebase_info;
-    
-    if (s_timebase_info.denom == 0) 
+
+    if (s_timebase_info.denom == 0)
         (void) mach_timebase_info(&s_timebase_info);
-    
+
     // mach_absolute_time() returns billionth of seconds, so divide by one million to get milliseconds
     GP_ASSERT(s_timebase_info.denom);
     return ((double)mach_absolute_time() * (double)s_timebase_info.numer) / (kOneMillion * (double)s_timebase_info.denom);
@@ -158,7 +171,7 @@ double getMachTimeInMilliseconds()
 
 - (CFIndex)logicalMinimum
 {
-    return IOHIDElementGetLogicalMin(e);    
+    return IOHIDElementGetLogicalMin(e);
 }
 
 - (CFIndex)logicalMaximum
@@ -170,7 +183,7 @@ double getMachTimeInMilliseconds()
 {
     float cmax = 2.0f;
     float cmin = 0.0f;
-    return ((((v - [self logicalMinimum]) * (cmax - cmin)) / ([self logicalMaximum] - [self logicalMinimum])) + cmin - 1.0f);    
+    return ((((v - [self logicalMinimum]) * (cmax - cmin)) / ([self logicalMaximum] - [self logicalMinimum])) + cmin - 1.0f);
 }
 
 - (CFIndex)value
@@ -371,7 +384,7 @@ double getMachTimeInMilliseconds()
         IOHIDQueueRef queue = IOHIDQueueCreate(CFAllocatorGetDefault(), rawDevice, 10, kIOHIDOptionsTypeNone);
         [self setHidDeviceRef:rawDevice];
         [self setQueueRef:queue];
-        
+
         [self initializeGamepadElements];
         [self startListening];
     }
@@ -381,12 +394,12 @@ double getMachTimeInMilliseconds()
 - (void)dealloc
 {
     [self stopListening];
-    
+
     CFRelease([self rawDevice]);
     CFRelease([self queueRef]);
     [self setQueueRef:NULL];
     [self setHidDeviceRef:NULL];
-    
+
     [self setButtons:NULL];
     [self setTriggerButtons:NULL];
     [self setAxes:NULL];
@@ -394,7 +407,7 @@ double getMachTimeInMilliseconds()
     {
         [hatSwitch dealloc];
     }
-    
+
     [super dealloc];
 }
 
@@ -412,7 +425,7 @@ double getMachTimeInMilliseconds()
 {
     uint32_t vendorID = [self vendorID];
     uint32_t productID = [self productID];
-    
+
     CFArrayRef elements = IOHIDDeviceCopyMatchingElements([self rawDevice], NULL, kIOHIDOptionsTypeNone);
     for(int i = 0; i < CFArrayGetCount(elements); i++)
     {
@@ -475,7 +488,7 @@ double getMachTimeInMilliseconds()
         IOHIDElementRef hidElement = (IOHIDElementRef)CFArrayGetValueAtIndex(elements, i);
         IOHIDElementType type = IOHIDElementGetType(hidElement);
         IOHIDElementCookie cookie = IOHIDElementGetCookie(hidElement);
-        
+
         // Gamepad specific code
         if(vendorID == SONY_USB_VENDOR_ID && productID == SONY_USB_PS3_PRODUCT_ID)
         {
@@ -516,19 +529,19 @@ double getMachTimeInMilliseconds()
         return false;
     }
     IOHIDDeviceScheduleWithRunLoop([self hidDeviceRef], CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
-    
+
     IOHIDQueueStart([self queueRef]);
     IOHIDQueueRegisterValueAvailableCallback([self queueRef], hidDeviceValueAvailableCallback, self);
-    
+
     CFArrayRef elements = (CFArrayRef)[self watchedElements];
     for(int i = 0; i < CFArrayGetCount(elements); i++)
     {
         IOHIDElementRef hidElement = (IOHIDElementRef)CFArrayGetValueAtIndex(elements, i);
         IOHIDQueueAddElement([self queueRef], hidElement);
     }
-    
+
     IOHIDQueueScheduleWithRunLoop([self queueRef], CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
-    
+
     return true;
 }
 
@@ -536,7 +549,7 @@ double getMachTimeInMilliseconds()
 {
     IOHIDQueueUnscheduleFromRunLoop([self queueRef], CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
     IOHIDQueueStop([self queueRef]);
-    
+
     IOHIDDeviceUnscheduleFromRunLoop([self hidDeviceRef], CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
     IOHIDDeviceClose([self hidDeviceRef], kIOHIDOptionsTypeNone);
 }
@@ -670,10 +683,10 @@ double getMachTimeInMilliseconds()
 {
     IOHIDElementRef element = IOHIDValueGetElement(value);
     IOHIDElementCookie cookie = IOHIDElementGetCookie(element);
-    
+
     if(IOHIDValueGetLength(value) > 4) return; // saftey precaution for PS3 cotroller
     CFIndex integerValue = IOHIDValueGetIntegerValue(value);
-    
+
     for(HIDGamepadAxis *a in [self axes])
     {
         if([a cookie] == cookie)
@@ -681,7 +694,7 @@ double getMachTimeInMilliseconds()
             [a setValue:integerValue];
         }
     }
-    
+
     for(HIDGamepadButton *b in [self buttons])
     {
         if([b cookie] == cookie)
@@ -690,7 +703,7 @@ double getMachTimeInMilliseconds()
             break;
         }
     }
-    
+
     for(HIDGamepadButton *b in [self triggerButtons])
     {
         if([b triggerCookie] == cookie)
@@ -708,6 +721,7 @@ double getMachTimeInMilliseconds()
 @end
 
 
+#if 0
 @interface View : NSOpenGLView <NSWindowDelegate>
 {
 @public
@@ -717,7 +731,7 @@ double getMachTimeInMilliseconds()
 @protected
     Game* _game;
     unsigned int _gestureEvents;
-}    
+}
 - (void) detectGamepads: (Game*) game;
 
 @end
@@ -725,7 +739,7 @@ double getMachTimeInMilliseconds()
 
 @implementation View
 
--(void)windowWillClose:(NSNotification*)note 
+-(void)windowWillClose:(NSNotification*)note
 {
     [gameLock lock];
     _game->exit();
@@ -736,28 +750,31 @@ double getMachTimeInMilliseconds()
 - (void)reshape
 {
     [gameLock lock];
-    
-    NSSize size = [ [ _window contentView ] frame ].size;
+    #error
+    NSWindow* window = syswminfo.info.cocoa.window;
+    NSSize size = [ [ window contentView ] frame ].size;
     __width = size.width;
     __height = size.height;
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s => %dx%d\n", __FUNCTION__,  __width, __height);
     CGLContextObj cglContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
     GLint dim[2] = {__width, __height};
     CGLSetParameter(cglContext, kCGLCPSurfaceBackingSize, dim);
     CGLEnable(cglContext, kCGLCESurfaceBackingSize);
-    
+
     gameplay::Platform::resizeEventInternal((unsigned int)__width, (unsigned int)__height);
-    
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s => %dx%d\n", __FUNCTION__,  __width, __height);
+
     [gameLock unlock];
 }
 
 - (CVReturn) getFrameForTime:(const CVTimeStamp*)outputTime
 {
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    
+
     [self update];
-    
+
     [pool release];
-    
+
     return kCVReturnSuccess;
 }
 
@@ -768,7 +785,7 @@ double getMachTimeInMilliseconds()
     {
         NSNumber* locationID = [gamepad locationID];
         if([__activeGamepads objectForKey:locationID] == NULL)
-        {            
+        {
             // Gameplay::add is friended to Platform, but we're not in Platform right now.
             Platform::gamepadEventConnectedInternal((unsigned int)[locationID intValue],
                                                     [gamepad numberOfButtons],
@@ -779,7 +796,7 @@ double getMachTimeInMilliseconds()
             [__activeGamepads setObject:locationID forKey:locationID];
         }
     }
-    
+
     // Detect any disconnected gamepads
     NSMutableArray* deadGamepads = [NSMutableArray array];
     for(NSNumber* locationID in __activeGamepads)
@@ -796,7 +813,7 @@ double getMachTimeInMilliseconds()
 }
 
 -(void) update
-{       
+{
     [gameLock lock];
 
     [[self openGLContext] makeCurrentContext];
@@ -804,16 +821,16 @@ double getMachTimeInMilliseconds()
     if (_game)
     {
         [self detectGamepads: _game];
-        
+
         _game->frame();
     }
     CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
-    CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);  
+    CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 
     [gameLock unlock];
 }
 
-static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime, 
+static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime,
                                       CVOptionFlags flagsIn, CVOptionFlags* flagsOut, void* displayLinkContext)
 {
     CVReturn result = [(View*)displayLinkContext getFrameForTime:outputTime];
@@ -823,15 +840,15 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTime
 - (id) initWithFrame: (NSRect) frame
 {
     _game = Game::getInstance();
-    
+
     Properties* config = _game->getConfig()->getNamespace("window", true);
     int samples = config ? config->getInt("samples") : 0;
     if (samples < 0)
         samples = 0;
-    
+
     // Note: Keep multisampling attributes at the start of the attribute lists since code below
     // assumes they are array elements 0 through 4.
-    NSOpenGLPixelFormatAttribute windowedAttrs[] = 
+    NSOpenGLPixelFormatAttribute windowedAttrs[] =
     {
         NSOpenGLPFAMultisample,
         NSOpenGLPFASampleBuffers, static_cast<NSOpenGLPixelFormatAttribute>(samples ? 1 : 0),
@@ -844,7 +861,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTime
         NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
         0
     };
-    NSOpenGLPixelFormatAttribute fullscreenAttrs[] = 
+    NSOpenGLPixelFormatAttribute fullscreenAttrs[] =
     {
         NSOpenGLPFAMultisample,
         NSOpenGLPFASampleBuffers, static_cast<NSOpenGLPixelFormatAttribute>(samples ? 1 : 0),
@@ -861,7 +878,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTime
         0
     };
     NSOpenGLPixelFormatAttribute* attrs = __fullscreen ? fullscreenAttrs : windowedAttrs;
-    
+
     __multiSampling = samples > 0;
 
     // Try to choose a supported pixel format
@@ -883,7 +900,7 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTime
         }
 
         __multiSampling = samples > 0;
-        
+
         if (!valid)
         {
             NSLog(@"OpenGL pixel format not supported.");
@@ -891,26 +908,26 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTime
             return nil;
         }
     }
-    
-    if ((self = [super initWithFrame:frame pixelFormat:[pf autorelease]])) 
+
+    if ((self = [super initWithFrame:frame pixelFormat:[pf autorelease]]))
     {
         gameLock = [[NSRecursiveLock alloc] init];
         __timeStart = getMachTimeInMilliseconds();
     }
-    
+
     return self;
 }
 
 - (void) prepareOpenGL
 {
     [super prepareOpenGL];
-    
+
     _game->run();
-    
+
     if (__fullscreen)
     {
         [[self window] setLevel: NSMainMenuWindowLevel+1];
-        [[self window] setHidesOnDeactivate:YES]; 
+        [[self window] setHidesOnDeactivate:YES];
     }
     else
     {
@@ -918,67 +935,68 @@ static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTime
     }
     [[self window] makeKeyAndOrderFront: self];
     [[self window] setTitle: [NSString stringWithUTF8String: __title ? __title : ""]];
-    
+
     // Make all the OpenGL calls to setup rendering and build the necessary rendering objects
     [[self openGLContext] makeCurrentContext];
     // Synchronize buffer swaps with vertical refresh rate
     GLint swapInt = __vsync ? 1 : 0;
     [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
-    
+
     // Create a display link capable of being used with all active displays
     CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
-    
+
     // Set the renderer output callback function
     CVDisplayLinkSetOutputCallback(displayLink, &MyDisplayLinkCallback, self);
-    
+
     CGLContextObj cglContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
     CGLPixelFormatObj cglPixelFormat = (CGLPixelFormatObj)[[self pixelFormat] CGLPixelFormatObj];
     CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext(displayLink, cglContext, cglPixelFormat);
-    
+
     GLint dim[2] = {__width, __height};
     CGLSetParameter(cglContext, kCGLCPSurfaceBackingSize, dim);
     CGLEnable(cglContext, kCGLCESurfaceBackingSize);
-    
+
     // Activate the display link
     CVDisplayLinkStart(displayLink);
 }
 
 - (void) dealloc
-{   
+{
     [gameLock lock];
-    
+
     // Release the display link
     CVDisplayLinkStop(displayLink);
     CVDisplayLinkRelease(displayLink);
     _game->exit();
-    
+
     [gameLock unlock];
 
     [super dealloc];
 }
 
-- (void)resumeDisplayRenderer 
-{
-    [gameLock lock];
-    CVDisplayLinkStop(displayLink);
-    [gameLock unlock]; 
-}
-
-- (void)haltDisplayRenderer 
+- (void)resumeDisplayRenderer
 {
     [gameLock lock];
     CVDisplayLinkStop(displayLink);
     [gameLock unlock];
 }
 
-- (void) mouse: (Mouse::MouseEvent) mouseEvent orTouchEvent: (Touch::TouchEvent) touchEvent x: (float) x y: (float) y s: (int) s 
+- (void)haltDisplayRenderer
 {
-    [__view->gameLock lock];
+    [gameLock lock];
+    CVDisplayLinkStop(displayLink);
+    [gameLock unlock];
+}
+
+#if 0
+- (void) mouse: (Mouse::MouseEvent) mouseEvent orTouchEvent: (Touch::TouchEvent) touchEvent x: (float) x y: (float) y s: (int) s
+{
+//    [__view->gameLock lock];
     if (!gameplay::Platform::mouseEventInternal(mouseEvent, x, y, s))
     {
         gameplay::Platform::touchEventInternal(touchEvent, x, y, 0);
     }
-    [__view->gameLock unlock];
+//    [__view->gameLock unlock];
 }
 
 - (void) mouseDown: (NSEvent*) event
@@ -1008,11 +1026,12 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
             __mouseCapturedFirstPass = false;
             return false;
         }
-        
+
         point.x = [event deltaX];
         point.y = [event deltaY];
-        
-        NSWindow* window = __view.window;
+
+        //NSWindow* window = __view.window;
+	NSWindow* window = syswminfo.info.cocoa.window;
         NSRect rect = window.frame;
         CGPoint centerPoint;
         centerPoint.x = rect.origin.x + (rect.size.width / 2);
@@ -1030,15 +1049,15 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
 - (void)mouseMoved:(NSEvent*) event
 {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    
+
     if (!getMousePointForEvent(point, event))
     {
         return;
     }
 
-    [__view->gameLock lock];
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_MOVE, point.x, point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
 - (void) mouseDragged: (NSEvent*) event
@@ -1052,10 +1071,10 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
             {
                 return;
             }
-            
-            [__view->gameLock lock];
+
+            //[__view->gameLock lock];
             gameplay::Platform::mouseEventInternal(Mouse::MOUSE_MOVE, point.x, point.y, 0);
-            [__view->gameLock unlock];
+            //[__view->gameLock unlock];
         }
         else
         {
@@ -1068,49 +1087,49 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
 {
     __rightMouseDown = true;
      NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    
-    [__view->gameLock lock];
+
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_PRESS_RIGHT_BUTTON, point.x, __height - point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
 - (void) rightMouseUp: (NSEvent*) event
 {
     __rightMouseDown = false;
     NSPoint point = [event locationInWindow];
-    
-    [__view->gameLock lock];
+
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_RELEASE_RIGHT_BUTTON, point.x, __height - point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
 - (void) rightMouseDragged: (NSEvent*) event
 {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    
+
     if (!getMousePointForEvent(point, event))
     {
         return;
     }
-    
+
     // In right-mouse case, whether __rightMouseDown is true or false
     // this should not matter, mouse move is still occuring
-    [__view->gameLock lock];
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_MOVE, point.x, point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
-- (void)otherMouseDown: (NSEvent*) event 
+- (void)otherMouseDown: (NSEvent*) event
 {
     __otherMouseDown = true;
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 
-    [__view->gameLock lock];
+    //[__view->gameLock lock];
     gameplay::Platform::mouseEventInternal(Mouse::MOUSE_PRESS_MIDDLE_BUTTON, point.x, __height - point.y, 0);
-    [__view->gameLock unlock];
+    //[__view->gameLock unlock];
 }
 
-- (void)otherMouseUp: (NSEvent*) event 
+- (void)otherMouseUp: (NSEvent*) event
 {
     __otherMouseDown = false;
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
@@ -1120,7 +1139,7 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
     [__view->gameLock unlock];
 }
 
-- (void)otherMouseDragged: (NSEvent*) event 
+- (void)otherMouseDragged: (NSEvent*) event
 {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 
@@ -1134,7 +1153,7 @@ bool getMousePointForEvent(NSPoint& point, NSEvent* event)
     __hasMouse = true;
 }
 
-- (void)scrollWheel: (NSEvent*) event 
+- (void)scrollWheel: (NSEvent*) event
 {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
 
@@ -1244,13 +1263,13 @@ int getKey(unsigned short keyCode, unsigned int modifierFlags)
             return Keyboard::KEY_F9;
         case 0x6D:
             return Keyboard::KEY_F10;
-        
+
         // MACOS reserved:
         // return Keyboard::KEY_F11;
         // return Keyboard::KEY_F12;
         // return Keyboard::KEY_PAUSE;
         // return Keyboard::KEY_SCROLL_LOCK;
-            
+
         case 0x31:
             return Keyboard::KEY_SPACE;
         case 0x1D:
@@ -1295,7 +1314,7 @@ int getKey(unsigned short keyCode, unsigned int modifierFlags)
             return __shiftDown ? Keyboard::KEY_RIGHT_BRACE : Keyboard::KEY_RIGHT_BRACKET;
         case 0x27:
             return __shiftDown ? Keyboard::KEY_QUOTE : Keyboard::KEY_APOSTROPHE;
-            
+
         case 0x00:
             return caps ? Keyboard::KEY_CAPITAL_A : Keyboard::KEY_A;
         case 0x0B:
@@ -1359,7 +1378,7 @@ int getKey(unsigned short keyCode, unsigned int modifierFlags)
  */
 int getUnicode(int key)
 {
-    
+
     switch (key)
     {
         case Keyboard::KEY_BACKSPACE:
@@ -1478,7 +1497,7 @@ int getUnicode(int key)
     unsigned int flags = [event modifierFlags];
 
     [__view->gameLock lock];
-    switch (keyCode) 
+    switch (keyCode)
     {
         case 0x39:
             gameplay::Platform::keyEventInternal((flags & NSAlphaShiftKeyMask) ? Keyboard::KEY_PRESS : Keyboard::KEY_RELEASE, Keyboard::KEY_CAPS_LOCK);
@@ -1519,7 +1538,7 @@ int getUnicode(int key)
 
         [__view->gameLock lock];
         gameplay::Platform::keyEventInternal(Keyboard::KEY_PRESS, key);
-        
+
         int character = getUnicode(key);
         if (character)
         {
@@ -1556,7 +1575,7 @@ int getUnicode(int key)
 - (void)magnifyWithEvent:(NSEvent *)event
 {
     if([self isGestureRegistered:Gesture::GESTURE_PINCH] == false) return;
-    
+
     NSSet *touches = [event touchesMatchingPhase:NSTouchPhaseAny  inView:nil];
     // Approximate the center by adding and averageing for now
     // Note this is centroid on the physical device be used for touching, not the display
@@ -1568,12 +1587,12 @@ int getUnicode(int key)
     }
     xavg /= [touches count];
     yavg /= [touches count];
-    
+
     [gameLock lock];
     gameplay::Platform::gesturePinchEventInternal((int)xavg, (int)yavg, [event magnification]);
     [gameLock unlock];
 }
-
+#endif
 
 @end
 
@@ -1596,6 +1615,7 @@ int getUnicode(int key)
     [sdc dismiss: self];
 }
 @end
+#endif
 
 
 namespace gameplay
@@ -1614,7 +1634,7 @@ extern int strcmpnocase(const char* s1, const char* s2)
 {
     return strcasecmp(s1, s2);
 }
-    
+
 Platform::Platform(Game* game)
 : _game(game)
 {
@@ -1623,13 +1643,13 @@ Platform::Platform(Game* game)
     __hidManagerRef = IOHIDManagerCreate(CFAllocatorGetDefault(), kIOHIDOptionsTypeNone);
     IOHIDManagerRegisterDeviceMatchingCallback(__hidManagerRef, hidDeviceDiscoveredCallback, NULL);
     IOHIDManagerRegisterDeviceRemovalCallback(__hidManagerRef, hidDeviceRemovalCallback, NULL);
-    
+
     CFMutableArrayRef matching = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
     if (matching)
     {
         CFDictionaryRef matchingJoystick = IOHIDCreateDeviceMatchingDictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
         CFDictionaryRef matchingGamepad = IOHIDCreateDeviceMatchingDictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad);
-        
+
         if (matchingJoystick && matchingGamepad)
         {
             CFArrayAppendValue(matching, matchingJoystick);
@@ -1639,18 +1659,18 @@ Platform::Platform(Game* game)
             IOHIDManagerSetDeviceMatchingMultiple(__hidManagerRef, matching);
         }
     }
-    
+
     IOHIDManagerScheduleWithRunLoop(__hidManagerRef, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
     IOReturn kr = IOHIDManagerOpen(__hidManagerRef, kIOHIDOptionsTypeNone);
     assert(kr == 0);
 }
 
-    
+
 Platform::~Platform()
 {
     IOHIDManagerUnscheduleFromRunLoop(__hidManagerRef, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
     IOHIDManagerClose(__hidManagerRef, kIOHIDOptionsTypeNone);
-    
+
     CFRelease(__hidManagerRef);
     __hidManagerRef = NULL;
     [__activeGamepads release];
@@ -1659,20 +1679,32 @@ Platform::~Platform()
     __gamepads = NULL;
 }
 
-    
-Platform* Platform::create(Game* game)
+
+Platform* Platform::create(Game* game, void* attachToWindow, int sizex, int sizey, bool fullscreen)
 {
-    Platform* platform = new Platform(game);
-    
-    return platform;
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "Create GamePlay platform %dx%d\n", sizex, sizey);
+    if (SDL_GetWindowWMInfo(window, &syswminfo)) {
+        __width = sizex;
+	__height = sizey;
+	gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "Create GamePlay platform => %dx%d\n", __width, __height);
+
+        Platform* platform = new Platform(game);
+	gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "Create GamePlay platform => %dx%d\n", __width, __height);
+
+        return platform;
+    } else {
+        return NULL;
+    }
 }
 
 int Platform::enterMessagePump()
 {
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s => %dx%d\n", __FUNCTION__,  __width, __height);
+#if 0
     NSString* bundlePath = [[NSBundle mainBundle] bundlePath];
     NSString* path = [bundlePath stringByAppendingString:@"/Contents/Resources/"];
     FileSystem::setResourcePath([path cStringUsingEncoding:NSASCIIStringEncoding]);
-    
+
     // Read window settings from config.
     if (_game->getConfig())
     {
@@ -1698,7 +1730,7 @@ int Platform::enterMessagePump()
                 __width = CGRectGetWidth(mainMonitor);
                 __height = CGRectGetHeight(mainMonitor);
             }
-            
+
             // Read resizable state.
             __resizable = config->getBool("resizable");
         }
@@ -1708,19 +1740,19 @@ int Platform::enterMessagePump()
     NSApplication* app = [NSApplication sharedApplication];
     NSRect screenBounds = [[NSScreen mainScreen] frame];
     NSRect viewBounds = NSMakeRect(0, 0, __width, __height);
-    
+
     __view = [[View alloc] initWithFrame:viewBounds];
     if (__view == NULL)
     {
         GP_ERROR("Failed to create view: exiting.");
         return EXIT_FAILURE;
     }
-    
+
     NSRect centered = NSMakeRect(NSMidX(screenBounds) - NSMidX(viewBounds),
                                  NSMidY(screenBounds) - NSMidY(viewBounds),
-                                 viewBounds.size.width, 
+                                 viewBounds.size.width,
                                  viewBounds.size.height);
-    
+
     NSWindow* window = NULL;
     if (__fullscreen)
     {
@@ -1738,21 +1770,23 @@ int Platform::enterMessagePump()
                    backing:NSBackingStoreBuffered
                    defer:NO];
     }
-    
+
     [window setAcceptsMouseMovedEvents:YES];
     [window setContentView:__view];
     [window setDelegate:__view];
     [__view release];
-    
+
     [app run];
-    
+
     [pool release];
+#endif
+    gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s => %dx%d\n", __FUNCTION__,  __width, __height);
     return EXIT_SUCCESS;
 }
 
-void Platform::signalShutdown() 
+void Platform::signalShutdown()
 {
-    [__view haltDisplayRenderer];
+    //[__view haltDisplayRenderer];
 
     // Don't perform terminate right away, enqueue to give game object
     // a chance to cleanup
@@ -1764,7 +1798,7 @@ bool Platform::canExit()
 {
     return true;
 }
-    
+
 unsigned int Platform::getDisplayWidth()
 {
     return __width;
@@ -1793,15 +1827,19 @@ bool Platform::isVsync()
 
 void Platform::setVsync(bool enable)
 {
+#if 0
     __vsync = enable;
     GLint swapInt = enable ? 1 : 0;
     [[__view openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+#endif
 }
 
 void Platform::swapBuffers()
 {
-    if (__view)
-        CGLFlushDrawable((CGLContextObj)[[__view openGLContext] CGLContextObj]);
+    //NSWindow* window = syswminfo.info.cocoa.window;
+    SDL_GL_SwapWindow(window);
+    //    if (__view)
+    //        CGLFlushDrawable((CGLContextObj)[[__view openGLContext] CGLContextObj]);
 }
 
 void Platform::sleep(long ms)
@@ -1829,7 +1867,7 @@ bool Platform::isMultiSampling()
 void Platform::setMultiTouch(bool enabled)
 {
 }
-    
+
 bool Platform::isMultiTouch()
 {
     return true;
@@ -1839,7 +1877,7 @@ bool Platform::hasAccelerometer()
 {
     return false;
 }
-    
+
 void Platform::getAccelerometerValues(float* pitch, float* roll)
 {
     GP_ASSERT(pitch);
@@ -1884,7 +1922,7 @@ void Platform::getArguments(int* argc, char*** argv)
     if (argv)
         *argv = __argv;
 }
-    
+
 bool Platform::hasMouse()
 {
     return true;
@@ -1900,10 +1938,11 @@ void Platform::setMouseCaptured(bool captured)
             __mouseCapturedFirstPass = true;
         }
         else
-        {   
+        {
             [NSCursor unhide];
         }
-        NSWindow* window = __view.window;
+	NSWindow* window = syswminfo.info.cocoa.window;
+        //NSWindow* window = __view.window;
         NSRect rect = window.frame;
         CGPoint centerPoint;
         centerPoint.x = rect.origin.x + (rect.size.width / 2);
@@ -1926,7 +1965,7 @@ void Platform::setCursorVisible(bool visible)
         {
              [NSCursor unhide];
         }
-        else 
+        else
         {
              [NSCursor hide];
         }
@@ -1955,7 +1994,7 @@ bool Platform::isGestureSupported(Gesture::GestureEvent evt)
     // Two fingers is scrolling
     // Three fingers is swipe, but is not always enabled on users system
     // Tap not supported as it is considered a mouse click/button click
-    // on some systems making it difficult to differentiate 
+    // on some systems making it difficult to differentiate
     switch(evt)
     {
         case Gesture::GESTURE_PINCH:
@@ -1968,17 +2007,18 @@ bool Platform::isGestureSupported(Gesture::GestureEvent evt)
 
 void Platform::registerGesture(Gesture::GestureEvent evt)
 {
-    [__view registerGesture:evt];   
+  //[__view registerGesture:evt];
 }
 
 void Platform::unregisterGesture(Gesture::GestureEvent evt)
 {
-    [__view unregisterGesture:evt];        
+  //[__view unregisterGesture:evt];
 }
-  
+
 bool Platform::isGestureRegistered(Gesture::GestureEvent evt)
 {
-     return [__view isGestureRegistered:evt];
+  //return [__view isGestureRegistered:evt];
+  return false;
 }
 
 void Platform::pollGamepadState(Gamepad* gamepad)
@@ -2007,7 +2047,7 @@ void Platform::pollGamepadState(Gamepad* gamepad)
             Gamepad::BUTTON_X,      // 0x8000
             Gamepad::BUTTON_MENU3   // 0x10000
         };
-        
+
         static const int XBox360Mapping[20] = {
             -1, -1, -1, -1, -1,
             Gamepad::BUTTON_UP,
@@ -2026,7 +2066,7 @@ void Platform::pollGamepadState(Gamepad* gamepad)
             Gamepad::BUTTON_X,
             Gamepad::BUTTON_Y
         };
-        
+
         static const int SteelSeriesFreeMapping[13] = {
             Gamepad::BUTTON_A,
             Gamepad::BUTTON_B,
@@ -2040,7 +2080,7 @@ void Platform::pollGamepadState(Gamepad* gamepad)
             Gamepad::BUTTON_MENU2,
             Gamepad::BUTTON_MENU1
         };
-        
+
         const int* mapping = NULL;
         float axisDeadZone = 0.0f;
         if ([gp vendorID] == SONY_USB_VENDOR_ID &&
@@ -2061,7 +2101,7 @@ void Platform::pollGamepadState(Gamepad* gamepad)
             mapping = SteelSeriesFreeMapping;
             axisDeadZone = 0.005f;
         }
-        
+
         unsigned int buttons = 0;
         for (int i = 0; i < [gp numberOfButtons]; ++i)
         {
@@ -2080,7 +2120,7 @@ void Platform::pollGamepadState(Gamepad* gamepad)
                 }
             }
         }
-        
+
         HIDGamepadAxis* hatSwitch = [gp getHatSwitch];
         if (hatSwitch != NULL)
         {
@@ -2115,9 +2155,9 @@ void Platform::pollGamepadState(Gamepad* gamepad)
                     break;
             }
         }
-        
+
         gamepad->setButtons(buttons);
-        
+
         for (unsigned int i = 0; i < [gp numberOfSticks]; ++i)
         {
             float rawX = [[gp axisAtIndex: i*2] calibratedValue];
@@ -2126,10 +2166,10 @@ void Platform::pollGamepadState(Gamepad* gamepad)
                 rawX = 0;
             if (std::fabs(rawY) <= axisDeadZone)
                 rawY = 0;
-            
+
             gamepad->setJoystickValue(i, rawX, rawY);
         }
-        
+
         for (unsigned int i = 0; i < [gp numberOfTriggerButtons]; ++i)
         {
             gamepad->setTriggerValue(i, [[gp triggerButtonAtIndex: i] calibratedStateValue]);
@@ -2173,66 +2213,66 @@ HIDGamepad* gamepadForGameHandle(int gameHandle)
     return gamepad;
 }
 
-CFMutableDictionaryRef IOHIDCreateDeviceMatchingDictionary(UInt32 inUsagePage, UInt32 inUsage) 
+CFMutableDictionaryRef IOHIDCreateDeviceMatchingDictionary(UInt32 inUsagePage, UInt32 inUsage)
 {
     // create a dictionary to add usage page/usages to
     CFMutableDictionaryRef result = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     if (result) {
-        if (inUsagePage) 
+        if (inUsagePage)
         {
             // Add key for device type to refine the matching dictionary.
             CFNumberRef pageCFNumberRef = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &inUsagePage);
-            if (pageCFNumberRef) 
+            if (pageCFNumberRef)
             {
                 CFDictionarySetValue(result, CFSTR( kIOHIDDeviceUsagePageKey ), pageCFNumberRef);
                 CFRelease(pageCFNumberRef);
-                
+
                 // note: the usage is only valid if the usage page is also defined
-                if (inUsage) 
+                if (inUsage)
                 {
                     CFNumberRef usageCFNumberRef = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &inUsage);
-                    if (usageCFNumberRef) 
+                    if (usageCFNumberRef)
                     {
                         CFDictionarySetValue(result, CFSTR(kIOHIDDeviceUsageKey), usageCFNumberRef);
                         CFRelease(usageCFNumberRef);
-                    } 
-                    else 
+                    }
+                    else
                     {
                         fprintf(stderr, "%s: CFNumberCreate( usage ) failed.", __PRETTY_FUNCTION__);
                     }
                 }
-            } 
-            else 
+            }
+            else
             {
                 fprintf( stderr, "%s: CFNumberCreate( usage page ) failed.", __PRETTY_FUNCTION__);
             }
         }
-    } 
-    else 
+    }
+    else
     {
         fprintf( stderr, "%s: CFDictionaryCreateMutable failed.", __PRETTY_FUNCTION__);
     }
     return result;
 }
 
-CFStringRef IOHIDDeviceGetStringProperty(IOHIDDeviceRef deviceRef, CFStringRef key) 
+CFStringRef IOHIDDeviceGetStringProperty(IOHIDDeviceRef deviceRef, CFStringRef key)
 {
     CFTypeRef typeRef = IOHIDDeviceGetProperty(deviceRef, key);
-    if (typeRef == NULL || CFGetTypeID(typeRef) != CFNumberGetTypeID()) 
+    if (typeRef == NULL || CFGetTypeID(typeRef) != CFNumberGetTypeID())
     {
         return NULL;
     }
     return (CFStringRef)typeRef;
 }
 
-int IOHIDDeviceGetIntProperty(IOHIDDeviceRef deviceRef, CFStringRef key) 
+int IOHIDDeviceGetIntProperty(IOHIDDeviceRef deviceRef, CFStringRef key)
 {
     CFTypeRef typeRef = IOHIDDeviceGetProperty(deviceRef, key);
-    if (typeRef == NULL || CFGetTypeID(typeRef) != CFNumberGetTypeID()) 
+    if (typeRef == NULL || CFGetTypeID(typeRef) != CFNumberGetTypeID())
     {
         return 0;
     }
-    
+
     int value;
     CFNumberGetValue((CFNumberRef) typeRef, kCFNumberSInt32Type, &value);
     return value;
@@ -2304,11 +2344,11 @@ NSString* getAbsolutePath(const char* path)
     NSString* bundlePathStr = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/Contents/Resources"];
     if (path == NULL )
         return bundlePathStr;
-    
+
     NSString* absPath = [NSString stringWithUTF8String:path];
     if ([absPath length] == 0)
         return @"";
-    
+
     if ([absPath hasPrefix:@"/"])
     {
         absPath = [NSString stringWithUTF8String:path];
@@ -2325,11 +2365,11 @@ NSString* getAbsolutePath(const char* path)
 std::string Platform::displayFileDialog(size_t mode, const char* title, const char* filterDescription, const char* filterExtensions, const char* initialDirectory)
 {
     std::string filename = "";
-    
+
     if (mode == FileSystem::OPEN)
     {
         NSOpenPanel* openPanel = [NSOpenPanel openPanel];
-        
+
         [openPanel setCanChooseFiles:TRUE];
         [openPanel setCanChooseDirectories:FALSE];
         [openPanel setAllowsMultipleSelection:FALSE];
@@ -2337,17 +2377,17 @@ std::string Platform::displayFileDialog(size_t mode, const char* title, const ch
         // Title
         NSString* titleStr = [NSString stringWithUTF8String:title];
         [openPanel setTitle:titleStr];
-        
+
         // Filter ext.
         NSString* ext = [NSString stringWithUTF8String:filterExtensions];
         NSArray* fileTypes = [NSArray arrayWithObjects: ext, nil];
         [openPanel setAllowedFileTypes:fileTypes];
-        
+
         // Set the initial directory
         NSString* absPath = getAbsolutePath(initialDirectory);
         NSURL* url = [NSURL fileURLWithPath:absPath];
         [openPanel setDirectoryURL:url];
-        
+
         // Show the open dialog
         if ([openPanel runModal] == NSOKButton)
         {
@@ -2366,17 +2406,17 @@ std::string Platform::displayFileDialog(size_t mode, const char* title, const ch
         // Title
         NSString* titleStr = [NSString stringWithUTF8String:title];
         [savePanel setTitle:titleStr];
-        
+
         // Filter ext.
         NSString* ext = [NSString stringWithUTF8String:filterExtensions];
         NSArray* fileTypes = [NSArray arrayWithObjects: ext, nil];
         [savePanel setAllowedFileTypes:fileTypes];
-        
+
         // Set the initial directory
         NSString* absPath = getAbsolutePath(initialDirectory);
         NSURL* url = [NSURL fileURLWithPath:absPath];
         [savePanel setDirectoryURL:url];
-        
+
         // Show the save dialog
         if ([savePanel runModal] == NSOKButton)
         {
@@ -2387,7 +2427,7 @@ std::string Platform::displayFileDialog(size_t mode, const char* title, const ch
             filename.replace(filename.find(fileProtocol), fileProtocol.size(), "");
         }
     }
-    
+
     return filename;
 }
 

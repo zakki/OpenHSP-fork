@@ -64,7 +64,10 @@
 int hgio_fontsystem_get_texid(void);
 #endif
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(__APPLE__)
+#include <OpenGL/gl.h>
+#include "SDL2/SDL.h"
+#elif defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
 #ifdef HSPRASPBIAN
 #include "bcm_host.h"
 #include "GLES/gl.h"
