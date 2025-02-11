@@ -14,13 +14,15 @@ CFLAGS_DEBUG =
 
 CFLAGS = $(CFLAGS_CORE) $(CFLAGS_DEBUG) -DUSE_OBAQ\
 	   -s USE_SDL=2 -s USE_SDL_TTF=2 -s USE_SDL_IMAGE=2 -s USE_SDL_MIXER=2 \
-	   -s "SDL2_MIXER_FORMATS=['ogg', 'mp3']" \
+	   -s "SDL2_MIXER_FORMATS=['ogg', 'mp3', 'mid']" \
+	   --embed-file tmp/node_modules/freepats@/etc/timidity \
 	   -O3 \
 	   -s LEGACY_GL_EMULATION=1
 
 CFLAGS_GP = $(CFLAGS_CORE) $(CFLAGS_DEBUG) \
 		  -s USE_SDL=2 -s USE_SDL_TTF=2 -s USE_SDL_MIXER=2 \
-		  -s "SDL2_MIXER_FORMATS=['ogg', 'mp3']" \
+		  -s "SDL2_MIXER_FORMATS=['ogg', 'mp3', 'mid']" \
+		  --embed-file tmp/node_modules/freepats@/etc/timidity \
 		  -D_LARGEFILE64_SOURCE -O3\
 		  -DHSPDISHGP \
 		  -I src/hsp3dish/emscripten/extlib/include -I src/hsp3dish/extlib/src -I src/hsp3dish/gameplay/src -I src/hsp3dish/win32gp

@@ -141,9 +141,13 @@ MMMan::MMMan()
 	engine_flag = false;
 	MusicInit();
 
-	int init_result = Mix_Init(MIX_INIT_OGG|MIX_INIT_MP3);
-	if (init_result != (MIX_INIT_OGG|MIX_INIT_MP3)) {
-		Alertf("[MMMan] Mix_Init: %d OGG:%d MP3:%d\n", init_result, init_result & MIX_INIT_OGG, init_result & MIX_INIT_MP3);
+	int init_result = Mix_Init(MIX_INIT_OGG|MIX_INIT_MP3|MIX_INIT_MID);
+	if (init_result != (MIX_INIT_OGG|MIX_INIT_MP3|MIX_INIT_MID)) {
+		Alertf("[MMMan] Mix_Init: %d OGG:%d MP3:%d MID:%d\n",
+			init_result,
+			init_result & MIX_INIT_OGG,
+			init_result & MIX_INIT_MP3,
+			init_result & MIX_INIT_MID);
 	}
 
 	int ret = Mix_OpenAudio(0, 0, 0, 0);
@@ -319,6 +323,7 @@ int MMMan::BankLoad( MMM *mmm, char *fname )
 	getpath(fname,fext,16+2);
 	if (!strcmp(fext,".mp3")) is_music = true;
 	if (!strcmp(fext,".ogg")) is_music = true;
+	if (!strcmp(fext,".mid")) is_music = true;
 	if ( is_music ) {
 		mmm->fname = (char *)malloc( strlen(fname)+1 );
 		strcpy( mmm->fname,fname );
