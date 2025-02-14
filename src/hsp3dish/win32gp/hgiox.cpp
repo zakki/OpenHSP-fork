@@ -1341,6 +1341,112 @@ void hgio_copy(BMSCR *bm, short xx, short yy, short srcsx, short srcsy, BMSCR *b
 	game->drawPolyTex2D(mat);
 }
 
+////////////////////////////
+static float *s_hgio_copy_v = nullptr;
+static gpmat *s_hgio_copy_mat = nullptr;
+
+void hgio_copy_begin(BMSCR *bm, BMSCR *bmsrc)
+{
+	//		画像コピー開始
+	//		texidの画像を現在の画面にコピー
+	//		カレントポジション、描画モードはBMSCRから取得
+	//
+	if (bm == NULL) return;
+	if ((bm->type != HSPWND_TYPE_MAIN) && (bm->type != HSPWND_TYPE_OFFSCREEN)) return;
+	if (drawflag == 0) hgio_render_start();
+
+	gpmat *mat = game->getMat(bmsrc->texid);
+	if (mat == NULL) return;
+	float *v = game->startPolyTex2D(mat, bm->texid);
+	if (v == NULL) return;
+
+	float a_val = game->setMaterialBlend(mat->_material, bm->gmode, bm->gfrate);
+
+	game->setPolyDiffuseTex2D(bm->mulcolorvalue[0], bm->mulcolorvalue[1], bm->mulcolorvalue[2], a_val);
+
+	s_hgio_copy_v = v;
+	s_hgio_copy_mat = mat;
+}
+
+void hgio_copy_add(BMSCR *bm, short xx, short yy, short srcsx, short srcsy, float s_psx, float s_psy)
+{
+	//		画像コピー
+	//		texid内の(xx,yy)-(xx+srcsx,yy+srcsy)を現在の画面に(psx,psy)サイズでコピー
+	//		カレントポジション、描画モードはBMSCRから取得
+	//
+	float psx, psy;
+	float x1, y1, x2, y2, sx, sy;
+	float tx0, ty0, tx1, ty1;
+
+	float * v = s_hgio_copy_v;
+	gpmat *mat = s_hgio_copy_mat;
+
+	if (s_psx < 0.0) {
+		psx = -s_psx;
+		tx1 = ((float)xx);
+		tx0 = ((float)(xx + srcsx));
+	}
+	else {
+		psx = s_psx;
+		tx0 = ((float)xx);
+		tx1 = ((float)(xx + srcsx));
+	}
+	if (s_psy < 0.0) {
+		psy = -s_psy;
+		ty1 = ((float)yy);
+		ty0 = ((float)(yy + srcsy));
+	}
+	else {
+		psy = s_psy;
+		ty0 = ((float)yy);
+		ty1 = ((float)(yy + srcsy));
+	}
+
+	x1 = ((float)bm->cx);
+	y1 = ((float)bm->cy);
+	x2 = x1 + psx;
+	y2 = y1 + psy;
+
+	sx = mat->_texratex;
+	sy = mat->_texratey;
+
+	tx0 *= sx;
+	tx1 *= sx;
+	ty0 = 1.0f - ty0 * sy;
+	ty1 = 1.0f - ty1 * sy;
+
+	*v++ = x1; *v++ = y2; v++;
+	*v++ = tx0; *v++ = ty1;
+	v += 4;
+	//*v++ = c_val; *v++ = c_val; *v++ = c_val; *v++ = a_val;
+	*v++ = x1; *v++ = y1; v++;
+	*v++ = tx0; *v++ = ty0;
+	v += 4;
+	//*v++ = c_val; *v++ = c_val; *v++ = c_val; *v++ = a_val;
+	*v++ = x2; *v++ = y2; v++;
+	*v++ = tx1; *v++ = ty1;
+	v += 4;
+	//*v++ = c_val; *v++ = c_val; *v++ = c_val; *v++ = a_val;
+	*v++ = x2; *v++ = y1; v++;
+	*v++ = tx1; *v++ = ty0;
+	//v+=4;
+	//*v++ = c_val; *v++ = c_val; *v++ = c_val; *v++ = a_val;
+
+	game->addPolyTex2D( mat );
+}
+
+void hgio_copy_commit()
+{
+	//		画像コピーの描画
+	//
+	gpmat *mat = s_hgio_copy_mat;
+	game->finishPolyTex2D( mat );
+
+	s_hgio_copy_v = nullptr;
+	s_hgio_copy_mat = nullptr;
+}
+
+////////////////////////////
 
 int hgio_celputmulti(BMSCR *bm, int *xpos, int *ypos, int *cel, int count, BMSCR *bmsrc)
 {
@@ -1462,6 +1568,89 @@ void hgio_copyrot( BMSCR *bm, short xx, short yy, short srcsx, short srcsy, floa
 	float a_val = game->setMaterialBlend( mat->_material, bm->gmode, bm->gfrate );
 
 	game->setPolyDiffuseTex2D(bm->mulcolorvalue[0], bm->mulcolorvalue[1], bm->mulcolorvalue[2], a_val);
+
+	mx0=-(float)sin( ang );
+	my0=(float)cos( ang );
+	mx1 = -my0;
+	my1 = mx0;
+
+	ofsx = -s_ofsx;
+	ofsy = -s_ofsy;
+	x0 = mx0 * ofsy;
+	y0 = my0 * ofsy;
+	x1 = mx1 * ofsx;
+	y1 = my1 * ofsx;
+
+	//		基点の算出
+	x = ( (float)bm->cx - (-x0+x1) );
+	y = ( (float)bm->cy - (-y0+y1) );
+
+	//		回転座標の算出
+	ofsx = -psx;
+	ofsy = -psy;
+	x0 = mx0 * ofsy;
+	y0 = my0 * ofsy;
+	x1 = mx1 * ofsx;
+	y1 = my1 * ofsx;
+
+	sx = mat->_texratex;
+	sy = mat->_texratey;
+
+	tx0 = (float)xx;
+	ty0 = (float)yy;
+	tx1 = (float)(xx+srcsx);
+	ty1 = (float)(yy+srcsy);
+
+	tx0 *= sx;
+	tx1 *= sx;
+	ty0 = 1.0f - ty0 * sy;
+	ty1 = 1.0f - ty1 * sy;
+
+	*v++ = ((-x0) + x);
+	*v++ = ((-y0) + y);
+	v++;
+	*v++ = tx0;
+	*v++ = ty1;
+	v+=4;
+
+	*v++ = ((-x0+x1) + x);
+	*v++ = ((-y0+y1) + y);
+	v++;
+	*v++ = tx1;
+	*v++ = ty1;
+	v+=4;
+
+	*v++ = (x);
+	*v++ = (y);
+	v++;
+	*v++ = tx0;
+	*v++ = ty0;
+	v+=4;
+
+	*v++ = ((x1) + x);
+	*v++ = ((y1) + y);
+	v++;
+	*v++ = tx1;
+	*v++ = ty0;
+
+	game->drawPolyTex2D( mat );
+}
+
+void hgio_copyrot_add( BMSCR *bm, short xx, short yy, short srcsx, short srcsy, float s_ofsx, float s_ofsy, float psx, float psy, float ang )
+{
+	//		画像コピー
+	//		texid内の(xx,yy)-(xx+srcsx,yy+srcsy)を現在の画面に(psx,psy)サイズでコピー
+	//		カレントポジション、描画モードはBMSCRから取得
+	//
+	float x,y,x0,y0,x1,y1,ofsx,ofsy,mx0,mx1,my0,my1;
+	float tx0,ty0,tx1,ty1,sx,sy;
+
+	if ( bm == NULL ) return;
+	if ((bm->type != HSPWND_TYPE_MAIN) && (bm->type != HSPWND_TYPE_OFFSCREEN)) return;
+	if (drawflag == 0) hgio_render_start();
+
+	float * v = s_hgio_copy_v;
+	gpmat *mat = s_hgio_copy_mat;
 
 	mx0=-(float)sin( ang );
 	my0=(float)cos( ang );

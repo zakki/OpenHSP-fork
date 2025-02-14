@@ -25,6 +25,13 @@ HspWnd *curwnd;
 HWND hgio_gethwnd( void );
 #endif
 
+///
+void hgio_copy_begin(BMSCR *bm, BMSCR *bmsrc);
+void hgio_copy_add(BMSCR *bm, short xx, short yy, short srcsx, short srcsy, float s_psx, float s_psy);
+void hgio_copyrot_add( BMSCR *bm, short xx, short yy, short srcsx, short srcsy, float s_ofsx, float s_ofsy, float psx, float psy, float ang );
+void hgio_copy_commit();
+///
+
 #define COLORRATE ( 1.0f / 255.0f )
 
 /*------------------------------------------------------------*/
@@ -733,7 +740,7 @@ void Bmscr::Circle( int x1,int y1,int x2,int y2, int mode )
 
 /*----------------------------------------------------------------*/
 
-int Bmscr::Copy( Bmscr *src, int xx, int yy, int s_psx, int s_psy )
+int Bmscr::Copy( Bmscr *src, int xx, int yy, int s_psx, int s_psy, int mode )
 {
 	//		copy
 	//
@@ -752,7 +759,11 @@ int Bmscr::Copy( Bmscr *src, int xx, int yy, int s_psx, int s_psy )
 		if ( yy >= src->sy ) return -1;
 		psy = src->sy - yy;
 	}
-	hgio_copy( (BMSCR *)this, xx, yy, psx, psy, (BMSCR *)src, (float)psx, (float)psy );
+	if (mode == 0) {
+		hgio_copy( (BMSCR *)this, xx, yy, psx, psy, (BMSCR *)src, (float)psx, (float)psy );
+	} else if (mode == 1) {
+		hgio_copy_add( (BMSCR *)this, xx, yy, psx, psy, (float)psx, (float)psy );
+	}
 	return 0;
 }
 
@@ -876,11 +887,15 @@ void Bmscr::FillRot( int x, int y, int dst_sx, int dst_sy, float ang )
 }
 
 
-void Bmscr::FillRotTex( int dst_sx, int dst_sy, float ang, Bmscr *src, int tx, int ty, int srcx, int srcy )
+void Bmscr::FillRotTex( int dst_sx, int dst_sy, float ang, Bmscr *src, int tx, int ty, int srcx, int srcy, int mode )
 {
 	//		回転矩形塗りつぶし(grotate用)
 	//
-	hgio_copyrot( (BMSCR *)this, tx, ty, srcx, srcy, (float)(dst_sx>>1), (float)(dst_sy>>1), (BMSCR *)src, (float)dst_sx, (float)dst_sy, ang );
+	if (mode == 0) {
+		hgio_copyrot( (BMSCR *)this, tx, ty, srcx, srcy, (float)(dst_sx>>1), (float)(dst_sy>>1), (BMSCR *)src, (float)dst_sx, (float)dst_sy, ang );
+	} else if (mode == 1) {
+		hgio_copyrot_add( (BMSCR *)this, tx, ty, srcx, srcy, (float)(dst_sx>>1), (float)(dst_sy>>1), (float)dst_sx, (float)dst_sy, ang );
+	}
 }
 
 
@@ -934,7 +949,7 @@ int Bmscr::CelPut( Bmscr *src, int id, float destx, float desty, float ang )
 }
 
 
-int Bmscr::CelPut( Bmscr *src, int id )
+int Bmscr::CelPut( Bmscr *src, int id, int mode )
 {
 	//		セルをコピー(固定サイズ)
 	//
@@ -963,7 +978,11 @@ int Bmscr::CelPut( Bmscr *src, int id )
 	cx -= src->celofsx;
 	cy -= src->celofsy;
 
-	hgio_copy( (BMSCR *)this, xx, yy, psx, psy, (BMSCR *)src, (float)psx, (float)psy );
+	if (mode == 0) {
+		hgio_copy( (BMSCR *)this, xx, yy, psx, psy, (BMSCR *)src, (float)psx, (float)psy );
+	} else if (mode == 1) {
+		hgio_copy_add( (BMSCR *)this, xx, yy, psx, psy, (float)psx, (float)psy );
+	}
 	cx = bak_cx;
 	cy = bak_cy;
 	return 0;

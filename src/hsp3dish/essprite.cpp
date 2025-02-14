@@ -20,6 +20,11 @@
 
 #include "essprite.h"
 #include "supio.h"
+///
+void hgio_copy_begin(BMSCR *bm, BMSCR *bmsrc);
+void hgio_copy_add(BMSCR *bm, short xx, short yy, short srcsx, short srcsy, float s_psx, float s_psy);
+void hgio_copy_commit();
+///
 
 /*------------------------------------------------------------*/
 /*
@@ -410,10 +415,10 @@ int essprite::put(int xx, int yy, int chrno, int tpflag, int zoomx, int zoomy, i
 	setTransparentMode(tp);
 
 	if (deform) {
-		bmscr->FillRotTex(vx, vy, (float)rot, src, ix, iy, nx, ny);
+		bmscr->FillRotTex(vx, vy, (float)rot, src, ix, iy, nx, ny, 1);
 		return 0;
 	}
-	bmscr->Copy(src, ix, iy, nx, ny);
+	bmscr->Copy(src, ix, iy, nx, ny, 1);
 	return 0;
 }
 
@@ -913,6 +918,8 @@ int essprite::draw(int start, int num, int mode, int start_pri, int end_pri)
 		std::sort(selspr, selspr + maxspr, less_int_1);
 	}
 
+	Bmscr* current_src = nullptr;
+
 	spr = selspr;
 	for (i = 0; i < maxspr; i++) {
 		sp = getObj(spr->info);
@@ -931,10 +938,24 @@ int essprite::draw(int start, int num, int mode, int start_pri, int end_pri)
 				}
 			}
 			if (sp->fl) {
+				Bmscr* src = hspwnd->GetBmscrSafe(chr->wid);
+				if (src) {
+					if (current_src != src) {
+						if (current_src) {
+							hgio_copy_commit();
+						}
+						hgio_copy_begin((BMSCR *)bmscr, (BMSCR *)src);
+						current_src = src;
+					}
+				}
 				drawSubPut(sp, mode_p);
 			}
 		}
 		spr++;
+	}
+
+	if (current_src) {
+		hgio_copy_commit();
 	}
 
 	delete [] selspr;
@@ -1543,6 +1564,8 @@ int essprite::putMap(int xx, int yy, int bgno )
 
 	setTransparentMode(bg->tpflag);
 
+	hgio_copy_begin((BMSCR *)bmscr, (BMSCR *)bm);
+
 	ofsy = vy/divy;
 	for (j = 0; j < sy;j++) {
 		bmscr->cx = x;
@@ -1551,12 +1574,15 @@ int essprite::putMap(int xx, int yy, int bgno )
 		p += bg->mapsx * (ofsy % bg->mapsy);
 		ofsx = vx/divx;
 		for (i = 0; i < sx;i++) {
-			bmscr->CelPut(bm, p[ofsx % bg->mapsx]);
+			bmscr->CelPut(bm, p[ofsx % bg->mapsx], 1);
 			ofsx++;
 		}
 		y+=bm->divsy;
 		ofsy++;
 	}
+
+	hgio_copy_commit();
+
 	return 0;
 }
 
