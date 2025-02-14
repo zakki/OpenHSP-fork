@@ -11,9 +11,7 @@
 #include <ctype.h>
 #endif
 
-#ifdef HSPDISHGP
 #include "gamehsp.h"
-#endif
 
 #include "hsp3dish.h"
 #include "../../hsp3/hsp3config.h"
@@ -77,7 +75,6 @@ SDL_Window *window;
 static SDL_Renderer *renderer;
 static SDL_GLContext context;
 
-#ifdef HSPDISHGP
 gamehsp *game;
 gameplay::Platform *platform;
 
@@ -94,8 +91,6 @@ extern "C" {
 		if (( level == gameplay::Logger::LEVEL_ERROR )||( level == gameplay::Logger::LEVEL_WARN )) printf( "#%s\n",msg );
 	}
 }
-
-#endif
 
 /*----------------------------------------------------------*/
 
@@ -146,13 +141,8 @@ static int handleEvent( void ) {
 					SDL_MouseMotionEvent *m = (SDL_MouseMotionEvent*)&event;
 					int x, y;
 					bm = (Bmscr *)exinfo->HspFunc_getbmscr(0);
-#ifdef HSPDISHGP
 					x = m->x;
 					y = m->y;
-#else
-					hgio_scale_point( m->x, m->y, x, y );
-					hgio_cnvview((BMSCR *)bm,&x,&y);
-#endif
 
 					bm->savepos[BMSCR_SAVEPOS_MOSUEX] = x;
 					bm->savepos[BMSCR_SAVEPOS_MOSUEY] = y;
@@ -610,12 +600,10 @@ int hsp3dish_init( char *startfile )
 #endif
 	InitSysReq();
 
-#ifdef HSPDISHGP
 	SetSysReq( SYSREQ_MAXMATERIAL, 64 );            // マテリアルのデフォルト値
 
 	game = NULL;
 	platform = NULL;
-#endif
 
 	//		HSP関連の初期化
 	//
@@ -742,15 +730,6 @@ int hsp3dish_init( char *startfile )
 	//
 	hsp3dish_initwindow( NULL, sx, sy, "HSPDish ver" hspver);
 
-	if ( sx != hsp_wx || sy != hsp_wy ) {
-#ifndef HSPDISHGP
-		hgio_view( hsp_wx, hsp_wy );
-		hgio_size( sx, sy );
-		hgio_autoscale( autoscale );
-#endif
-	}
-
-#ifdef HSPDISHGP
 	//		Initalize gameplay
 	//
 	game = new gamehsp;
@@ -768,7 +747,6 @@ int hsp3dish_init( char *startfile )
 	}
 	platform->enterMessagePump();
 	game->frame();
-#endif
 
 	//		Initalize GUI System
 	//
@@ -849,7 +827,6 @@ static void hsp3dish_bye( void )
 	//
 	emscripten_cancel_main_loop();
 
-#ifdef HSPDISHGP
 	//		gameplay関連の解放
 	//
 	if ( platform != NULL ) {
@@ -859,7 +836,6 @@ static void hsp3dish_bye( void )
 	if ( game != NULL ) {
 		delete game;
 	}
-#endif
 
 	//		HSP関連の解放
 	//
@@ -875,11 +851,7 @@ static void hsp3dish_bye( void )
 
 char *hsp3dish_getlog(void)
 {
-#ifdef HSPDISHGP
 	return (char *)gplog.c_str();
-#else
-	return "";
-#endif
 }
 
 

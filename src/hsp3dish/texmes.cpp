@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifndef HSPDISHGP
+
+#if defined(HSPDISHGP) || defined(HSPDISHES)
+#else
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -27,7 +29,7 @@ texmes::texmes()
 	flag = 0;
 	text = NULL;
 	textsize = 0;
-#ifdef HSPDISHGP
+#if defined(HSPDISHGP) || defined(HSPDISHES)
 	_texture = NULL;
 #else
 	_texture = -1;
@@ -41,7 +43,7 @@ texmes::~texmes()
 
 void texmes::clear(void)
 {
-#ifdef HSPDISHGP
+#if defined(HSPDISHGP) || defined(HSPDISHES)
 	if (_texture) {
 		delete _texture;
 		_texture = NULL;
@@ -76,7 +78,7 @@ void texmes::reset(int width, int height, int p_texsx, int p_texsy, void *data)
 	texsx = p_texsx;
 	texsy = p_texsy;
 
-#ifdef HSPDISHGP
+#if defined(HSPDISHGP) || defined(HSPDISHES)
 	Texture* texture = Texture::create(Texture::Format::RGBA, texsx, texsy, NULL, false, Texture::TEXTURE_2D);
 	texture->setData((const unsigned char*)data);
 	// Bind the texture to the material as a sampler

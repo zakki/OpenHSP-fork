@@ -142,11 +142,13 @@ extern int strcmpnocase(const char* s1, const char* s2);
     #pragma warning( disable : 4996 )
 #endif
 
+#if !defined(HSPDISHES)
 // Bullet Physics
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #define BV(v) (btVector3((v).x, (v).y, (v).z))
 #define BQ(q) (btQuaternion((q).x, (q).y, (q).z, (q).w))
+#endif
 
 // Debug new for memory leak detection
 #include "DebugNew.h"

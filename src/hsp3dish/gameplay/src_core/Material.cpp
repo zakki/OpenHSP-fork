@@ -5,7 +5,9 @@
 #include "Technique.h"
 #include "Pass.h"
 #include "Properties.h"
+#if !defined(HSPDISHES)
 #include "Node.h"
+#endif
 
 
 
@@ -184,6 +186,7 @@ void Material::setTechnique(const char* id)
     }
 }
 
+#if !defined(HSPDISHES)
 void Material::setNodeBinding(Node* node)
 {
     RenderState::setNodeBinding(node);
@@ -193,6 +196,7 @@ void Material::setNodeBinding(Node* node)
         _techniques[i]->setNodeBinding(node);
     }
 }
+#endif
 
 Material* Material::clone(NodeCloneContext &context) const
 {

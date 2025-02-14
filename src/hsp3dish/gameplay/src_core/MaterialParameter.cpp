@@ -1,6 +1,8 @@
 #include "Base.h"
 #include "MaterialParameter.h"
+#if !defined(HSPDISHES)
 #include "Node.h"
+#endif
 
 namespace gameplay
 {
@@ -516,6 +518,7 @@ void MaterialParameter::bind(Effect* effect)
     }
 }
 
+#if !defined(HSPDISHES)
 void MaterialParameter::bindValue(Node* node, const char* binding)
 {
     GP_ASSERT(binding);
@@ -753,6 +756,7 @@ void MaterialParameter::applyAnimationValue(AnimationValue* value, float blendWe
     for (unsigned int i = 0; i < count; i++)
         _value.floatPtrValue[i] = Curve::lerp(blendWeight, _value.floatPtrValue[i], value->getFloat(i));
 }
+#endif
 
 void MaterialParameter::cloneInto(MaterialParameter* materialParameter) const
 {
@@ -848,9 +852,10 @@ void MaterialParameter::cloneInto(MaterialParameter* materialParameter) const
         GP_ERROR("Unsupported material parameter type(%d).", _type);
         break;
     }
-    
+#if !defined(HSPDISHES)
     NodeCloneContext context;
     this->AnimationTarget::cloneInto(materialParameter, context);
+#endif
 }
 
 MaterialParameter::MethodBinding::MethodBinding(MaterialParameter* param) :

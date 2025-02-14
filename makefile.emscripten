@@ -16,25 +16,32 @@ CFLAGS = $(CFLAGS_CORE) $(CFLAGS_DEBUG) -DUSE_OBAQ\
 	   -s USE_SDL=2 -s USE_SDL_TTF=2 -s USE_SDL_IMAGE=2 -s USE_SDL_MIXER=2 \
 	   -s "SDL2_MIXER_FORMATS=['ogg', 'mp3']" \
 	   -O3 \
-	   -s LEGACY_GL_EMULATION=1
+	   -DHSPDISHGP -DHSPDISHES \
+	   -I src/hsp3dish/emscripten/extlib/include -I src/hsp3dish/extlib/src \
+	   -I src/hsp3dish/gameplay/src_core -I src/hsp3dish/gameplay/src_min \
+	   -I src/hsp3dish/win32gp
 
 CFLAGS_GP = $(CFLAGS_CORE) $(CFLAGS_DEBUG) \
 		  -s USE_SDL=2 -s USE_SDL_TTF=2 -s USE_SDL_MIXER=2 \
 		  -s "SDL2_MIXER_FORMATS=['ogg', 'mp3']" \
 		  -D_LARGEFILE64_SOURCE -O3\
 		  -DHSPDISHGP \
-		  -I src/hsp3dish/emscripten/extlib/include -I src/hsp3dish/extlib/src -I src/hsp3dish/gameplay/src -I src/hsp3dish/win32gp
+		  -I src/hsp3dish/emscripten/extlib/include -I src/hsp3dish/extlib/src \
+		  -I src/hsp3dish/gameplay/src_core -I src/hsp3dish/gameplay/src \
+		  -I src/hsp3dish/win32gp
 
 CFLAGS_EXTLIB = $(CFLAGS_CORE) $(CFLAGS_DEBUG) \
 		  -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
 		  -D_LARGEFILE64_SOURCE -O3\
-		  -I src/hsp3dish/emscripten/extlib/include -I src/hsp3dish/extlib/src -I src/hsp3dish/gameplay/src
+		  -I src/hsp3dish/emscripten/extlib/include -I src/hsp3dish/extlib/src \
+		  -I src/hsp3dish/gameplay/src_core -I src/hsp3dish/gameplay/src
 
 LINK_FLAGS_CORE =  -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 \
 	-s "EXPORTED_RUNTIME_METHODS=['addRunDependency', 'removeRunDependency', 'FS_createPreloadedFile', 'FS_createPath', 'ccall', 'cwrap']" \
 	-s "EXPORTED_FUNCTIONS=['_main', '_malloc', '_free']"
 
-LINK_FLAGS = $(LINK_FLAGS_CORE)
+LINK_FLAGS = $(LINK_FLAGS_CORE) \
+		-s FULL_ES2=1 -s USE_WEBGL2=1 -s MIN_WEBGL_VERSION=2
 LINK_FLAGS_GP = $(LINK_FLAGS_CORE) \
 		-s FULL_ES2=1 -s USE_WEBGL2=1 -s MIN_WEBGL_VERSION=2
 
@@ -70,13 +77,56 @@ OBJS = \
 	src/obaq/physics/rock.js.o \
 	src/hsp3dish/emscripten/fontsystem.js.o \
 	src/hsp3dish/emscripten/hgtex.js.o \
-	src/hsp3dish/emscripten/hgiox.js.o \
 	src/hsp3dish/emscripten/hsp3dish.js.o \
 	src/hsp3dish/emscripten/main.js.o \
 	src/hsp3dish/emscripten/mmman.js.o \
 	src/hsp3dish/emscripten/webtask_emscripten.js.o \
 	src/hsp3dish/emscripten/stb_image.js.o \
-	src/hsp3dish/emscripten/supio_emscripten.js.o
+	src/hsp3dish/emscripten/supio_emscripten.js.o \
+	src/hsp3dish/win32gp/gamehsp2d.js.o \
+	src/hsp3dish/win32gp/gpmat.js.o \
+	src/hsp3dish/win32gp/hgiox.js.o \
+
+SRCS_GAMEPLAY_CORE = \
+	src/hsp3dish/gameplay/src_core/BoundingBox.cpp \
+	src/hsp3dish/gameplay/src_core/BoundingSphere.cpp \
+	src/hsp3dish/gameplay/src_core/DebugNew.cpp \
+	src/hsp3dish/gameplay/src_core/DepthStencilTarget.cpp \
+	src/hsp3dish/gameplay/src_core/Effect.cpp \
+	src/hsp3dish/gameplay/src_core/FileSystem.cpp \
+	src/hsp3dish/gameplay/src_core/FrameBuffer.cpp \
+	src/hsp3dish/gameplay/src_core/Frustum.cpp \
+	src/hsp3dish/gameplay/src_core/Image.cpp \
+	src/hsp3dish/gameplay/src_core/Logger.cpp \
+	src/hsp3dish/gameplay/src_core/Material.cpp \
+	src/hsp3dish/gameplay/src_core/MaterialParameter.cpp \
+	src/hsp3dish/gameplay/src_core/MathUtil.cpp \
+	src/hsp3dish/gameplay/src_core/Matrix.cpp \
+	src/hsp3dish/gameplay/src_core/Mesh.cpp \
+	src/hsp3dish/gameplay/src_core/MeshBatch.cpp \
+	src/hsp3dish/gameplay/src_core/MeshPart.cpp \
+	src/hsp3dish/gameplay/src_core/Pass.cpp \
+	src/hsp3dish/gameplay/src_core/Plane.cpp \
+	src/hsp3dish/gameplay/src_core/Properties.cpp \
+	src/hsp3dish/gameplay/src_core/Quaternion.cpp \
+	src/hsp3dish/gameplay/src_core/Ray.cpp \
+	src/hsp3dish/gameplay/src_core/Rectangle.cpp \
+	src/hsp3dish/gameplay/src_core/Ref.cpp \
+	src/hsp3dish/gameplay/src_core/RenderTarget.cpp \
+	src/hsp3dish/gameplay/src_core/Technique.cpp \
+	src/hsp3dish/gameplay/src_core/Texture.cpp \
+	src/hsp3dish/gameplay/src_core/Vector2.cpp \
+	src/hsp3dish/gameplay/src_core/Vector3.cpp \
+	src/hsp3dish/gameplay/src_core/Vector4.cpp \
+	src/hsp3dish/gameplay/src_core/VertexAttributeBinding.cpp \
+	src/hsp3dish/gameplay/src_core/VertexFormat.cpp
+
+OBJS_GAMEPLAY_MIN = \
+	$(SRCS_GAMEPLAY_CORE:.cpp=.js.o) \
+	src/hsp3dish/gameplay/src_min/Game.js.o \
+	src/hsp3dish/gameplay/src_min/Platform.js.o \
+	src/hsp3dish/gameplay/src_min/PlatformEmscripten.js.o \
+	src/hsp3dish/gameplay/src_min/RenderState.js.o
 
 OBJS_GP = \
 	src/hsp3/dpmread.gpjs.o \
@@ -120,6 +170,7 @@ OBJS_GP = \
 	src/hsp3dish/emscripten/supio_emscripten.gpjs.o
 
 OBJS_GAMEPLAY = \
+	$(SRCS_GAMEPLAY_CORE:.cpp=.gpjs.o) \
 	src/hsp3dish/gameplay/src/AbsoluteLayout.gpjs.o \
 	src/hsp3dish/gameplay/src/AIAgent.gpjs.o \
 	src/hsp3dish/gameplay/src/AIController.gpjs.o \
@@ -134,8 +185,6 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/AudioController.gpjs.o \
 	src/hsp3dish/gameplay/src/AudioListener.gpjs.o \
 	src/hsp3dish/gameplay/src/AudioSource.gpjs.o \
-	src/hsp3dish/gameplay/src/BoundingBox.gpjs.o \
-	src/hsp3dish/gameplay/src/BoundingSphere.gpjs.o \
 	src/hsp3dish/gameplay/src/Bundle.gpjs.o \
 	src/hsp3dish/gameplay/src/Button.gpjs.o \
 	src/hsp3dish/gameplay/src/Camera.gpjs.o \
@@ -144,39 +193,23 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/Control.gpjs.o \
 	src/hsp3dish/gameplay/src/ControlFactory.gpjs.o \
 	src/hsp3dish/gameplay/src/Curve.gpjs.o \
-	src/hsp3dish/gameplay/src/DebugNew.gpjs.o \
-	src/hsp3dish/gameplay/src/DepthStencilTarget.gpjs.o \
 	src/hsp3dish/gameplay/src/Drawable.gpjs.o \
-	src/hsp3dish/gameplay/src/Effect.gpjs.o \
-	src/hsp3dish/gameplay/src/FileSystem.gpjs.o \
 	src/hsp3dish/gameplay/src/FlowLayout.gpjs.o \
 	src/hsp3dish/gameplay/src/Font.gpjs.o \
 	src/hsp3dish/gameplay/src/Form.gpjs.o \
-	src/hsp3dish/gameplay/src/FrameBuffer.gpjs.o \
-	src/hsp3dish/gameplay/src/Frustum.gpjs.o \
 	src/hsp3dish/gameplay/src/Game.gpjs.o \
 	src/hsp3dish/gameplay/src/Gamepad.gpjs.o \
 	src/hsp3dish/gameplay/src/HeightField.gpjs.o \
-	src/hsp3dish/gameplay/src/Image.gpjs.o \
 	src/hsp3dish/gameplay/src/ImageControl.gpjs.o \
 	src/hsp3dish/gameplay/src/Joint.gpjs.o \
 	src/hsp3dish/gameplay/src/JoystickControl.gpjs.o \
 	src/hsp3dish/gameplay/src/Label.gpjs.o \
 	src/hsp3dish/gameplay/src/Layout.gpjs.o \
 	src/hsp3dish/gameplay/src/Light.gpjs.o \
-	src/hsp3dish/gameplay/src/Logger.gpjs.o \
-	src/hsp3dish/gameplay/src/Material.gpjs.o \
-	src/hsp3dish/gameplay/src/MaterialParameter.gpjs.o \
-	src/hsp3dish/gameplay/src/MathUtil.gpjs.o \
-	src/hsp3dish/gameplay/src/Matrix.gpjs.o \
-	src/hsp3dish/gameplay/src/Mesh.gpjs.o \
-	src/hsp3dish/gameplay/src/MeshBatch.gpjs.o \
-	src/hsp3dish/gameplay/src/MeshPart.gpjs.o \
 	src/hsp3dish/gameplay/src/MeshSkin.gpjs.o \
 	src/hsp3dish/gameplay/src/Model.gpjs.o \
 	src/hsp3dish/gameplay/src/Node.gpjs.o \
 	src/hsp3dish/gameplay/src/ParticleEmitter.gpjs.o \
-	src/hsp3dish/gameplay/src/Pass.gpjs.o \
 	src/hsp3dish/gameplay/src/PhysicsCharacter.gpjs.o \
 	src/hsp3dish/gameplay/src/PhysicsCollisionObject.gpjs.o \
 	src/hsp3dish/gameplay/src/PhysicsCollisionShape.gpjs.o \
@@ -191,17 +224,10 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/PhysicsSpringConstraint.gpjs.o \
 	src/hsp3dish/gameplay/src/PhysicsVehicle.gpjs.o \
 	src/hsp3dish/gameplay/src/PhysicsVehicleWheel.gpjs.o \
-	src/hsp3dish/gameplay/src/Plane.gpjs.o \
 	src/hsp3dish/gameplay/src/Platform.gpjs.o \
 	src/hsp3dish/gameplay/src/PlatformEmscripten.gpjs.o \
-	src/hsp3dish/gameplay/src/Properties.gpjs.o \
-	src/hsp3dish/gameplay/src/Quaternion.gpjs.o \
 	src/hsp3dish/gameplay/src/RadioButton.gpjs.o \
-	src/hsp3dish/gameplay/src/Ray.gpjs.o \
-	src/hsp3dish/gameplay/src/Rectangle.gpjs.o \
-	src/hsp3dish/gameplay/src/Ref.gpjs.o \
 	src/hsp3dish/gameplay/src/RenderState.gpjs.o \
-	src/hsp3dish/gameplay/src/RenderTarget.gpjs.o \
 	src/hsp3dish/gameplay/src/Scene.gpjs.o \
 	src/hsp3dish/gameplay/src/SceneLoader.gpjs.o \
 	src/hsp3dish/gameplay/src/ScreenDisplayer.gpjs.o \
@@ -210,21 +236,14 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/Slider.gpjs.o \
 	src/hsp3dish/gameplay/src/Sprite.gpjs.o \
 	src/hsp3dish/gameplay/src/SpriteBatch.gpjs.o \
-	src/hsp3dish/gameplay/src/Technique.gpjs.o \
 	src/hsp3dish/gameplay/src/Terrain.gpjs.o \
 	src/hsp3dish/gameplay/src/TerrainPatch.gpjs.o \
 	src/hsp3dish/gameplay/src/Text.gpjs.o \
 	src/hsp3dish/gameplay/src/TextBox.gpjs.o \
-	src/hsp3dish/gameplay/src/Texture.gpjs.o \
 	src/hsp3dish/gameplay/src/Theme.gpjs.o \
 	src/hsp3dish/gameplay/src/ThemeStyle.gpjs.o \
 	src/hsp3dish/gameplay/src/TileSet.gpjs.o \
 	src/hsp3dish/gameplay/src/Transform.gpjs.o \
-	src/hsp3dish/gameplay/src/Vector2.gpjs.o \
-	src/hsp3dish/gameplay/src/Vector3.gpjs.o \
-	src/hsp3dish/gameplay/src/Vector4.gpjs.o \
-	src/hsp3dish/gameplay/src/VertexAttributeBinding.gpjs.o \
-	src/hsp3dish/gameplay/src/VertexFormat.gpjs.o \
 	src/hsp3dish/gameplay/src/VerticalLayout.gpjs.o \
 	src/hsp3dish/extlib/src/libpng/png.gpjs.o \
 	src/hsp3dish/extlib/src/libpng/pngerror.gpjs.o \
@@ -407,8 +426,8 @@ all: $(TARGETS)
 
 .SUFFIXES: .cpp
 
-hsp3dish.js: $(OBJS) src/hsp3dish/emscripten/license.js
-	$(CXX) $(CFLAGS) $(LINK_FLAGS) $(OBJS) -o $@ $(LIBS) \
+hsp3dish.js: $(OBJS) $(OBJS_GAMEPLAY_MIN) src/hsp3dish/emscripten/license.js
+	$(CXX) $(CFLAGS) $(LINK_FLAGS) $(OBJS) $(OBJS_GAMEPLAY_MIN) -o $@ $(LIBS) \
 	--extern-pre-js src/hsp3dish/emscripten/license.js
 
 hsp3dish-gp.js: $(OBJS_GP) $(LIBS_GP) src/hsp3dish/emscripten/license.js
@@ -446,6 +465,6 @@ libLinearMath.js.a: $(OBJS_LINEAR_MATH)
 	echo $(CC) $(CFLAGS_GP) -std=c++11 -c $< -o $*.gpjs.o
 	$(CXX) $(CFLAGS_GP) -std=c++11 -c $< -o $*.gpjs.o
 
+.PHONY: clean
 clean:
-	rm -f $(OBJS) $(OBJS_GP) $(OBJS_GAMEPLAY) $(TARGETS)
-
+	rm -f $(OBJS) $(OBJS_GP) $(OBJS_GAMEPLAY) $(OBJS_GAMEPLAY_MIN) $(TARGETS)

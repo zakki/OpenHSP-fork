@@ -25,8 +25,10 @@ class Material : public RenderState
     friend class Technique;
     friend class Pass;
     friend class RenderState;
+#if !defined(HSPDISHES)
     friend class Node;
     friend class Model;
+#endif
 
 public:
 
@@ -143,10 +145,12 @@ public:
      */
     void setTechnique(const char* id);
 
+#if !defined(HSPDISHES)
     /**
      * @see RenderState::setNodeBinding
      */
     void setNodeBinding(Node* node);
+#endif
 
     /**
      * Clones this material.

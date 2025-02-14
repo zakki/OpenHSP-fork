@@ -1,7 +1,9 @@
 #include "Base.h"
 #include "Technique.h"
 #include "Material.h"
+#if !defined(HSPDISHES)
 #include "Node.h"
+#endif
 
 namespace gameplay
 {
@@ -53,6 +55,7 @@ Pass* Technique::getPass(const char* id) const
     return NULL;
 }
 
+#if !defined(HSPDISHES)
 void Technique::setNodeBinding(Node* node)
 {
     RenderState::setNodeBinding(node);
@@ -62,6 +65,7 @@ void Technique::setNodeBinding(Node* node)
         _passes[i]->setNodeBinding(node);
     }
 }
+#endif
 
 Technique* Technique::clone(Material* material, NodeCloneContext &context) const
 {

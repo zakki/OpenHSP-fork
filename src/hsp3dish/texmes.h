@@ -1,13 +1,13 @@
 #ifndef texmes_H_
 #define texmes_H_
 
-#ifdef HSPDISHGP
+#if defined(HSPDISHGP) || defined(HSPDISHES)
 #include "gameplay.h"
 #else
 #include <string>
 #endif
 
-#ifdef HSPDISHGP
+#if defined(HSPDISHGP) || defined(HSPDISHES)
 using namespace gameplay;
 #endif
 
@@ -47,7 +47,7 @@ public:
 	int font_style;		// Text font style
 	char buf[TEXMES_NAME_BUFFER];		// Text Data Buffer
 
-#ifdef HSPDISHGP
+#if defined(HSPDISHGP) || defined(HSPDISHES)
 	Texture::Sampler *_texture;
 #else
 	int _texture;

@@ -1,6 +1,9 @@
 #ifndef gamehsp_H_
 #define gamehsp_H_
 
+#ifdef HSPDISHES
+#include "gamehsp2d.h"
+#else
 #include "gameplay.h"
 #include "gpmat.h"
 #include "gplgt.h"
@@ -683,5 +686,5 @@ private:
 	std::string	user_defines;
 
 };
-
+#endif
 #endif

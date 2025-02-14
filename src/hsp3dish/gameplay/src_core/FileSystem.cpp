@@ -232,10 +232,12 @@ void FileSystem::loadResourceAliases(Properties* properties)
     }
 }
 
+#if !defined(HSPDISH)
 std::string FileSystem::displayFileDialog(size_t dialogMode, const char* title, const char* filterDescription, const char* filterExtensions, const char* initialDirectory)
 {
     return Platform::displayFileDialog(dialogMode, title, filterDescription, filterExtensions, initialDirectory);
 }
+#endif
 
 const char* FileSystem::resolvePath(const char* path)
 {

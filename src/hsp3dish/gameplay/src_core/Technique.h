@@ -55,10 +55,12 @@ public:
      */
     Pass* getPass(const char* id) const;
 
+#if !defined(HSPDISHES)
     /**
      * @see RenderState::setNodeBinding
      */
     void setNodeBinding(Node* node);
+#endif
 
 private:
 

@@ -2,8 +2,6 @@
 #include "Mesh.h"
 #include "MeshPart.h"
 #include "Effect.h"
-#include "Model.h"
-#include "Material.h"
 
 namespace gameplay
 {

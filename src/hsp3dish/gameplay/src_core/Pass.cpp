@@ -2,7 +2,6 @@
 #include "Pass.h"
 #include "Technique.h"
 #include "Material.h"
-#include "Node.h"
 
 namespace gameplay
 {

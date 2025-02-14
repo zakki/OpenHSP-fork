@@ -201,7 +201,7 @@ void ex_mref( PVal *pval, int prm )
 */
 /*------------------------------------------------------------*/
 
-#ifdef HSPDISHGP
+#if defined(HSPDISHGP) && !defined(HSPDISHES)
 
 static void code_getvec( gameplay::Vector4 *vec )
 {
@@ -1407,7 +1407,7 @@ static int cmdfunc_extcmd( int cmd )
 		ctx->stat = p_res;
 		break;
 
-#ifdef HSPDISHGP
+#if defined(HSPDISHGP) && !defined(HSPDISHES)
 
 	case 0x60:								// gpreset
 		p1 = code_getdi( -1 );

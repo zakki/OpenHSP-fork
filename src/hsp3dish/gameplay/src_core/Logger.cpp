@@ -1,7 +1,9 @@
 
 #include "Base.h"
+#ifndef HSPDISH
 #include "Game.h"
 #include "ScriptController.h"
+#endif
 
 namespace gameplay
 {

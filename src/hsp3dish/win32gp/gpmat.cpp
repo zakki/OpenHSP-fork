@@ -153,6 +153,7 @@ int gpmat::updateTex32(char* ptr, int mode)
 	return 0;
 }
 
+#if !defined(HSPDISHES)
 /*------------------------------------------------------------*/
 /*
 Material process for gpobj
@@ -245,6 +246,7 @@ void gpobj::setFilter(Texture::Filter value, int part)
 	if (sampler == NULL) return;
 	sampler->setFilterMode(value, value);
 }
+#endif
 
 /*------------------------------------------------------------*/
 /*
@@ -309,6 +311,7 @@ Material *gamehsp::getMaterial( int matid )
 }
 
 
+#if !defined(HSPDISHES)
 void gamehsp::setLightMaterialParameter(Material* material)
 {
 	gpobj *lgt;
@@ -403,6 +406,7 @@ void gamehsp::setLightMaterialParameter(Material* material)
 	if (hasParameter(material, lightname_ambient))
 		material->getParameter(lightname_ambient)->setValue(vambient);
 }
+#endif
 
 
 void gamehsp::setMaterialDefaultBinding(Material* material)
@@ -436,8 +440,10 @@ void gamehsp::setMaterialDefaultBinding( Material* material, int icolor, int mat
 	//	シェーダーに必要なパラメーターを反映させる
 	setMaterialDefaultBinding(material);
 
+#if !defined(HSPDISHES)
 	//	カレントライトを反映させる
 	setLightMaterialParameter(material);
+#endif
 
 	colorVector3( icolor, color );
 	if ( hasParameter( material, "u_diffuseColor" ) )
@@ -528,6 +534,7 @@ int gamehsp::makeNewMat( Material* material, int mode, int color, int matopt )
 }
 
 
+#if !defined(HSPDISHES)
 int gamehsp::makeNewMatFromObj(int objid, int part)
 {
 	//	オブジェクト固有のマテリアルを参照する
@@ -541,7 +548,9 @@ int gamehsp::makeNewMatFromObj(int objid, int part)
 	mat->_material = obj->_model->getMaterial(part);
 	mat->_mode = GPMAT_MODE_PROXY;
 	return mat->_id;
+	return -1;
 }
+#endif
 
 
 int gamehsp::makeNewMat2D( char *fname, int matopt )
@@ -674,7 +683,7 @@ void gamehsp::setupDefines(void)
 
 }
 
-
+#if !defined(HSPDISHES)
 void gamehsp::setUserShader2D(char *vsh, char *fsh, char *defines)
 {
 	// カスタムシェーダーの設定
@@ -682,6 +691,7 @@ void gamehsp::setUserShader2D(char *vsh, char *fsh, char *defines)
 	user_fsh = fsh;
 	user_defines = defines;
 }
+#endif
 
 
 Material *gamehsp::makeMaterialColor( int color, int matopt )

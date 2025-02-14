@@ -2,7 +2,8 @@ CC = gcc
 CXX = g++
 AR = ar
 CFLAGS_DISH = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ
-CFLAGS_GP = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11
+CFLAGS_GP = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DPNG_ARM_NEON_OPT=0 \
+	-I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src_core -I src/hsp3dish/gameplay/src -std=c++11
 CFLAGS_CL = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG
 CFLAGS_CMP = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG
 PKG_CONFIG = pkg-config
@@ -146,8 +147,8 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/AnimationValue.gpo \
 	src/hsp3dish/gameplay/src/AudioController.gpo \
 	src/hsp3dish/gameplay/src/AudioListener.gpo \
-	src/hsp3dish/gameplay/src/BoundingBox.gpo \
-	src/hsp3dish/gameplay/src/BoundingSphere.gpo \
+	src/hsp3dish/gameplay/src_core/BoundingBox.gpo \
+	src/hsp3dish/gameplay/src_core/BoundingSphere.gpo \
 	src/hsp3dish/gameplay/src/Bundle.gpo \
 	src/hsp3dish/gameplay/src/Button.gpo \
 	src/hsp3dish/gameplay/src/Camera.gpo \
@@ -156,39 +157,39 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/Control.gpo \
 	src/hsp3dish/gameplay/src/ControlFactory.gpo \
 	src/hsp3dish/gameplay/src/Curve.gpo \
-	src/hsp3dish/gameplay/src/DebugNew.gpo \
-	src/hsp3dish/gameplay/src/DepthStencilTarget.gpo \
+	src/hsp3dish/gameplay/src_core/DebugNew.gpo \
+	src/hsp3dish/gameplay/src_core/DepthStencilTarget.gpo \
 	src/hsp3dish/gameplay/src/Drawable.gpo \
-	src/hsp3dish/gameplay/src/Effect.gpo \
-	src/hsp3dish/gameplay/src/FileSystem.gpo \
+	src/hsp3dish/gameplay/src_core/Effect.gpo \
+	src/hsp3dish/gameplay/src_core/FileSystem.gpo \
 	src/hsp3dish/gameplay/src/FlowLayout.gpo \
 	src/hsp3dish/gameplay/src/Font.gpo \
 	src/hsp3dish/gameplay/src/Form.gpo \
-	src/hsp3dish/gameplay/src/FrameBuffer.gpo \
-	src/hsp3dish/gameplay/src/Frustum.gpo \
+	src/hsp3dish/gameplay/src_core/FrameBuffer.gpo \
+	src/hsp3dish/gameplay/src_core/Frustum.gpo \
 	src/hsp3dish/gameplay/src/Game.gpo \
 	src/hsp3dish/gameplay/src/Gamepad.gpo \
 	src/hsp3dish/gameplay/src/HeightField.gpo \
 	src/hsp3dish/gameplay/src/ImageControl.gpo \
-	src/hsp3dish/gameplay/src/Image.gpo \
+	src/hsp3dish/gameplay/src_core/Image.gpo \
 	src/hsp3dish/gameplay/src/Joint.gpo \
 	src/hsp3dish/gameplay/src/JoystickControl.gpo \
 	src/hsp3dish/gameplay/src/Label.gpo \
 	src/hsp3dish/gameplay/src/Layout.gpo \
 	src/hsp3dish/gameplay/src/Light.gpo \
-	src/hsp3dish/gameplay/src/Logger.gpo \
-	src/hsp3dish/gameplay/src/Material.gpo \
-	src/hsp3dish/gameplay/src/MaterialParameter.gpo \
-	src/hsp3dish/gameplay/src/MathUtil.gpo \
-	src/hsp3dish/gameplay/src/Matrix.gpo \
-	src/hsp3dish/gameplay/src/MeshBatch.gpo \
-	src/hsp3dish/gameplay/src/Mesh.gpo \
-	src/hsp3dish/gameplay/src/MeshPart.gpo \
+	src/hsp3dish/gameplay/src_core/Logger.gpo \
+	src/hsp3dish/gameplay/src_core/Material.gpo \
+	src/hsp3dish/gameplay/src_core/MaterialParameter.gpo \
+	src/hsp3dish/gameplay/src_core/MathUtil.gpo \
+	src/hsp3dish/gameplay/src_core/Matrix.gpo \
+	src/hsp3dish/gameplay/src_core/MeshBatch.gpo \
+	src/hsp3dish/gameplay/src_core/Mesh.gpo \
+	src/hsp3dish/gameplay/src_core/MeshPart.gpo \
 	src/hsp3dish/gameplay/src/MeshSkin.gpo \
 	src/hsp3dish/gameplay/src/Model.gpo \
 	src/hsp3dish/gameplay/src/Node.gpo \
 	src/hsp3dish/gameplay/src/ParticleEmitter.gpo \
-	src/hsp3dish/gameplay/src/Pass.gpo \
+	src/hsp3dish/gameplay/src_core/Pass.gpo \
 	src/hsp3dish/gameplay/src/PhysicsCharacter.gpo \
 	src/hsp3dish/gameplay/src/PhysicsCollisionObject.gpo \
 	src/hsp3dish/gameplay/src/PhysicsCollisionShape.gpo \
@@ -203,17 +204,17 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/PhysicsSpringConstraint.gpo \
 	src/hsp3dish/gameplay/src/PhysicsVehicle.gpo \
 	src/hsp3dish/gameplay/src/PhysicsVehicleWheel.gpo \
-	src/hsp3dish/gameplay/src/Plane.gpo \
+	src/hsp3dish/gameplay/src_core/Plane.gpo \
 	src/hsp3dish/gameplay/src/Platform.gpo \
 	src/hsp3dish/gameplay/src/PlatformEmscripten.gpo \
-	src/hsp3dish/gameplay/src/Properties.gpo \
-	src/hsp3dish/gameplay/src/Quaternion.gpo \
+	src/hsp3dish/gameplay/src_core/Properties.gpo \
+	src/hsp3dish/gameplay/src_core/Quaternion.gpo \
 	src/hsp3dish/gameplay/src/RadioButton.gpo \
-	src/hsp3dish/gameplay/src/Ray.gpo \
-	src/hsp3dish/gameplay/src/Rectangle.gpo \
-	src/hsp3dish/gameplay/src/Ref.gpo \
+	src/hsp3dish/gameplay/src_core/Ray.gpo \
+	src/hsp3dish/gameplay/src_core/Rectangle.gpo \
+	src/hsp3dish/gameplay/src_core/Ref.gpo \
 	src/hsp3dish/gameplay/src/RenderState.gpo \
-	src/hsp3dish/gameplay/src/RenderTarget.gpo \
+	src/hsp3dish/gameplay/src_core/RenderTarget.gpo \
 	src/hsp3dish/gameplay/src/Scene.gpo \
 	src/hsp3dish/gameplay/src/SceneLoader.gpo \
 	src/hsp3dish/gameplay/src/ScreenDisplayer.gpo \
@@ -222,21 +223,21 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/Slider.gpo \
 	src/hsp3dish/gameplay/src/SpriteBatch.gpo \
 	src/hsp3dish/gameplay/src/Sprite.gpo \
-	src/hsp3dish/gameplay/src/Technique.gpo \
+	src/hsp3dish/gameplay/src_core/Technique.gpo \
 	src/hsp3dish/gameplay/src/Terrain.gpo \
 	src/hsp3dish/gameplay/src/TerrainPatch.gpo \
 	src/hsp3dish/gameplay/src/TextBox.gpo \
 	src/hsp3dish/gameplay/src/Text.gpo \
-	src/hsp3dish/gameplay/src/Texture.gpo \
+	src/hsp3dish/gameplay/src_core/Texture.gpo \
 	src/hsp3dish/gameplay/src/Theme.gpo \
 	src/hsp3dish/gameplay/src/ThemeStyle.gpo \
 	src/hsp3dish/gameplay/src/TileSet.gpo \
 	src/hsp3dish/gameplay/src/Transform.gpo \
-	src/hsp3dish/gameplay/src/Vector2.gpo \
-	src/hsp3dish/gameplay/src/Vector3.gpo \
-	src/hsp3dish/gameplay/src/Vector4.gpo \
-	src/hsp3dish/gameplay/src/VertexAttributeBinding.gpo \
-	src/hsp3dish/gameplay/src/VertexFormat.gpo \
+	src/hsp3dish/gameplay/src_core/Vector2.gpo \
+	src/hsp3dish/gameplay/src_core/Vector3.gpo \
+	src/hsp3dish/gameplay/src_core/Vector4.gpo \
+	src/hsp3dish/gameplay/src_core/VertexAttributeBinding.gpo \
+	src/hsp3dish/gameplay/src_core/VertexFormat.gpo \
 	src/hsp3dish/gameplay/src/VerticalLayout.gpo \
 	src/hsp3dish/extlib/src/glew/GL/glew.gpo \
 	src/hsp3dish/extlib/src/libpng/png.gpo \
@@ -469,4 +470,3 @@ libLinearMath.a: $(OBJS_LINEAR_MATH)
 
 clean:
 	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
-

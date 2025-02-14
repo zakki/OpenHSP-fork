@@ -1,7 +1,9 @@
 #ifndef MATERIALPARAMETER_H_
 #define MATERIALPARAMETER_H_
 
+#if !defined(HSPDISHES)
 #include "AnimationTarget.h"
+#endif
 #include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
@@ -11,7 +13,12 @@
 
 namespace gameplay
 {
-    class Node;
+#if defined(HSPDISHES)
+struct AnimationTarget {};
+#else
+class Node;
+#endif
+class NodeCloneContext;
 
 /**
  * Defines a material parameter.
@@ -300,6 +307,7 @@ public:
     template <class ClassType, class ParameterType>
     void bindValue(ClassType* classInstance, ParameterType (ClassType::*valueMethod)() const, unsigned int (ClassType::*countMethod)() const);
 
+#if !defined(HSPDISHES)
     /**
      * Binds the return value of the supported class method for the given node to this material parameter.
      * 
@@ -345,6 +353,7 @@ public:
      * @see AnimationTarget::setAnimationProperty
      */
     void setAnimationPropertyValue(int propertyId, AnimationValue* value, float blendWeight = 1.0f);
+#endif
 
 private:
    
@@ -432,7 +441,9 @@ private:
 
     void bind(Effect* effect);
 
+#if !defined(HSPDISHES)
     void applyAnimationValue(AnimationValue* value, float blendWeight, int components);
+#endif
 
     void cloneInto(MaterialParameter* materialParameter) const;
 

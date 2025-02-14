@@ -1008,6 +1008,7 @@ int hgio_mes(BMSCR* bm, char* msg)
 	if ((bm->type != HSPWND_TYPE_MAIN) && (bm->type != HSPWND_TYPE_OFFSCREEN)) return -1;
 	if (drawflag == 0) hgio_render_start();
 
+#if !defined(HSPDISHES)
 	if (GetSysReq(SYSREQ_USEGPBFONT)) {
 		xsize = game->drawFont( bm, bm->cx, bm->cy, msg, &ysize );
 		bm->printsizex = xsize;
@@ -1015,6 +1016,7 @@ int hgio_mes(BMSCR* bm, char* msg)
 		bm->cy += ysize;
 		return 0;
 	}
+#endif
 
 	texmesManager *tmes = game->getTexmesManager();
 
@@ -1706,6 +1708,7 @@ HWND hgio_gethwnd( void )
 #endif
 
 
+#if !defined(HSPDISHES)
 /*------------------------------------------------------------*/
 /*
 		HGIMG4 Sprite service
@@ -1760,6 +1763,7 @@ void hgio_draw_all(Bmscr *bmscr, int option)
 
 	game->drawAll(option);
 }
+#endif
 
 
 #ifdef HSPNDK
@@ -2210,6 +2214,3 @@ void hgio_cnvview(BMSCR* bm, int* xaxis, int* yaxis)
 	*yaxis = (int)v2.y;
 #endif
 }
-
-
-
