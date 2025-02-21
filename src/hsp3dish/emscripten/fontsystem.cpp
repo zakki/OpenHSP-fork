@@ -790,41 +790,26 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 
 	if (buffer == NULL) {
 		EM_ASM_({
-			let d = document.getElementById('hsp3dishFontDiv');
-			if (!d) {
-				d = document.createElement("div");
-				d.id = 'hsp3dishFontDiv';
-				d.style.setProperty("width", "auto");
-				d.style.setProperty("height", "auto");
-				d.style.setProperty("position", "absolute");
-				d.style.setProperty("visibility", "hidden");
-				d.style.setProperty("top", "0");
-				d.style.setProperty("left", "0");
-				document.body.appendChild(d);
-			}
-			d.style.setProperty("font", $1 + "px 'sans-serif'");
-
-			//const t = document.createTextNode(UTF8ToString($0));
-			//if (d.hasChildNodes())
-			//	d.removeChild(d.firstChild);
-			//d.appendChild(t);
-			d.innerText = UTF8ToString($0);
-			HEAP32[$2 >> 2] = d.clientWidth | 0;
-			HEAP32[$3 >> 2] = d.clientHeight | 0;
-
 			let canvas = document.getElementById('hsp3dishFontCanvas');
 			if (!canvas) {
 				canvas = document.createElement("canvas");
 				canvas.id = 'hsp3dishFontCanvas';
 				canvas.style.setProperty("visibility", "hidden");
+				canvas.style.setProperty("position", "absolute");
+				canvas.style.setProperty("top", "0");
+				canvas.style.setProperty("left", "0");
 				document.body.appendChild(canvas);
 			}
 
-			if ($4 !== 0) {
-				const context = canvas.getContext("2d");
-				context.font = $1 + "px 'sans-serif'";
+			const context = canvas.getContext("2d");
+			context.font = $1 + "px 'sans-serif'";
 
-				const msg = UTF8ToString($0);
+			const msg = UTF8ToString($0);
+			const metrics = context.measureText(msg);
+			HEAP32[$2 >> 2] = Math.max(metrics.width, metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight) | 0;
+			HEAP32[$3 >> 2] = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent) | 0;
+
+			if ($4 !== 0) {
 				const metrics = context.measureText(msg);
 				//console.log({msg, metrics});
 				const arr = Array.from(msg);
