@@ -11,18 +11,45 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <string>
+#include "emscripten.h"
 #include "hsp3dish.h"
 
 /*----------------------------------------------------------*/
+
+static int st;
+
+static int start_hsp3dish(char *startfile)
+{
+	int res = hsp3dish_init( startfile );
+	if ( res ) return res;
+
+	hsp3dish_option( st );
+	res = hsp3dish_exec();
+
+	return res;
+}
+
+static void dpm_onload(const char *message)
+{
+	printf("ダウンロードしました(%s)\n", message);
+	start_hsp3dish(nullptr);
+}
+
+static void dpm_onerror(const char *message)
+{
+	printf("ダウンロード中にエラーが発生しました(%s)\n", message);
+}
+
 
 int main( int argc, char *argv[] )
 {
 	int res;
 	char *p;
 
-#ifdef HSPDEBUG
+// #ifdef HSPDEBUG
+#if 1
 	char a1,a2,a3;
-	int b,st,index;
+	int b,index;
 	char mydir[1024];
 	char *cl;
 	std::string clopt;
@@ -70,13 +97,17 @@ int main( int argc, char *argv[] )
 	hsp3dish_cmdline((char *)clopt.c_str());
 	hsp3dish_modname((char *)clmod.c_str());
 
-	res = hsp3dish_init( p );
-	if ( res ) return res;
-	hsp3dish_option( st );
-	res = hsp3dish_exec();
 
+	char *env_download_dpm = getenv( "HSP_DOWNLOAD_DPM" );
+	if ( env_download_dpm ) {
+		emscripten_async_wget(
+			env_download_dpm,
+			"data.dpm",
+			dpm_onload,
+			dpm_onerror);
+		return 0;
+	}
+
+	start_hsp3dish(p);
 	return res;
 }
-
-
-

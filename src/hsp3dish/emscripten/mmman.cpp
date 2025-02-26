@@ -32,11 +32,13 @@
 
 //	SDL Music Object
 int curmusic;
+char* m_music_audio;
 Mix_Music *m_music;
 
 void MusicInit( void )
 {
 	m_music = NULL;
+	m_music_audio = NULL;
 	curmusic = -1;
 }
 
@@ -46,6 +48,8 @@ void MusicTerm( void )
 		Mix_HaltMusic();
 		Mix_FreeMusic(m_music);
 		m_music = NULL;
+		free(m_music_audio);
+		m_music_audio = NULL;
 		curmusic = -1;
 	}
 }
@@ -53,7 +57,13 @@ void MusicTerm( void )
 int MusicLoad( char *fname )
 {
 	MusicTerm();
-	m_music=Mix_LoadMUS((const char *)fname);
+
+	int fsize = dpm_exist(fname);
+	if (fsize<=0) return -1;
+	m_music_audio = (char*)malloc(fsize);
+	dpm_read(fname, m_music_audio, fsize, 0);
+	SDL_RWops* rw = SDL_RWFromMem(m_music_audio, fsize);
+	m_music=Mix_LoadMUS_RW(rw, 1);
 	if (m_music==NULL) return -1;
 	return 0;
 }
@@ -127,6 +137,7 @@ typedef struct MMM
 	Mix_Chunk	*chunk;
 	int		channel;
 	// int	pause_flag;
+	char	*audio;
 
 } MMM;
 
@@ -186,7 +197,12 @@ void MMMan::DeleteBank( int bank )
 		free(m->fname);
 		m->fname = NULL;
 	}
-	
+
+	if (m->audio!=NULL) {
+		free(m->audio);
+		m->audio = NULL;
+	}
+
 	lpSnd = sndbank( bank );
 	if ( lpSnd != NULL ) {
 		free( lpSnd );
@@ -212,6 +228,7 @@ int MMMan::AllocBank( void )
 	mem_snd[ids].flag = MMDATA_NONE;
 	mem_snd[ids].num = -1;
 	mem_snd[ids].channel = -1;
+	mem_snd[ids].audio = NULL;
 	return ids;
 }
 
@@ -253,6 +270,7 @@ MMM *MMMan::SetBank( int num, int flag, int opt, void *mempt, char *fname, int s
 	m->end = end;
 	m->chunk = NULL;
 	m->channel = -1;
+	m->audio = NULL;
 	return m;
 }
 
@@ -325,8 +343,14 @@ int MMMan::BankLoad( MMM *mmm, char *fname )
 		mmm->flag = MMDATA_MUSIC;
 		return 0;
 	}
+	fprintf(stderr, "Mix_LoadWAV %s\n", fname);
 
-	mmm->chunk = Mix_LoadWAV( fname );
+	int fsize = dpm_exist(fname);
+	if (fsize<=0) return 1;
+	mmm->audio = (char*)malloc(fsize);
+	dpm_read(fname, mmm->audio, fsize, 0);
+	SDL_RWops* rw = SDL_RWFromMem(mmm->audio, fsize);
+	mmm->chunk = Mix_LoadWAV_RW( rw, 1 );
 	if (mmm->chunk==NULL) return 1;
 	mmm->flag = MMDATA_INTWAVE;
 	return 0;
