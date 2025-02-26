@@ -11,9 +11,36 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <string>
+#include "emscripten.h"
 #include "hsp3dish.h"
+#include "../supio.h"
 
 /*----------------------------------------------------------*/
+
+static int st;
+
+static int start_hsp3dish( char *startfile )
+{
+	int res = hsp3dish_init( startfile );
+	if ( res ) return res;
+
+	hsp3dish_option( st );
+	res = hsp3dish_exec();
+
+	return res;
+}
+
+static void dpm_onload( const char *message )
+{
+	Alertf( "Download (%s)\n", message );
+	start_hsp3dish( nullptr );
+}
+
+static void dpm_onerror( const char *message )
+{
+	Alertf( "Error during download (%s)\n", message );
+}
+
 
 int main( int argc, char *argv[] )
 {
@@ -22,7 +49,7 @@ int main( int argc, char *argv[] )
 
 #ifdef HSPDEBUG
 	char a1,a2,a3;
-	int b,st,index;
+	int b,index;
 	char mydir[1024];
 	char *cl;
 	std::string clopt;
@@ -69,13 +96,17 @@ int main( int argc, char *argv[] )
 	hsp3dish_cmdline((char *)clopt.c_str());
 	hsp3dish_modname((char *)clmod.c_str());
 
-	res = hsp3dish_init( p );
-	if ( res ) return res;
-	hsp3dish_option( st );
-	res = hsp3dish_exec();
 
+	char *env_dpm_path = getenv( "HSP_DPM_PATH" );
+	if ( env_dpm_path ) {
+		emscripten_async_wget(
+			env_dpm_path,
+			"data.dpm",
+			dpm_onload,
+			dpm_onerror);
+		return 0;
+	}
+
+	start_hsp3dish(p);
 	return res;
 }
-
-
-
