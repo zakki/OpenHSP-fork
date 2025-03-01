@@ -440,7 +440,10 @@ static int cmdfunc_extcmd( int cmd )
 #else
 		i = mmman->Load( fname, p1, p2 );
 #endif
-		if (i) throw HSPERR_FILE_IO;
+		if (i) {
+			Alertf( "mmload %s", fname );
+			throw HSPERR_FILE_IO;
+		}
 		break;
 		}
 	case 0x09:								// mmplay
@@ -678,7 +681,10 @@ static int cmdfunc_extcmd( int cmd )
 
 
 	case 0x21:								// bmpsave
-		if ( bmscr->BmpSave( code_gets() ) ) throw HSPERR_FILE_IO;
+		if ( bmscr->BmpSave( code_gets() ) ) {
+			Alertf( "bmpsave" );
+			throw HSPERR_FILE_IO;
+		}
 		break;
 
 	case 0x22:								// hsvcolor

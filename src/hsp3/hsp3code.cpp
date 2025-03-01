@@ -3246,19 +3246,28 @@ int code_event( int event, int prm1, int prm2, void *prm3 )
 		sbStrCopy(&hspctx->fnbuffer, (char *)prm3);
 #ifdef HSP3IMP
 		//	HSP3IMP用セキュリティ対応
-		if ( SecurityCheck( hspctx->fnbuffer ) ) throw HSPERR_FILE_IO;
+		if ( SecurityCheck( hspctx->fnbuffer ) ) {
+			Alertf( "FNAME %s", hspctx->fnbuffer );
+			throw HSPERR_FILE_IO;
+		}
 #endif
 		break;
 	case HSPEVENT_FREAD:
 		// fread (fseek,size,loadptr)
 		res = dpm_read( hspctx->fnbuffer, prm3, prm2, prm1 );
-		if ( res < 0 ) throw HSPERR_FILE_IO;
+		if ( res < 0 ) {
+			Alertf( "FREAD %s", hspctx->fnbuffer );
+			throw HSPERR_FILE_IO;
+		}
 		hspctx->strsize = res;
 		break;
 	case HSPEVENT_FWRITE:
 		// fwrite (fseek,size,saveptr)
 		res = mem_save( hspctx->fnbuffer, prm3, prm2, prm1 );
-		if ( res < 0 ) throw HSPERR_FILE_IO;
+		if ( res < 0 ) {
+			Alertf( "FWRITE %s", hspctx->fnbuffer );
+			throw HSPERR_FILE_IO;
+		}
 		hspctx->strsize = res;
 		break;
 	case HSPEVENT_FEXIST:
@@ -3269,21 +3278,34 @@ int code_event( int event, int prm1, int prm2, void *prm3 )
 		// delete (n/a,n/a,n/a)
 #ifdef HSP3IMP
 		//	HSP3IMP用セキュリティ対応
+		Alertf( "FDELETE %s", hspctx->fnbuffer );
 		throw HSPERR_FILE_IO;
 #endif
-		if ( delfile( hspctx->fnbuffer ) == 0 ) throw HSPERR_FILE_IO;
+		if ( delfile( hspctx->fnbuffer ) == 0 ) {
+			Alertf( "FDELETE %s", hspctx->fnbuffer );
+			throw HSPERR_FILE_IO;
+		}
 		break;
 	case HSPEVENT_FMKDIR:
 		// mkdir (n/a,n/a,n/a)
-		if ( makedir( hspctx->fnbuffer ) ) throw HSPERR_FILE_IO;
+		if ( makedir( hspctx->fnbuffer ) ) {
+			Alertf( "FMKDIR %s", hspctx->fnbuffer );
+			throw HSPERR_FILE_IO;
+		}
 		break;
 	case HSPEVENT_FCHDIR:
 		// chdir (n/a,n/a,n/a)
-		if ( changedir( hspctx->fnbuffer ) ) throw HSPERR_FILE_IO;
+		if ( changedir( hspctx->fnbuffer ) ) {
+			Alertf( "FCHDIR %s", hspctx->fnbuffer );
+			throw HSPERR_FILE_IO;
+		}
 		break;
 	case HSPEVENT_FCOPY:
 		// bcopy (n/a,n/a,dst filename)
-		if ( dpm_filecopy( hspctx->fnbuffer, (char *)prm3 ) ) throw HSPERR_FILE_IO;
+		if ( dpm_filecopy( hspctx->fnbuffer, (char *)prm3 ) ) {
+			Alertf( "FCOPY %s", hspctx->fnbuffer );
+			throw HSPERR_FILE_IO;
+		}
 		break;
 	case HSPEVENT_FDIRLIST1:
 		// dirlist1 (opt,n/a,result ptr**)

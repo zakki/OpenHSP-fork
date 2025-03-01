@@ -906,7 +906,10 @@ static int cmdfunc_intcmd( int cmd )
 		p1 = code_getdi( -1 );
 		dpm_bye();
 		p2 = dpm_ini( ctx->fnbuffer, 0, -1, p1 );
-		if ( p2 ) throw HSPERR_FILE_IO;
+		if ( p2 ) {
+			Alertf( "chdpmd %s", ctx->fnbuffer );
+			throw HSPERR_FILE_IO;
+		}
 #ifndef HSP3IMP
 #ifdef HSPWIN
 		Sleep( 1000 );
@@ -1011,7 +1014,10 @@ static int cmdfunc_intcmd( int cmd )
 		p1 = code_getdi( -1 );
 		code_event( HSPEVENT_FEXIST, 0, 0, NULL );
 		size = ctx->strsize;
-		if ( size < 0 ) throw HSPERR_FILE_IO;
+		if ( size < 0 ) {
+			Alertf( "noteload", );
+			throw HSPERR_FILE_IO;
+		}
 		if ( p1>=0 ) if ( size >= p1 ) { ctx->strsize = size = p1; }
 
 		pdat = note_update();
