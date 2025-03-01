@@ -40,6 +40,9 @@ LINK_FLAGS_GP = $(LINK_FLAGS_CORE) \
 
 OBJS = \
 	src/hsp3/dpmread.js.o \
+	src/hsp3/filepack.js.o \
+	src/hsp3/hsp3crypt.js.o \
+	src/hsp3/hsp3utfcnv.js.o \
 	src/hsp3dish/geometry.js.o \
 	src/hsp3/hsp3.js.o \
 	src/hsp3/hsp3code.js.o \
@@ -80,6 +83,9 @@ OBJS = \
 
 OBJS_GP = \
 	src/hsp3/dpmread.gpjs.o \
+	src/hsp3/filepack.gpjs.o \
+	src/hsp3/hsp3crypt.gpjs.o \
+	src/hsp3/hsp3utfcnv.gpjs.o \
 	src/hsp3dish/geometry.gpjs.o \
 	src/hsp3/hsp3.gpjs.o \
 	src/hsp3/hsp3code.gpjs.o \
