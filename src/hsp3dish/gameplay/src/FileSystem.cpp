@@ -28,7 +28,7 @@ extern AAssetManager* __assetManager;
 #endif
 
 #ifdef HSPDISH
-#ifdef WIN32
+#if defined(WIN32) || defined(HSPEMSCRIPTEN)
 #include "../../../hsp3/dpmread.h"
 #endif
 #endif
@@ -151,6 +151,41 @@ private:
     bool _canWrite;
 };
 
+/**
+ *
+ * @script{ignore}
+ */
+class MemStream : public Stream
+{
+public:
+    friend class FileSystem;
+
+    ~MemStream();
+    virtual bool canRead();
+    virtual bool canWrite();
+    virtual bool canSeek();
+    virtual void close();
+    virtual size_t read(void* ptr, size_t size, size_t count);
+    virtual char* readLine(char* str, int num);
+    virtual size_t write(const void* ptr, size_t size, size_t count);
+    virtual bool eof();
+    virtual size_t length();
+    virtual long int position();
+    virtual bool seek(long int offset, int origin);
+    virtual bool rewind();
+
+    static MemStream* create(std::vector<char>&& buffer, bool canRead, bool canWrite);
+
+private:
+    MemStream(std::vector<char>&& buffer, bool canRead, bool canWrite);
+
+private:
+    std::vector<char> _buffer;
+    size_t _position;
+    bool _canRead;
+    bool _canWrite;
+ };
+
 #ifdef __ANDROID__
 
 /**
@@ -186,6 +221,14 @@ private:
 };
 
 #endif
+
+static const char* getFileName(const char* path)
+{
+    if (path == NULL)
+        return NULL;
+    const char* p = strrchr(path, '/');
+    return p ? p + 1 : path;
+}
 
 /////////////////////////////
 
@@ -362,11 +405,20 @@ bool FileSystem::fileExists(const char* filePath)
     }
 #endif
 
+#if defined(HSPDISH) && (defined(WIN32) || defined(HSPEMSCRIPTEN ))
+    const char* filename = filePath;
+    int isize = dpm_exist((char *)filename);
+    if (isize < 0) {
+        filename = getFileName(filename);
+        isize = dpm_exist((char *)filename);
+    }
+    return isize >= 0;
+#else
     getFullPath(filePath, fullPath);
 
     gp_stat_struct s;
     return stat(fullPath.c_str(), &s) == 0;
-
+#endif
 }
 
 Stream* FileSystem::open(const char* path, size_t streamMode)
@@ -407,6 +459,37 @@ Stream* FileSystem::open(const char* path, size_t streamMode)
 
         return stream;
     }
+
+#elif defined(HSPDISH) && (defined(WIN32) || defined(HSPEMSCRIPTEN ))
+    if ((streamMode & WRITE) != 0)
+    {
+        GP_WARN("Create file to write: %s", path);
+        std::string fullPath;
+        getFullPath(path, fullPath);
+        FileStream* stream = FileStream::create(fullPath.c_str(), modeStr);
+        return stream;
+    }
+    else
+    {
+        const char* filename = path;
+        int isize = dpm_exist((char *)filename);
+        if (isize < 0) {
+            filename = getFileName(filename);
+            isize = dpm_exist((char *)filename);
+        }
+        if (isize < 0) {
+            GP_ERROR("Failed to load file: %s", path);
+            return nullptr;
+        }
+        size_t size = (size_t)isize;
+        std::vector<char> buffer(size + 1);
+        dpm_read((char *)filename, buffer.data(), buffer.size(), 0);
+        // Force the character buffer to be NULL-terminated.
+        buffer[size] = '\0';
+        printf("read file: %s size:%zu contents: %d %d[%s]\n", path, size, buffer[0], buffer[1], buffer.data());
+        MemStream *stream = MemStream::create(std::move(buffer), true, false);
+        return stream;
+    }
 #else
     std::string fullPath;
     getFullPath(path, fullPath);
@@ -434,27 +517,33 @@ char* FileSystem::readAll(const char* filePath, int* fileSize)
     GP_ASSERT(filePath);
 
 #ifdef HSPDISH
-#ifdef WIN32
-	{
-		size_t size = (size_t)dpm_exist((char *)filePath);
-		if (size < 0) {
-			GP_ERROR("Failed to load file: %s", filePath);
-			return NULL;
-		}
-		char* buffer = new char[size + 1];
-		dpm_read((char *)filePath, buffer, size, 0);
-		// Force the character buffer to be NULL-terminated.
-		buffer[size] = '\0';
-		if (fileSize)
-		{
-			*fileSize = (int)size;
-		}
-		return buffer;
-	}
+#if defined(WIN32) || defined(HSPEMSCRIPTEN )
+    {
+        const char* filename = filePath;
+        int isize = dpm_exist((char *)filename);
+        if (isize < 0) {
+            filename = getFileName(filename);
+            isize = dpm_exist((char *)filename);
+        }
+        if (isize < 0) {
+            GP_ERROR("Failed to load file: %s", filePath);
+            return NULL;
+        }
+        size_t size = (size_t)isize;
+        char* buffer = new char[size + 1];
+        dpm_read((char *)filename, buffer, size, 0);
+        // Force the character buffer to be NULL-terminated.
+        buffer[size] = '\0';
+        if (fileSize)
+        {
+            *fileSize = (int)size;
+        }
+        return buffer;
+    }
 #endif
 #endif
 
-	// Open file for reading.
+    // Open file for reading.
     std::unique_ptr<Stream> stream(open(filePath));
     if (stream.get() == NULL)
     {
@@ -740,6 +829,135 @@ bool FileStream::rewind()
         return true;
     }
     return false;
+}
+
+////////////////////////////////
+
+MemStream::MemStream(std::vector<char>&& buffer, bool canRead, bool canWrite)
+    : _buffer(std::move(buffer)), _position(0), _canRead(canRead), _canWrite(canWrite)
+{
+}
+
+MemStream::~MemStream()
+{
+    close();
+}
+
+MemStream* MemStream::create(std::vector<char>&& buffer, bool canRead, bool canWrite)
+{
+    return new MemStream(std::move(buffer), canRead, canWrite);
+}
+
+bool MemStream::canRead()
+{
+    return _canRead;
+}
+
+bool MemStream::canWrite()
+{
+    return _canWrite;
+}
+
+bool MemStream::canSeek()
+{
+    return true;
+}
+
+void MemStream::close()
+{
+    _buffer.clear();
+    _position = 0;
+}
+
+size_t MemStream::read(void* ptr, size_t size, size_t count)
+{
+    if (!_canRead)
+        return 0;
+
+    size_t bytesToRead = size * count;
+    if (_position + bytesToRead > _buffer.size())
+        bytesToRead = _buffer.size() - _position;
+
+    std::memcpy(ptr, _buffer.data() + _position, bytesToRead);
+    _position += bytesToRead;
+    return bytesToRead / size;
+}
+
+char* MemStream::readLine(char* str, int num)
+{
+    if (!_canRead || num <= 0)
+        return nullptr;
+
+    int i = 0;
+    while (i < num - 1 && _position < _buffer.size())
+    {
+        char c = _buffer[_position++];
+        str[i++] = c;
+        if (c == '\n')
+            break;
+    }
+    str[i] = '\0';
+    return str;
+}
+
+size_t MemStream::write(const void* ptr, size_t size, size_t count)
+{
+    if (!_canWrite)
+        return 0;
+
+    size_t bytesToWrite = size * count;
+    if (_position + bytesToWrite > _buffer.size())
+        _buffer.resize(_position + bytesToWrite);
+
+    std::memcpy(_buffer.data() + _position, ptr, bytesToWrite);
+    _position += bytesToWrite;
+    return count;
+}
+
+bool MemStream::eof()
+{
+    return _position >= _buffer.size();
+}
+
+size_t MemStream::length()
+{
+    return _buffer.size();
+}
+
+long int MemStream::position()
+{
+    return _position;
+}
+
+bool MemStream::seek(long int offset, int origin)
+{
+    size_t newPos = 0;
+    switch (origin)
+    {
+    case SEEK_SET:
+        newPos = offset;
+        break;
+    case SEEK_CUR:
+        newPos = _position + offset;
+        break;
+    case SEEK_END:
+        newPos = _buffer.size() + offset;
+        break;
+    default:
+        return false;
+    }
+
+    if (newPos > _buffer.size())
+        return false;
+
+    _position = newPos;
+    return true;
+}
+
+bool MemStream::rewind()
+{
+    _position = 0;
+    return true;
 }
 
 ////////////////////////////////
