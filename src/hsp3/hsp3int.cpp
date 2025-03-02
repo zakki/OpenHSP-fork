@@ -1009,13 +1009,15 @@ static int cmdfunc_intcmd( int cmd )
 		int size;
 		char *ptr;
 		char *pdat;
+		char *str;
 
-		code_event( HSPEVENT_FNAME, 0, 0, code_gets() );
+		str = code_gets();
+		code_event( HSPEVENT_FNAME, 0, 0, str );
 		p1 = code_getdi( -1 );
 		code_event( HSPEVENT_FEXIST, 0, 0, NULL );
 		size = ctx->strsize;
 		if ( size < 0 ) {
-			Alertf( "noteload", );
+			Alertf( "noteload %s", str);
 			throw HSPERR_FILE_IO;
 		}
 		if ( p1>=0 ) if ( size >= p1 ) { ctx->strsize = size = p1; }

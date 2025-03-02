@@ -12,6 +12,9 @@ PKG_CONFIG = pkg-config
 
 OBJS = \
 	src/hsp3/dpmread.do \
+	src/hsp3/filepack.do \
+	src/hsp3/hsp3crypt.do \
+	src/hsp3/hsp3utfcnv.do \
 	src/hsp3dish/geometry.do \
 	src/hsp3/hsp3.do \
 	src/hsp3/hsp3code.do \
@@ -87,6 +90,9 @@ OBJS_CL = \
 	src/hsp3/strbuf.o \
 	src/hsp3/strnote.o \
 	src/hsp3/dpmread.o \
+	src/hsp3/filepack.o \
+	src/hsp3/hsp3crypt.o \
+	src/hsp3/hsp3utfcnv.o \
 	src/hsp3/linux/supio_linux.o \
 	src/hsp3/linux/hsp3cl.o \
 	src/hsp3/linux/hsp3ext_linux.o \
@@ -97,6 +103,9 @@ OBJS_CL = \
 
 OBJS_GP = \
 	src/hsp3/dpmread.gpo \
+	src/hsp3/filepack.gpo \
+	src/hsp3/hsp3crypt.gpo \
+	src/hsp3/hsp3utfcnv.gpo \
 	src/hsp3dish/geometry.gpo \
 	src/hsp3/hsp3.gpo \
 	src/hsp3/hsp3code.gpo \

@@ -11,7 +11,9 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <string>
+#if defined(HSPEMSCRIPTEN)
 #include "emscripten.h"
+#endif
 #include "hsp3dish.h"
 
 /*----------------------------------------------------------*/
@@ -29,6 +31,7 @@ static int start_hsp3dish(char *startfile)
 	return res;
 }
 
+#if defined(HSPEMSCRIPTEN)
 static void dpm_onload(const char *message)
 {
 	printf("ダウンロードしました(%s)\n", message);
@@ -39,6 +42,7 @@ static void dpm_onerror(const char *message)
 {
 	printf("ダウンロード中にエラーが発生しました(%s)\n", message);
 }
+#endif
 
 
 int main( int argc, char *argv[] )
@@ -97,7 +101,7 @@ int main( int argc, char *argv[] )
 	hsp3dish_cmdline((char *)clopt.c_str());
 	hsp3dish_modname((char *)clmod.c_str());
 
-
+#if defined(HSPEMSCRIPTEN)
 	char *env_download_dpm = getenv( "HSP_DOWNLOAD_DPM" );
 	if ( env_download_dpm ) {
 		emscripten_async_wget(
@@ -107,6 +111,7 @@ int main( int argc, char *argv[] )
 			dpm_onerror);
 		return 0;
 	}
+#endif
 
 	start_hsp3dish(p);
 	return res;
