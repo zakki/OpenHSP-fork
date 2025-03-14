@@ -850,13 +850,14 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 		if (canvas.height < $3)
 			canvas.height = $3;
 
-		var context = canvas.getContext("2d", { willReadFrequently: true });
+		const context = canvas.getContext("2d", { willReadFrequently: true });
 		context.font = $1 + "px 'sans-serif'";
 
-		var msg = UTF8ToString($0);
+		const msg = UTF8ToString($0);
+		const metrics = context.measureText(msg);
 		context.clearRect(0, 0, Math.min(canvas.width, $2 + 1), Math.min(canvas.height, $3 + 1));
 		context.fillStyle = 'rgba(255, 255, 255, 255)';
-		context.fillText(msg, 0, $1);
+		context.fillText(msg, 0, metrics.fontBoundingBoxAscent);
 		//console.log(msg);
 
 		//GLctx.texImage2D(GLctx.TEXTURE_2D, 0, GLctx.RGBA, GLctx.RGBA, GLctx.UNSIGNED_BYTE, context.getImageData(0, 0, $2, $3));
