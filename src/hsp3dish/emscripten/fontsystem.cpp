@@ -747,6 +747,7 @@ static	int fontsystem_sy;		// 縦のサイズ
 static	unsigned char *fontdata_pix;
 static	int fontdata_size;
 static	int fontdata_color;
+static	std::string fontsystem_fontname = "sans-serif";
 static	int fontsystem_size;
 static	int fontsystem_style;
 static	int fontsystem_texid;
@@ -775,6 +776,7 @@ void hgio_fontsystem_init(char* fontname, int size, int style)
 	//		フォントレンダリング初期化
 	//
 	hgio_fontsystem_term();
+	fontsystem_fontname = fontname;
 	fontsystem_flag = 1;
 	fontsystem_size = size;
 	fontsystem_style = style;
@@ -800,12 +802,17 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 			}
 
 			const context = canvas.getContext("2d", { willReadFrequently: true });
-			context.font = $1 + "px 'sans-serif'";
+
+			let fontStyle = "";
+			if ($6 & 1) fontStyle += "bold ";
+			if ($6 & 2) fontStyle += "italic ";
+			fontStyle += $1 + "px " + UTF8ToString($5);
+			context.font = fontStyle;
 
 			const msg = UTF8ToString($0);
 			const metrics = context.measureText(msg);
-			HEAP32[$2 >> 2] = Math.max(metrics.width, metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight) | 0;
-			HEAP32[$3 >> 2] = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent) | 0;
+			HEAP32[$2 >> 2] = Math.ceil(Math.max(metrics.width, metrics.actualBoundingBoxRight) - Math.min(0, metrics.actualBoundingBoxLeft)) + 1;
+			HEAP32[$3 >> 2] = Math.ceil(Math.max(metrics.fontBoundingBoxAscent, metrics.actualBoundingBoxAscent) +Math.max(metrics.fontBoundingBoxDescent, metrics.actualBoundingBoxDescent));
 
 			if ($4 !== 0) {
 				const metrics = context.measureText(msg);
@@ -818,7 +825,7 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 					HEAP16[($4 >> 1) + i + 1] = m.width | 0; //(m.actualBoundingBoxRight - m.actualBoundingBoxLeft) | 0;
 				}
 			}
-			}, msg, fontsystem_size, & fontsystem_sx, & fontsystem_sy, info ? info->pos : nullptr);
+			}, msg, fontsystem_size, & fontsystem_sx, & fontsystem_sy, info ? info->pos : nullptr, fontsystem_fontname.c_str(), fontsystem_style);
 
 		//Alertf("text %s %d %d\n", msg, fontsystem_sx, fontsystem_sy);
 
@@ -851,10 +858,16 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 			canvas.height = $3;
 
 		const context = canvas.getContext("2d", { willReadFrequently: true });
-		context.font = $1 + "px 'sans-serif'";
 
-		const msg = UTF8ToString($0);
+		let fontStyle = "";
+		if ($6 & 1) fontStyle += "bold ";
+		if ($6 & 2) fontStyle += "italic ";
+		fontStyle += $1 + "px " + UTF8ToString($5);
+		context.font = fontStyle;
+
+		let msg = UTF8ToString($0);
 		const metrics = context.measureText(msg);
+		// msg += " " + metrics.alphabeticBaseline + "/" + metrics.ideographicBaseline + "/" + metrics.actualBoundingBoxLeft + "/" + metrics.actualBoundingBoxRight + "/" + metrics.fontBoundingBoxAscent + "/" + metrics.fontBoundingBoxDescent;
 		context.clearRect(0, 0, Math.min(canvas.width, $2 + 1), Math.min(canvas.height, $3 + 1));
 		context.fillStyle = 'rgba(255, 255, 255, 255)';
 		context.fillText(msg, 0, metrics.fontBoundingBoxAscent);
@@ -864,7 +877,7 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 		var imageData = context.getImageData(0, 0, $2, $3);
 		HEAPU8.set(imageData.data, $4);
 
-		}, msg, fontsystem_size, sx, sy, buffer);
+		}, msg, fontsystem_size, sx, sy, buffer, fontsystem_fontname.c_str(), fontsystem_style);
 
 	//Alertf( "Init:Surface(%d,%d) %d destpitch%d",fontsystem_sx,fontsystem_sy,fontdata_color,pitch );
 	*out_sx = fontsystem_sx;
