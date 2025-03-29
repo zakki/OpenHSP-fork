@@ -42,6 +42,7 @@
 #if defined(HSPMAC)
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
+#include <CoreFoundation/CoreFoundation.h>
 
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
@@ -211,7 +212,7 @@ static		texmesManager tmes;	// テキストメッセージマネージャー
 static GLfloat _line_colors[8];
 static GLfloat _panelColorsTex[16];
 
-#ifdef HSPIOS
+#if defined(HSPIOS) || defined(HSPMAC)
 static	double  total_tick;
 static	CFAbsoluteTime  lastTime;
 #endif
@@ -346,7 +347,7 @@ void hgio_init( int mode, int sx, int sy, void *hwnd )
 	}
 
     //  timer initalize
-#ifdef HSPIOS
+#if defined(HSPIOS) || defined(HSPMAC)
     total_tick = 0.0;
     lastTime = CFAbsoluteTimeGetCurrent();
 #endif
@@ -1821,7 +1822,7 @@ int hgio_celputmulti( BMSCR *bm, int *xpos, int *ypos, int *cel, int count, BMSC
 
 /*-------------------------------------------------------------------------------*/
 
-#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
+#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN)
     static time_t basetick;
     static bool tick_reset = false;
 #endif
@@ -1830,7 +1831,7 @@ int hgio_gettick( void )
 {
     // 経過時間の計測
 
-#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
+#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN)
 	int i;
 	timespec ts;
 	double nsec;
@@ -1849,7 +1850,7 @@ int hgio_gettick( void )
     return i;
 #endif
 
-#ifdef HSPIOS
+#if defined(HSPIOS) || defined(HSPMAC)
     CFAbsoluteTime now;
     now = CFAbsoluteTimeGetCurrent();
     total_tick += now - lastTime;
