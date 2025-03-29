@@ -33,7 +33,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install libraries
-      run: brew install glew glfw sdl2 sdl2_image sdl2_mixer sdl2_ttf gtk+
+      run: brew install glew glfw sdl2 sdl2_image sdl2_mixer sdl2_ttf gtk+ bullet
     - name: make
       run: make -f makefile.macos -j2
     - name: Archive production artifacts
