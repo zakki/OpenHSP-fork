@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include <unistd.h>
 #endif
 
@@ -91,7 +91,7 @@ int main( int argc, char *argv[] )
 	syspath[0]=0;
 	helpkey[0] = 0;
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 	strcpy( compath,"common/" );
 #else
 	strcpy( compath,"common\\" );
@@ -99,7 +99,7 @@ int main( int argc, char *argv[] )
 
 	for (b=1;b<argc;b++) {
 		a1=*argv[b];a2=tolower(*(argv[b]+1));
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 		if (a1!='-') {
 #else
 		if ((a1!='/')&&(a1!='-')) {
@@ -252,7 +252,7 @@ int main( int argc, char *argv[] )
 			strcpy( oname, "hsp3.exe" );			// デフォルトランタイム
 		}
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 		cutext( oname );
 		if ( execobj & 8 ) {
 			printf("Runtime[%s].\n",oname);

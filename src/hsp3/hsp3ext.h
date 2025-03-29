@@ -17,7 +17,7 @@
 #include "ndk/hsp3ext_ndk.h"
 #endif
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include "linux/hsp3ext_linux.h"
 #endif
 

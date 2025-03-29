@@ -24,8 +24,10 @@
 #include "../../hsp3dish/hgio.h"
 #include "../../hsp3dish/supio.h"
 
+#if !defined(HSPMAC)
 #define DEVCTRL_IO
 #include "devctrl_io.h"
+#endif
 
 static HSP3DEVINFO mem_devinfo;
 static HSP3DEVINFO *devinfo;

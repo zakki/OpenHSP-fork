@@ -38,8 +38,13 @@
 #include "hsp3dish/ios/appengine.h"
 #endif
 
+#if defined(HSPMAC)
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#endif
 
-#if defined(HSPLINUX)
+
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include <SDL2/SDL_ttf.h>
 #define USE_TTFFONT
 #define USE_JAVA_FONT
@@ -329,7 +334,7 @@ void ChangeTex( int id )
 #if defined(HSPNDK)
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 #endif
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 		glDisable(GL_TEXTURE_2D);
 #endif
 		return;
@@ -340,7 +345,7 @@ void ChangeTex( int id )
 #if defined(HSPNDK)
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 #endif
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 		glEnable(GL_TEXTURE_2D);
 #endif
 	}

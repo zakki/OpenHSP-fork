@@ -214,9 +214,12 @@ int Hsp3::Reset( int mode )
 
 #ifdef HSPMAC
 	hspctx.hspstat |= HSPSTAT_MAC;
+#ifndef HSPMACGUI
+	hspctx.hspstat |= HSPSTAT_CONSOLE;
+#endif
 #endif
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX)
 	hspctx.hspstat |= HSPSTAT_LINUX;
 #ifndef HSPLINUXGUI
 	hspctx.hspstat |= HSPSTAT_CONSOLE;

@@ -21,7 +21,7 @@
 #include "ndk/hspwnd_ndk.h"
 #endif
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include "linux/hspwnd_linux.h"
 #endif
 

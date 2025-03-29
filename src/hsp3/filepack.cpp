@@ -13,7 +13,7 @@
 #include "windows.h"
 #endif
 
-#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPIOS)
+#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPIOS) || defined(HSPMAC)
 #include<unistd.h>
 #define _getcwd getcwd
 #endif

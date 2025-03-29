@@ -556,7 +556,7 @@ pickag:
 			}
 		}
 		if (a1==0) { wp=NULL;break; }
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 		if (a1==10) {
 			wp++;
 			line++;
@@ -1232,7 +1232,7 @@ char *CToken::ExpandStrEx( char *str )
 			if (*vs==10) { vs++; }
 			continue;
 		}
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 		if (a1==10) {
 			s3[a++]=0x5c; s3[a++]='n';
 			vs++;

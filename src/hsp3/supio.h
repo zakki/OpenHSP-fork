@@ -31,7 +31,7 @@
 #include "ndk/supio_ndk.h"
 #endif
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include "linux/supio_linux.h"
 #endif
 

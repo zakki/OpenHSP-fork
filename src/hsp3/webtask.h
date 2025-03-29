@@ -17,7 +17,7 @@
 #include "ndk/webtask_ndk.h"
 #endif
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include "linux/webtask_linux.h"
 #endif
 

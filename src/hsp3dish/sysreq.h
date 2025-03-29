@@ -79,6 +79,7 @@ SYSREQ_MAX
 #define PLATFORM_EMSCRIPTEN 3
 #define PLATFORM_LINUX 4
 #define PLATFORM_RASPBIAN 5
+#define PLATFORM_MAC 6
 
 void InitSysReq( void );
 void SetSysReq( int reqid, int val );

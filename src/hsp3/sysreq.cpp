@@ -110,6 +110,9 @@ void InitSysReq( void )
 	sysreq[SYSREQ_PLATFORM] = PLATFORM_LINUX;
 #endif
 #endif
+#ifdef HSPMAC
+	sysreq[SYSREQ_PLATFORM] = PLATFORM_MAC;
+#endif
 
 	dbgmsg[0] = 0;
 }

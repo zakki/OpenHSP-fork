@@ -71,7 +71,7 @@ extern int resY0, resY1;
 #ifdef HSPNDK
 #include "ndk/mmman.h"
 #endif
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include "emscripten/mmman.h"
 #endif
 #ifdef HSPEMSCRIPTEN
@@ -633,7 +633,7 @@ static int cmdfunc_extcmd( int cmd )
 		}
 		hgio_setback((BMSCR *)src);
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #ifdef HSPRASPBIAN
 		if ((p1&1)==0) {
 			if ( hgio_getkey( 27 ) ) {
@@ -782,7 +782,7 @@ static int cmdfunc_extcmd( int cmd )
 			p2 = ( hgio_stick(0)&256 )>>8;
 		}
 #endif
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 		if ( hgio_getkey( p1 ) ) p2 = 1;
 #endif
 		code_setva( pval, aptr, TYPE_INUM, &p2 );
@@ -932,7 +932,7 @@ static int cmdfunc_extcmd( int cmd )
 			if (cmd == 0x2b) {
 				bmscr->buffer_option |= 0x10000;
 			}
-#if (defined(HSPWIN)||defined(HSPLINUX))
+#if (defined(HSPWIN)||defined(HSPLINUX)||defined(HSPMAC))
 			ctx->runmode = RUNMODE_RESTART;
 			return RUNMODE_RESTART;
 #endif
@@ -4192,7 +4192,7 @@ static int get_ginfo( int arg )
 #ifdef HSPWIN
 		return GetSystemMetrics( SM_CXSCREEN );
 #endif
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 		return hgio_getDesktopWidth();
 #endif
 		return hgio_getWidth();
@@ -4200,7 +4200,7 @@ static int get_ginfo( int arg )
 #ifdef HSPWIN
 		return GetSystemMetrics( SM_CYSCREEN );
 #endif
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 		return hgio_getDesktopHeight();
 #endif
 		return hgio_getHeight();
@@ -4456,7 +4456,7 @@ void hsp3excmd_rebuild_window(void)
 
 void hsp3extcmd_pause(void)
 {
-#if defined(HSPNDK) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPNDK) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 #ifdef USE_MMAN
 	if (mmman) {
 		mmman->Pause();
@@ -4468,7 +4468,7 @@ void hsp3extcmd_pause(void)
 
 void hsp3extcmd_resume( void )
 {
-#if defined(HSPNDK) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPNDK) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 #ifdef USE_MMAN
 	if (mmman) {
 		mmman->Resume();

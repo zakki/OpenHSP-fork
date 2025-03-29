@@ -43,7 +43,7 @@ int main( int argc, char *argv[] )
 
 	for (b=1;b<argc;b++) {
 		a1=*argv[b];a2=tolower(*(argv[b]+1));
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 		if (a1!='-') {
 #else
 		if ((a1!='/')&&(a1!='-')) {

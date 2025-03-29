@@ -39,8 +39,13 @@
 #include "hsp3dish/ios/appengine.h"
 #endif
 
+#if defined(HSPMAC)
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#endif
 
-#if defined(HSPLINUX)
+
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include <SDL2/SDL_ttf.h>
 #define USE_TTFFONT
 #define USE_JAVA_FONT
@@ -81,20 +86,10 @@
 
 //#include <GL/glut.h>
 
-#ifdef HSPEMSCRIPTEN
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
 #include "SDL2/SDL_opengl.h"
-#else
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_image.h"
-#include "SDL2/SDL_opengl.h"
-#endif
 
-#endif
-
-#ifdef USE_TTFFONT
-#define TTF_FONTFILE "/ipaexg.ttf"
 #endif
 
 

@@ -68,7 +68,7 @@
 #define HSPRANDMT // Use std::mt19937
 #endif
 
-#if defined(HSPLINUX)|defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX)|defined(HSPEMSCRIPTEN)||defined(HSPMAC)
 #define HSP_ALIGN_DOUBLE __attribute__ ((aligned (8)))
 #else
 #define HSP_ALIGN_DOUBLE
@@ -85,7 +85,7 @@
 #define HSP_MAX_PATH	256
 #define HSP_PATH_SEPARATOR '/'
 #endif
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #undef JPNMSG
 #endif
 

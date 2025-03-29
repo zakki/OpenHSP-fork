@@ -69,6 +69,22 @@ extern SDL_Window *window;
 
 #endif
 
+#if defined(HSPMAC)
+#include <unistd.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_image.h"
+
+#include "SDL2/SDL_ttf.h"
+#define TTF_FONTFILE "/ipaexg.ttf"
+
+extern bool get_key_state(int sym);
+extern SDL_Window *window;
+
+#endif
+
 
 #include "../../hsp3/hsp3config.h"
 #include "../hgio.h"
@@ -128,7 +144,7 @@ static int _uvfix;		// UVFix
 static engine	*appengine;
 #endif
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 extern bool get_key_state(int sym);
 #endif
 
@@ -412,7 +428,7 @@ void hgio_init( int mode, int sx, int sy, void *hwnd )
     lastTime = CFAbsoluteTimeGetCurrent();
 #endif
 
-#if defined(HSPLINUX)
+#if defined(HSPLINUX) || defined(HSPMAC)
 	//TTF初期化
 	char fontpath[HSP_MAX_PATH+1];
 	*fontpath = 0;
@@ -662,7 +678,7 @@ int hgio_getHeightOffset( void )
 
 int hgio_getDesktopWidth( void )
 {
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 	SDL_DisplayMode dm;
 	SDL_GetDesktopDisplayMode(0,&dm);
 	return dm.w;
@@ -673,7 +689,7 @@ int hgio_getDesktopWidth( void )
 
 int hgio_getDesktopHeight( void )
 {
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 	SDL_DisplayMode dm;
 	SDL_GetDesktopDisplayMode(0,&dm);
 	return dm.h;
@@ -740,7 +756,7 @@ int hgio_stick( int actsw )
 	if (GetAsyncKeyState(83) & 0x8000)  ckey |= 1 << 17;	// [s]
 #endif
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	if ( get_key_state(SDL_SCANCODE_LEFT) )  ckey|=1;		// [left]
 	if ( get_key_state(SDL_SCANCODE_UP) )    ckey|=1<<1;		// [up]
 	if ( get_key_state(SDL_SCANCODE_RIGHT) ) ckey|=1<<2;		// [right]
@@ -766,7 +782,7 @@ int hgio_stick( int actsw )
 	return ckey;
 }
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 static const unsigned int key_map[256]={
 	/* 0- */
 	0, 0, 0, 3, 0, 0, 0, 0, SDL_SCANCODE_BACKSPACE, SDL_SCANCODE_TAB, 0, 0, 12, SDL_SCANCODE_RETURN, 0, 0,
@@ -922,7 +938,7 @@ int hgio_dialog( int mode, char *str1, char *str2 )
     gpb_dialog( mode, str1, str2 );
     //Alertf( str1 );
 #endif
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 	{
 	int i = 0;
 	if (mode>=16) return 0;
@@ -951,7 +967,7 @@ int hgio_title( char *str1 )
 	SDL_SetWindowTitle( window, (const char *)str1 );
 	//SDL_WM_SetCaption( (const char *)str1, NULL );
 #endif
-#if defined(HSPLINUX)
+#if defined(HSPLINUX) || defined(HSPMAC)
 #ifndef HSPRASPBIAN
 	SDL_SetWindowTitle( window, (const char *)str1 );
 	//SDL_WM_SetCaption( (const char *)str1, NULL );
@@ -1752,7 +1768,7 @@ void hgio_square( BMSCR *bm, int *posx, int *posy, int *color )
 }
 
 
-#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
     static time_t basetick;
     static bool tick_reset = false;
 #endif
@@ -1764,7 +1780,7 @@ int hgio_gettick( void )
 	return timeGetTime();
 #endif
 
-#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	int i;
 	timespec ts;
 	double nsec;
@@ -1989,7 +2005,7 @@ char *hgio_getstorage( char *fname )
 
 /*-------------------------------------------------------------------------------*/
 
-#if defined(HSPNDK)||defined(HSPIOS)||defined(HSPLINUX)||defined(HSPEMSCRIPTEN)
+#if defined(HSPNDK)||defined(HSPIOS)||defined(HSPLINUX)||defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 
 void hgio_touch( int xx, int yy, int button )
 {
@@ -2099,7 +2115,7 @@ int hgio_getmousebtn( void )
 
 /*-------------------------------------------------------------------------------*/
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 
 char *hgio_getstorage( char *fname )
 {
@@ -2126,7 +2142,7 @@ static int GetSurface(int x, int y, int sx, int sy, int px, int py, void *res, i
 #ifdef	GP_USE_ANGLE
 	return -1;
 #else
-#if defined(HSPWIN)||defined(HSPLINUX)
+#if defined(HSPWIN)||defined(HSPLINUX)||defined(HSPMAC)
 	glReadBuffer(GL_BACK);
 #endif
 #endif
@@ -2215,7 +2231,7 @@ void hgio_editputclip(BMSCR* bm, char *str)
 	SetClipboardData(CF_TEXT, hg);
 	CloseClipboard();
 #endif
-#if (defined(HSPLINUX)||defined(HSPEMSCRIPTEN))
+#if (defined(HSPLINUX)||defined(HSPEMSCRIPTEN))||defined(HSPMAC)
 	SDL_SetClipboardText( (const char *)str );
 #endif
 }
@@ -2237,7 +2253,7 @@ char *hgio_editgetclip(BMSCR* bm)
 		return p;
 	}
 #endif
-#if (defined(HSPLINUX)||defined(HSPEMSCRIPTEN))
+#if (defined(HSPLINUX)||defined(HSPEMSCRIPTEN))||defined(HSPMAC)
 	if ( SDL_HasClipboardText() ) {
 		return (SDL_GetClipboardText());
 	}

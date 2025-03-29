@@ -150,7 +150,13 @@ char *hsp3ext_sysinfo(int p2, int* res, char* outbuf)
 
 	switch(p2) {
 	case 0:
+#if defined(HSPLINUX)
 		strcpy( p1, "Linux" );
+#elif defined(HSPMAC)
+		strcpy( p1, "Mac" );
+#else
+#error Unsupportd Platform
+#endif
 		fl=HSPVAR_FLAG_STR;
 		break;
 	case 1:
@@ -179,7 +185,7 @@ char* hsp3ext_getdir(int id)
 
 	switch( id ) {
 	case 0:				//    カレント(現在の)ディレクトリ
-#if defined(HSPLINUX)||defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX)||defined(HSPEMSCRIPTEN)||defined(HSPMAC)
 		getcwd( p, HSP_MAX_PATH );
 		cutlast = 1;
 #endif
@@ -222,7 +228,7 @@ char* hsp3ext_getdir(int id)
 
 void hsp3ext_execfile(char* msg, char* option, int mode)
 {
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 	system(msg);
 #endif
 }

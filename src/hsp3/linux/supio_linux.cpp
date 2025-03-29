@@ -528,7 +528,7 @@ int strsp_get( char *srcstr, char *dststr, char splitchr, int len )
 			if (a2==10) splc++;
 			break;
 		}
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 		if (a1==10) {
 			a2=srcstr[splc];
 			break;

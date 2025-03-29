@@ -12,7 +12,7 @@
 #include <windows.h>
 #endif
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include <sys/time.h>
 #include <time.h>
 #endif
@@ -60,7 +60,7 @@ int CLocalInfo::GetTime( int index )
 	a=(short *)&st;
 	return (int)(a[index]);
 #endif
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 	struct timeval tv;
 	struct tm *lt;
 

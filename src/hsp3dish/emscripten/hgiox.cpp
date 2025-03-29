@@ -39,6 +39,28 @@
 #include "hsp3dish/ios/appengine.h"
 #endif
 
+#if defined(HSPMAC)
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_image.h"
+#include "SDL2/SDL_opengl.h"
+#include "../mac/appengine.h"
+
+extern bool get_key_state(int sym);
+
+#define USE_TTFFONT
+#define USE_JAVA_FONT
+#define FONT_TEX_SX 512
+#define FONT_TEX_SY 128
+
+#ifdef USE_TTFFONT
+#include <SDL2/SDL_ttf.h>
+#define TTF_FONTFILE "/ipaexg.ttf"
+#endif
+extern SDL_Window *window;
+#endif
 
 #if defined(HSPLINUX)
 #include <SDL2/SDL_ttf.h>
@@ -97,7 +119,6 @@
 #include <SDL2/SDL_ttf.h>
 #define TTF_FONTFILE "/ipaexg.ttf"
 #endif
-
 
 #include "appengine.h"
 extern bool get_key_state(int sym);
@@ -293,7 +314,7 @@ void hgio_init( int mode, int sx, int sy, void *hwnd )
 	#endif
 #endif
 
-#if defined(HSPLINUX)
+#if defined(HSPLINUX) || defined(HSPMAC)
 	#ifdef USE_TTFFONT
 
 	//TTF初期化
@@ -440,7 +461,7 @@ void hgio_reset( void )
     glDisable(GL_LIGHTING);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
-#if defined(HSPIOS) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPIOS) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
     glDisable(GL_DEPTH_BUFFER_BIT);
 #endif
 
@@ -459,14 +480,14 @@ void hgio_reset( void )
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	glDisable(GL_TEXTURE_2D);
 #else
     glEnable(GL_TEXTURE_2D);
 #endif
 
 
-#if defined(HSPNDK) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPNDK) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	if ( GetSysReq( SYSREQ_CLSMODE ) == CLSMODE_SOLID ) {
 		//指定カラーで消去
 		int ccol = GetSysReq( SYSREQ_CLSCOLOR );
@@ -516,7 +537,7 @@ void hgio_resume( void )
 	//テクスチャ初期化
 	TexInit();
 
-#if defined(HSPNDK) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPNDK) || defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	#ifdef USE_JAVA_FONT
 	//font_texid = MakeEmptyTex( FONT_TEX_SX, FONT_TEX_SY );
 	#else
@@ -565,7 +586,7 @@ static int GetSurface(int x, int y, int sx, int sy, int px, int py, void *res, i
 #ifdef	GP_USE_ANGLE
 	return -1;
 #else
-#if defined(HSPWIN)||defined(HSPLINUX)
+#if defined(HSPWIN)||defined(HSPLINUX) || defined(HSPMAC)
 #ifndef HSPRASPBIAN
 	glReadBuffer(GL_BACK);
 #endif
@@ -810,7 +831,7 @@ int hgio_getHeight( void )
 
 int hgio_getDesktopWidth( void )
 {
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 	SDL_DisplayMode dm;
 	SDL_GetDesktopDisplayMode(0,&dm);
 	return dm.w;
@@ -821,7 +842,7 @@ int hgio_getDesktopWidth( void )
 
 int hgio_getDesktopHeight( void )
 {
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 	SDL_DisplayMode dm;
 	SDL_GetDesktopDisplayMode(0,&dm);
 	return dm.h;
@@ -842,7 +863,7 @@ int hgio_title( char *str1 )
 	SDL_SetWindowTitle( window, (const char *)str1 );
 	//SDL_WM_SetCaption( (const char *)str1, NULL );
 #endif
-#if defined(HSPLINUX)
+#if defined(HSPLINUX) || defined(HSPMAC)
 #ifndef HSPRASPBIAN
 	SDL_SetWindowTitle( window, (const char *)str1 );
 	//SDL_WM_SetCaption( (const char *)str1, NULL );
@@ -854,7 +875,7 @@ int hgio_title( char *str1 )
 int hgio_stick( int actsw )
 {
 	int ckey = 0;
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 #ifndef HSPRASPBIAN
 	if ( get_key_state(SDL_SCANCODE_LEFT) )  ckey|=1;		// [left]
 	if ( get_key_state(SDL_SCANCODE_UP) )    ckey|=1<<1;		// [up]
@@ -896,7 +917,7 @@ int hgio_stick( int actsw )
 	return ckey;
 }
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 #ifndef HSPRASPBIAN
 static const unsigned int key_map[256]={
 	/* 0- */
@@ -1351,7 +1372,7 @@ void hgio_fcopy( float distx, float disty, short xx, short yy, short srcsx, shor
     *flp++ = x2;
     *flp++ = y2;
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	glEnable(GL_TEXTURE_2D);
 #endif
 
@@ -1370,7 +1391,7 @@ void hgio_fcopy( float distx, float disty, short xx, short yy, short srcsx, shor
 //    glDisableClientState(GL_COLOR_ARRAY);
     glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	glDisable(GL_TEXTURE_2D);
 #endif
 }
@@ -1421,7 +1442,7 @@ void hgio_fontcopy( BMSCR *bm, float distx, float disty, float ratex, float rate
     *flp++ = x2;
     *flp++ = y2;
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	glEnable(GL_TEXTURE_2D);
 #endif
 
@@ -1457,7 +1478,7 @@ void hgio_fontcopy( BMSCR *bm, float distx, float disty, float ratex, float rate
 
     glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 
-#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	glDisable(GL_TEXTURE_2D);
 #endif
 }
@@ -1800,7 +1821,7 @@ int hgio_celputmulti( BMSCR *bm, int *xpos, int *ypos, int *cel, int count, BMSC
 
 /*-------------------------------------------------------------------------------*/
 
-#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
     static time_t basetick;
     static bool tick_reset = false;
 #endif
@@ -1809,7 +1830,7 @@ int hgio_gettick( void )
 {
     // 経過時間の計測
 
-#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN)
+#if defined(HSPLINUX) || defined(HSPNDK) || defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	int i;
 	timespec ts;
 	double nsec;
@@ -1847,7 +1868,7 @@ int hgio_dialog( int mode, char *str1, char *str2 )
     gb_dialog( mode, str1, str2 );
     //Alertf( str1 );
 #endif
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 	{
 	int i = 0;
 	if (mode>=16) return 0;
@@ -2175,7 +2196,7 @@ void hgio_editputclip(BMSCR* bm, char *str)
 {
 	//		クリップボードコピー
 	//
-#if (defined(HSPLINUX)||defined(HSPEMSCRIPTEN))
+#if defined(HSPLINUX)||defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	SDL_SetClipboardText( (const char *)str );
 #endif
 }
@@ -2185,7 +2206,7 @@ char *hgio_editgetclip(BMSCR* bm)
 {
 	//		クリップボードペースト文字列取得
 	//
-#if (defined(HSPLINUX)||defined(HSPEMSCRIPTEN))
+#if defined(HSPLINUX)||defined(HSPEMSCRIPTEN) || defined(HSPMAC)
 	if ( SDL_HasClipboardText() ) {
 		return (SDL_GetClipboardText());
 	}
@@ -2272,7 +2293,7 @@ int hgio_render_end( void )
 	SDL_GL_SwapWindow(window);
 	//SDL_GL_SwapBuffers();
 #endif
-#if defined(HSPLINUX)
+#if defined(HSPLINUX) || defined(HSPMAC)
 
 	//hgio_makeTexFont( msg );
 	//hgio_putTexFont( 0,0, (char *)"This is Test.", -1 );

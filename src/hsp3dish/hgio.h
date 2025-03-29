@@ -119,7 +119,7 @@ CLSMODE_MAX,
 #include "emscripten/hgiox.h"
 #endif
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX) || defined(HSPMAC)
 #include "emscripten/hgiox.h"
 #endif
 

@@ -170,6 +170,9 @@ void CHsc3::AddSystemMacros( CToken *tk, int option )
 #ifdef HSPNDK		// android NDK version flag
 		tk->RegistExtMacro("_hspndk", "");
 #endif
+#ifdef HSPMAC		// Mac version flag
+		tk->RegistExtMacro("_hspmac", "");
+#endif
 #ifdef HSPEMSCRIPTEN	// EMSCRIPTEN version flag
 		tk->RegistExtMacro("_hspemscripten", "");
 #else
