@@ -42,6 +42,7 @@ jobs:
         name: openhsp-macos-arm64
         path: |
           hsp3dish
+          hsp3gp
           hsp3cl
           hspcmp
           hsed

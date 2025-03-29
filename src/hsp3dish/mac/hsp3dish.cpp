@@ -656,10 +656,21 @@ int hsp3dish_init_sub( int sx, int sy, int autoscale )
 		hsp3dish_savelog();
 		return 1;
 	}
-	platform->enterMessagePump();
+
+	gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s ok\n", __FUNCTION__);
+
+	Alertf( "---enterMessagePump OK\n" );
+	if (Game::getInstance()->getState() == Game::UNINITIALIZED) {
+		gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s run\n", __FUNCTION__);
+		Game::getInstance()->run();
+	} else {
+		gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s resume\n", __FUNCTION__);
+		Game::getInstance()->resume();
+	}
+	// gameplay::Logger::log(gameplay::Logger::LEVEL_INFO, "%s enterMessagePump\n", __FUNCTION__);
+	//platform->enterMessagePump();
 	game->frame();
 #endif
-
 	return 0;
 }
 

@@ -9,7 +9,8 @@ CLFAGS_COMMON = \
 	-DGL_SILENCE_DEPRECATION \
 	`$(PKG_CONFIG) --cflags --libs SDL2 SDL2_image SDL2_mixer SDL2_ttf zlib libffi`
 CFLAGS_DISH = -Wno-write-strings -fexec-charset=UTF-8 -DHSPDISH -DHSPMAC -DHSPMACGUI -DHSPDEBUG -DUSE_OBAQ -DHSP_COM_UNSUPPORTED $(CLFAGS_COMMON) $(CFLAGS_ENV)
-CFLAGS_GP = -Wno-write-strings -fexec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPMAC -DHSPMACGUI -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src $(CLFAGS_COMMON) $(CFLAGS_ENV)
+CFLAGS_GP = -Wno-write-strings -fexec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPMAC -DHSPMACGUI -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src $(CLFAGS_COMMON) $(CFLAGS_ENV) \
+	`$(PKG_CONFIG) --cflags --libs bullet`
 CXXFLAGS_GP = $(CFLAGS_GP) -std=c++11
 CFLAGS_CL = -Wno-write-strings -std=c++11 -fexec-charset=UTF-8 -DHSPMAC -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CLFAGS_COMMON) $(CFLAGS_ENV)
 CFLAGS_CMP = -Wno-write-strings -std=c++11 -fexec-charset=UTF-8 -DHSPMAC -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CLFAGS_COMMON) $(CFLAGS_ENV)
@@ -223,7 +224,7 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/PhysicsVehicleWheel.gpo \
 	src/hsp3dish/gameplay/src/Plane.gpo \
 	src/hsp3dish/gameplay/src/Platform.gpo \
-	src/hsp3dish/gameplay/src/PlatformEmscripten.gpo \
+	src/hsp3dish/gameplay/src/PlatformMacOSX.gpo \
 	src/hsp3dish/gameplay/src/Properties.gpo \
 	src/hsp3dish/gameplay/src/Quaternion.gpo \
 	src/hsp3dish/gameplay/src/RadioButton.gpo \
@@ -256,37 +257,7 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/VertexAttributeBinding.gpo \
 	src/hsp3dish/gameplay/src/VertexFormat.gpo \
 	src/hsp3dish/gameplay/src/VerticalLayout.gpo \
-	src/hsp3dish/extlib/src/glew/GL/glew.gpo \
-	src/hsp3dish/extlib/src/libpng/png.gpo \
-	src/hsp3dish/extlib/src/libpng/pngerror.gpo \
-	src/hsp3dish/extlib/src/libpng/pngget.gpo \
-	src/hsp3dish/extlib/src/libpng/pngmem.gpo \
-	src/hsp3dish/extlib/src/libpng/pngpread.gpo \
-	src/hsp3dish/extlib/src/libpng/pngread.gpo \
-	src/hsp3dish/extlib/src/libpng/pngrio.gpo \
-	src/hsp3dish/extlib/src/libpng/pngrtran.gpo \
-	src/hsp3dish/extlib/src/libpng/pngrutil.gpo \
-	src/hsp3dish/extlib/src/libpng/pngset.gpo \
-	src/hsp3dish/extlib/src/libpng/pngtrans.gpo \
-	src/hsp3dish/extlib/src/libpng/pngwio.gpo \
-	src/hsp3dish/extlib/src/libpng/pngwrite.gpo \
-	src/hsp3dish/extlib/src/libpng/pngwtran.gpo \
-	src/hsp3dish/extlib/src/libpng/pngwutil.gpo \
-	src/hsp3dish/extlib/src/zlib/adler32.gpo \
-	src/hsp3dish/extlib/src/zlib/compress.gpo \
-	src/hsp3dish/extlib/src/zlib/crc32.gpo \
-	src/hsp3dish/extlib/src/zlib/deflate.gpo \
-	src/hsp3dish/extlib/src/zlib/gzclose.gpo \
-	src/hsp3dish/extlib/src/zlib/gzlib.gpo \
-	src/hsp3dish/extlib/src/zlib/gzread.gpo \
-	src/hsp3dish/extlib/src/zlib/gzwrite.gpo \
-	src/hsp3dish/extlib/src/zlib/infback.gpo \
-	src/hsp3dish/extlib/src/zlib/inffast.gpo \
-	src/hsp3dish/extlib/src/zlib/inflate.gpo \
-	src/hsp3dish/extlib/src/zlib/inftrees.gpo \
-	src/hsp3dish/extlib/src/zlib/trees.gpo \
-	src/hsp3dish/extlib/src/zlib/uncompr.gpo \
-	src/hsp3dish/extlib/src/zlib/zutil.gpo
+	src/hsp3dish/extlib/src/glew/GL/glew.gpo
 
 OBJS_BULLET_COLLISION = \
 	src/hsp3dish/extlib/src/BulletCollision/BroadphaseCollision/btAxisSweep3.gpo \
@@ -426,14 +397,14 @@ OBJS_LINEAR_MATH = \
 	src/hsp3dish/extlib/src/LinearMath/btSerializer.gpo \
 	src/hsp3dish/extlib/src/LinearMath/btVector3.gpo
 
-TARGETS = hsp3dish hsp3cl hspcmp hsed
+TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed
 LIBS1 = -lm -lstdc++ -lcurl -lpthread -framework Foundation -framework OpenGL
-LIBS2 = -lm -lstdc++ -lcurl -lpthread -framework Foundation -framework OpenGL
+LIBS2 = -lm -lstdc++ -lcurl -lpthread \
+	-framework OpenGL -framework Foundation -framework GameKit -framework IOKit -framework QuartzCore -framework Cocoa \
+	-lBulletDynamics -lBulletCollision -lLinearMath
+
 LIBS_GP = \
-	libgameplay.a \
-	libBulletDynamics.a \
-	libBulletCollision.a \
-	libLinearMath.a
+	libgameplay.a
 
 all: $(TARGETS)
 
@@ -450,6 +421,8 @@ hsp3gp: $(OBJS_GP) $(LIBS_GP)
 %.gpo: %.c
 	$(CC) $(CFLAGS_GP) -c $< -o $*.gpo
 %.gpo: %.cpp
+	$(CXX) $(CXXFLAGS_GP) -c $< -o $*.gpo
+%.gpo: %.mm
 	$(CXX) $(CXXFLAGS_GP) -c $< -o $*.gpo
 
 hspcmp: $(OBJS_CMP)
