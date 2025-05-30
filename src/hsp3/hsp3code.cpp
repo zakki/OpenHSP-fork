@@ -1315,7 +1315,7 @@ static void customstack_delete( STRUCTDAT *st, char *stackptr )
 	char *ss;
 	STRUCTPRM *prm;
 	prm = &hspctx->mem_minfo[ st->prmindex ];
-	for(i=0;i<st->prmmax;i++) {							// パラメーターを取得
+	for(i=0;i<st->prm.prmmax;i++) {							// パラメーターを取得
 		if ( prm->mptype == MPTYPE_LOCALSTRING ) {
 			out = stackptr + prm->offset;
 			ss = *(char **)out;
@@ -1523,7 +1523,7 @@ void code_expandstruct( char *p, STRUCTDAT *st, int option )
 	STRUCTPRM *prm;
 	prm = &hspctx->mem_minfo[ st->prmindex ];
 
-	for(i=0;i<st->prmmax;i++) {							// パラメーターを取得
+	for(i=0;i<st->prm.prmmax;i++) {							// パラメーターを取得
 		out = p + prm->offset;
 		switch( prm->mptype ) {
 		case MPTYPE_INUM:
@@ -1641,7 +1641,7 @@ void code_delstruct( PVal *in_pval, APTR in_aptr )
 			code_callbackfunc( st->otindex );
 		}
 
-		for(i=0;i<st->prmmax;i++) {							// パラメーターを取得
+		for(i=0;i<st->prm.prmmax;i++) {							// パラメーターを取得
 			out = p + prm->offset;
 			switch( prm->mptype ) {
 			case MPTYPE_LOCALVAR:

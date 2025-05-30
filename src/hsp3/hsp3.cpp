@@ -404,7 +404,8 @@ STRUCTDAT *Hsp3::copy_STRUCTDAT(HSPHED *hsphed, char *ptr, size_t size)
 		dst->index = org_dat.index;
 		dst->subid = org_dat.subid;
 		dst->prmindex = org_dat.prmindex;
-		dst->prmmax = org_dat.prmmax;
+		dst->prm.prmmax = org_dat.prm.prmmax;
+		dst->prm.rettype = org_dat.prm.rettype;
 		dst->nameidx = org_dat.nameidx;
 		dst->size = org_dat.size;
 		dst->otindex = org_dat.otindex;
@@ -420,7 +421,7 @@ STRUCTDAT *Hsp3::copy_STRUCTDAT(HSPHED *hsphed, char *ptr, size_t size)
 			//	STRUCTPRMのoffset,size値を調整する (各メンバのサイズを2倍にする)
 			int j;
 			dst->size *= 2;
-			for (j = 0; j < dst->prmmax; j++) {
+			for (j = 0; j < dst->prm.prmmax; j++) {
 				STRUCTPRM *prm = &hspctx.mem_minfo[dst->prmindex + j];
 				if (prm->mptype == MPTYPE_STRUCTTAG) continue;
 				//Alertf("INIT: type%d: subid:%d offset:%d", prm->mptype, prm->subid, prm->offset);

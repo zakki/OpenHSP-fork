@@ -217,8 +217,8 @@ static void *reffunc_dllcmd( int *type_res, int arg )
 	if ( *val != '(' ) throw ( HSPERR_INVALID_FUNCPARAM );
 
 	*type_res = HSPVAR_FLAG_INT;
-	exec_dllcmd( arg, STRUCTDAT_OT_FUNCTION );
-	reffunc_intfunc_ivalue = hspctx->stat;
+	void* retptr = nullptr;
+	exec_dllcmd( arg, STRUCTDAT_OT_FUNCTION, &retptr, type_res );
 
 	//			')'で終わるかを調べる
 	//
@@ -226,7 +226,7 @@ static void *reffunc_dllcmd( int *type_res, int arg )
 	if ( *val != ')' ) throw ( HSPERR_INVALID_FUNCPARAM );
 	code_next();
 
-	return &reffunc_intfunc_ivalue;
+	return retptr;
 }
 
 

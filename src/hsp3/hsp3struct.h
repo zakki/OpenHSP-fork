@@ -279,7 +279,13 @@ typedef struct STRUCTDAT {
 	short	index;				// base LIBDAT index
 	short	subid;				// struct index
 	int		prmindex;			// STRUCTPRM index(MINFO)
-	int		prmmax;				// number of STRUCTPRM
+	union {
+		int		oldprmmax;				// number of STRUCTPRM
+		struct {
+			short	prmmax;			// number of STRUCTPRM
+			short	rettype;		// return type
+		} prm;
+	};
 	int		nameidx;			// name index (DS)
 	int		size;				// struct size (stack)
 	int		otindex;			// OT index(Module) / cleanup flag(Dll)
@@ -291,7 +297,13 @@ typedef struct HED_STRUCTDAT {
 	short	index;				// base LIBDAT index
 	short	subid;				// struct index
 	int		prmindex;			// STRUCTPRM index(MINFO)
-	int		prmmax;				// number of STRUCTPRM
+	union {
+		int		oldprmmax;				// number of STRUCTPRM
+		struct {
+			short	prmmax;			// number of STRUCTPRM
+			short	rettype;		// return type
+		} prm;
+	};
 	int		nameidx;			// name index (DS)
 	int		size;				// struct size (stack)
 	int		otindex;			// OT index(Module) / cleanup flag(Dll)
@@ -303,7 +315,13 @@ typedef struct STRUCTDAT {
 	short	index;				// base LIBDAT index
 	short	subid;				// struct index
 	int		prmindex;			// STRUCTPRM index(MINFO)
-	int		prmmax;				// number of STRUCTPRM
+	union {
+		int		prmmax;				// number of STRUCTPRM
+		struct {
+			short	prmmax;			// number of STRUCTPRM
+			short	rettype;		// return type
+		} prm;
+	};
 	int		nameidx;			// name index (DS)
 	int		size;				// struct size (stack)
 	int		otindex;			// OT index(Module) / cleanup flag(Dll)
