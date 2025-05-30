@@ -1,0 +1,60 @@
+#uselib "test.so"
+
+#cfunc test0 "func0"
+#cfunc test0_64 "func0_64"
+#cfunc test1 "func1" var,int,int,int
+
+//float floatMulAdd(float p0, double p1, int p2);
+#cfunc floatMulAdd "floatMulAdd" float, double, sptr
+
+//double doubleMulAdd(float p0, int p1, double p2);
+#cfunc doubleMulAdd "doubleMulAdd" float, int, double
+
+
+repeat 2
+    mes "call test0"
+    res=test0()
+    mes "return " + res
+    a = "abc"
+
+    mes "call test1"
+    res=test1(a,1,2,3)
+    mes "return " + res
+loop
+
+mes "call floatMulAdd"
+longval = 100
+res = floatMulAdd(0.1, 2.0, longval)
+mes res
+
+ladr=libptr( floatMulAdd )
+dupptr lptr,ladr,28	; STRUCTDAT構造体を取得
+lib_id=wpeek(lptr,0)
+prm_max=wpeek(lptr,8)
+prm_type=wpeek(lptr,10)
+mes "LIB#"+lib_id + " prm:" + prm_max + " ret:" + prm_type
+wpoke lptr, 10, -4 // MPTYPE_FLOAT -4
+prm_type=wpeek(lptr,10)
+mes "LIB#"+lib_id + " prm:" + prm_max + " ret:" + prm_type
+
+res = floatMulAdd(0.1, 2.0, longval)
+mes res
+
+
+mes "call doubleMulAdd"
+res = doubleMulAdd(0.1, 2.0, 100)
+mes res
+
+ladr=libptr( doubleMulAdd )
+dupptr lptr,ladr,28	; STRUCTDAT構造体を取得
+lib_id=wpeek(lptr,0)
+prm_max=wpeek(lptr,8)
+prm_type=wpeek(lptr,10)
+mes "LIB#"+lib_id + " prm:" + prm_max + " ret:" + prm_type
+wpoke lptr, 10, 3 // MPTYPE_DNUM 3
+prm_type=wpeek(lptr,10)
+mes "LIB#"+lib_id + " prm:" + prm_max + " ret:" + prm_type
+
+mes "call doubleMulAdd"
+res = doubleMulAdd(0.1, 2.0, 100)
+mes res

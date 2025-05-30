@@ -2990,7 +2990,8 @@ int CToken::PutStructEnd( int i, char *name, int libindex, int otindex, int func
 	st.nameidx = PutDSBuf( name );
 	st.subid = i;
 	st.prmindex = cg_stptr;
-	st.prmmax = cg_stnum;
+	st.prm.prmmax = cg_stnum;
+	st.prm.rettype = 0;
 	st.funcflag = funcflag;
 	st.size = cg_stsize;
 	if ( otindex < 0 ) {
@@ -3027,7 +3028,8 @@ int CToken::PutStructEndDll( char *name, int libindex, int subid, int otindex )
 	}
 	st.subid = subid;
 	st.prmindex = cg_stptr;
-	st.prmmax = cg_stnum;
+	st.prm.prmmax = cg_stnum;
+	st.prm.rettype = 0;
 	//st.proc = NULL;
 	st.funcflag = 0;
 	st.size = cg_stsize;

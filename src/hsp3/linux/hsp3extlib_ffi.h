@@ -63,8 +63,8 @@ int Hsp3ExtLibInit( HSP3TYPEINFO *info );
 void Hsp3ExtLibTerm( void );
 
 int cmdfunc_dllcmd( int cmd );
-int exec_dllcmd( int cmd, int mask );
-int code_expand_and_call( const STRUCTDAT *st );
+int exec_dllcmd( int cmd, int mask, void** res, int *type_res );
+// int code_expand_and_call( const STRUCTDAT *st );
 int64_t call_extfunc( void *proc, int **prm, int prms, int rettype );
 
 int cnvwstr( void *out, char *in, int bufsize );
