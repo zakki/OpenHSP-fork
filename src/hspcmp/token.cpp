@@ -944,12 +944,12 @@ void CToken::Calc_factor( CALCVAR &v )
 	int id,type;
 	char *ptr_dval;
 	if ( ttype==TK_NUM ) {
-		v=(CALCVAR)val;
+		v = CALCVAR(val);
 		Calc_token();
 		return;
 	}
 	if ( ttype==TK_DNUM ) {
-		v=(CALCVAR)val_d;
+		v = CALCVAR(val_d);
 		Calc_token();
 		return;
 	}
@@ -958,12 +958,12 @@ void CToken::Calc_factor( CALCVAR &v )
 		if ( id == -1 ) { ttype=TK_CALCERROR; return; }
 		type = lb->GetType( id );
 		if ( type != LAB_TYPE_PPVAL ) { ttype=TK_CALCERROR; return; }
-			ptr_dval = lb->GetData2( id );
-			if ( ptr_dval == NULL ) {
-				v = (CALCVAR)lb->GetOpt( id );
-			} else {
-				v = *(CALCVAR *)ptr_dval;
-			}
+		ptr_dval = lb->GetData2( id );
+		if ( ptr_dval == NULL ) {
+			v = CALCVAR( lb->GetOpt( id ) );
+		} else {
+			v = *(CALCVAR *)ptr_dval;
+		}
 		Calc_token();
 		return;
 	}
@@ -997,13 +997,13 @@ void CToken::Calc_muldiv( CALCVAR &v )
 	while( (ttype=='*')||(ttype=='/')||(ttype==0x5c)) {
 		op=ttype; Calc_token();
 		Calc_unary(v2);
-		if (op=='*') v1*=v2;
+		if (op=='*') v1 = v1 * v2;
 		else if (op=='/') {
-			if ( v2==0.0 ) { ttype=TK_CALCERROR; return; }
-			v1/=v2;
+			if ( v2.toDouble()==0.0 ) { ttype=TK_CALCERROR; return; }
+			v1 = v1 / v2;
 		} else if (op==0x5c) {
-			if ( (int)v2==0 ) { ttype=TK_CALCERROR; return; }
-			v1 = fmod( v1, v2 );
+			if ( v2.toInt()==0 ) { ttype=TK_CALCERROR; return; }
+			v1 = v1.mod( v2 );
 		}
 	}
 	v=v1;
@@ -1017,8 +1017,8 @@ void CToken::Calc_addsub( CALCVAR &v )
 	while( (ttype=='+')||(ttype=='-')) {
 		op=ttype; Calc_token();
 		Calc_muldiv(v2);
-		if (op=='+') v1+=v2;
-		else if (op=='-') v1-=v2;
+		if (op=='+') v1 = v1 + v2;
+		else if (op=='-') v1 = v1 - v2;
 	}
 	v=v1;
 }
@@ -1034,49 +1034,49 @@ void CToken::Calc_compare( CALCVAR &v )
 		if (op=='=') {
 			Calc_token();
 			Calc_addsub(v2);
-			v1i = v1==v2;
-			v1=(CALCVAR)v1i; continue;
+			v1i = (v1 == v2);
+			v1 = CALCVAR(v1i); continue;
 		}
 		if (op=='<') {
 			if ( *wp=='=' ) {
 				wp++;
 				Calc_token();Calc_addsub(v2);
-				v1i=(v1<=v2); v1=(CALCVAR)v1i; continue;
+				v1i=(v1<=v2); v1 = CALCVAR(v1i); continue;
 			}
 			if ( *wp=='<' ) {
 				wp++;
 				Calc_token();Calc_addsub(v2);
-				v1i = (int)v1;
-				v2i = (int)v2;
+				v1i = (int)v1.toInt();
+				v2i = (int)v2.toInt();
 				v1i<<=v2i;
-				v1=(CALCVAR)v1i; continue;
+				v1 = CALCVAR(v1i); continue;
 			}
 			Calc_token();
 			Calc_addsub(v2);
 			v1i=(v1<v2);
-			v1=(CALCVAR)v1i; continue;
+			v1 = CALCVAR(v1i); continue;
 		}
 		if (op=='>') {
 			if ( *wp=='=' ) {
 				wp++;
 				Calc_token();Calc_addsub(v2);
 				v1i=(v1>=v2);
-				v1=(CALCVAR)v1i; continue;
+				v1 = CALCVAR(v1i); continue;
 			}
 			if ( *wp=='>' ) {
 				wp++;
 				Calc_token();Calc_addsub(v2);
-				v1i = (int)v1;
-				v2i = (int)v2;
+				v1i = (int)v1.toInt();
+				v2i = (int)v2.toInt();
 				v1i>>=v2i;
-				v1=(CALCVAR)v1i; continue;
+				v1 = CALCVAR(v1i); continue;
 			}
 			Calc_token();
 			Calc_addsub(v2);
 			v1i=(v1>v2);
-			v1=(CALCVAR)v1i; continue;
+			v1 = CALCVAR(v1i); continue;
 		}
-		v1=(CALCVAR)v1i;
+		v1 = CALCVAR(v1i);
 	}
 	v=v1;
 }
@@ -1090,10 +1090,10 @@ void CToken::Calc_bool2( CALCVAR &v )
 	while( ttype=='!') {
 		Calc_token();
 		Calc_compare(v2);
-		v1i = (int)v1;
-		v2i = (int)v2;
+		v1i = (int)v1.toInt();
+		v2i = (int)v2.toInt();
 		v1i = v1i != v2i;
-		v1=(CALCVAR)v1i;
+		v1 = CALCVAR(v1i);
 	}
 	v=v1;
 }
@@ -1107,12 +1107,12 @@ void CToken::Calc_bool( CALCVAR &v )
 	while( (ttype=='&')||(ttype=='|')||(ttype=='^')) {
 		op=ttype; Calc_token();
 		Calc_bool2(v2);
-		v1i = (int)v1;
-		v2i = (int)v2;
+		v1i = (int)v1.toInt();
+		v2i = (int)v2.toInt();
 		if (op=='&') v1i&=v2i;
 		else if (op=='|') v1i|=v2i;
 		else if (op=='^') v1i^=v2i;
-		v1=(CALCVAR)v1i;
+		v1 = CALCVAR(v1i);
 	}
 	v=v1;
 }
@@ -1619,7 +1619,7 @@ char *CToken::ExpandToken( char *str, int *type, int ppmode )
 			if ( ptr_dval == NULL ) {
 				sprintf(cnvstr, "%d", lb->GetOpt(id));
 			} else {
-				sprintf(cnvstr, "%.16f", *(CALCVAR*)ptr_dval);
+				sprintf(cnvstr, "%.16f", ((CALCVAR*)ptr_dval)->toDouble());
 			}
 			chk = ReplaceLineBuf( str, (char *)vs, cnvstr, 0, NULL );
 			break;
@@ -2327,18 +2327,18 @@ ppresult_t CToken::PP_Const( void )
 			prop = ahtmodel->GetProperty( keyword );
 			if ( prop != NULL ) {
 				id = lb->Regist( keyword, LAB_TYPE_PPVAL, prop->GetValueInt() );
-				if ( cres != floor( cres ) ) {
-					dbval = prop->GetValueDouble();
-					lb->SetData2( id, (char *)(&dbval), sizeof(CALCVAR) );
+				if ( cres != floor( cres.toDouble() ) ) {
+						dbval = CALCVAR( prop->GetValueDouble() );
+						lb->SetData2( id, (char *)(&dbval), sizeof(CALCVAR) );
 				}
 				if ( glmode ) lb->SetEternal( id );
 				return PPRESULT_SUCCESS;
 			}
 		} else {									// AHT読み出し時
-			if ( cres != floor( cres ) ) {
-				ahtmodel->SetPropertyDefaultDouble( keyword, (double)cres );
+			if ( cres != floor( cres.toDouble() ) ) {
+				ahtmodel->SetPropertyDefaultDouble( keyword, cres.toDouble() );
 			} else {
-				ahtmodel->SetPropertyDefaultInt( keyword, (int)cres );
+				ahtmodel->SetPropertyDefaultInt( keyword, cres.toInt() );
 			}
 			if ( ahtmodel->SetAHTPropertyString( keyword, ahtkeyword ) ) {
 				SetError( "AHT parameter syntax error" ); return PPRESULT_ERROR;
@@ -2347,9 +2347,9 @@ ppresult_t CToken::PP_Const( void )
 	}
 
 
-	id = lb->Regist( keyword, LAB_TYPE_PPVAL, (int)cres );
+	id = lb->Regist( keyword, LAB_TYPE_PPVAL, cres.toInt() );
 	if ( valuetype == ConstType::Double
-		|| (valuetype == ConstType::Indeterminate && cres != floor(cres)) ) {
+		|| (valuetype == ConstType::Indeterminate && cres != floor(cres.toDouble())) ) {
 		lb->SetData2( id, (char *)(&cres), sizeof(CALCVAR) );
 	}
 	if ( glmode ) lb->SetEternal( id );
@@ -2393,7 +2393,7 @@ ppresult_t CToken::PP_Enum( void )
 
 	if ( GetToken() == '=' ) {
 		if ( Calc( cres ) ) return PPRESULT_ERROR;
-		enumgc = (int)cres;
+		enumgc = cres.toInt();
 	}
 	res = enumgc++;
 	id = lb->Regist( keyword, LAB_TYPE_PPVAL, res );
@@ -3580,7 +3580,7 @@ ppresult_t CToken::Preprocess( char *str )
 			else {
 				res = PPRESULT_SUCCESS;
 				if (Calc(cres) == 0) {
-					a = (int)cres;
+					a = cres.toInt();
 					res = PP_SwitchStart(a);
 				}
 				else res = PPRESULT_ERROR;

@@ -71,8 +71,180 @@
 #define CG_LIBMODE_COM 2
 #define CG_LIBMODE_COMNEW 3
 
-#define	CALCVAR double
 
+#include <cstdint>
+#include <cmath>
+
+// value type used for compile time calculations
+class CalcValue {
+public:
+	enum class Type { Int, Int64, Float, Double };
+
+	CalcValue() : type(Type::Int) { val.i = 0; }
+	CalcValue(int v) : type(Type::Int) { val.i = v; }
+	CalcValue(long long v) : type(Type::Int64) { val.i64 = v; }
+	CalcValue(float v) : type(Type::Float) { val.f = v; }
+	CalcValue(double v) : type(Type::Double) { val.d = v; }
+
+	bool isInt() const { return type == Type::Int; }
+	bool isInt64() const { return type == Type::Int64; }
+	bool isFloat() const { return type == Type::Float; }
+	bool isDouble() const { return type == Type::Double; }
+	bool isFloating() const { return type == Type::Float || type == Type::Double; }
+	Type getType() const { return type; }
+
+	static Type widen(Type a, Type b) {
+		if (a == Type::Double || b == Type::Double) return Type::Double;
+		if (a == Type::Float || b == Type::Float) return Type::Float;
+		if (a == Type::Int64 || b == Type::Int64) return Type::Int64;
+		return Type::Int;
+	}
+
+	long long toInt() const {
+		switch(type) {
+			case Type::Int: return val.i;
+			case Type::Int64: return val.i64;
+			case Type::Float: return static_cast<long long>(val.f);
+			case Type::Double: default: return static_cast<long long>(val.d);
+		}
+	}
+	long long toInt64() const {
+		return toInt();
+	}
+	float toFloat() const {
+		switch(type) {
+			case Type::Int: return static_cast<float>(val.i);
+			case Type::Int64: return static_cast<float>(val.i64);
+			case Type::Float: return val.f;
+			case Type::Double: default: return static_cast<float>(val.d);
+		}
+	}
+	double toDouble() const {
+		switch(type) {
+			case Type::Int: return static_cast<double>(val.i);
+			case Type::Int64: return static_cast<double>(val.i64);
+			case Type::Float: return val.f;
+			case Type::Double: default: return val.d;
+		}
+	}
+
+	CalcValue operator-() const {
+		switch(type) {
+			case Type::Double: return CalcValue(-val.d);
+			case Type::Float:  return CalcValue(-val.f);
+			case Type::Int64:  return CalcValue(-val.i64);
+			case Type::Int: default: return CalcValue(-val.i);
+		}
+	}
+
+	CalcValue operator+(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		switch(rt) {
+			case Type::Double: return CalcValue(toDouble() + r.toDouble());
+			case Type::Float:  return CalcValue(toFloat() + r.toFloat());
+			case Type::Int64:  return CalcValue(toInt64() + r.toInt64());
+			case Type::Int: default: return CalcValue(toInt() + r.toInt());
+		}
+	}
+	CalcValue operator-(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		switch(rt) {
+			case Type::Double: return CalcValue(toDouble() - r.toDouble());
+			case Type::Float:  return CalcValue(toFloat() - r.toFloat());
+			case Type::Int64:  return CalcValue(toInt64() - r.toInt64());
+			case Type::Int: default: return CalcValue(toInt() - r.toInt());
+		}
+	}
+	CalcValue operator*(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		switch(rt) {
+			case Type::Double: return CalcValue(toDouble() * r.toDouble());
+			case Type::Float:  return CalcValue(toFloat() * r.toFloat());
+			case Type::Int64:  return CalcValue(toInt64() * r.toInt64());
+			case Type::Int: default: return CalcValue(toInt() * r.toInt());
+		}
+	}
+	CalcValue operator/(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		switch(rt) {
+			case Type::Double: return CalcValue(toDouble() / r.toDouble());
+			case Type::Float:  return CalcValue(toFloat() / r.toFloat());
+			case Type::Int64:  return CalcValue(toInt64() / r.toInt64());
+			case Type::Int: default: return CalcValue(toInt() / r.toInt());
+		}
+	}
+	CalcValue mod(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		switch(rt) {
+			case Type::Double:
+				return CalcValue(fmod(toDouble(), r.toDouble()));
+			case Type::Float:
+				return CalcValue(static_cast<float>(fmod(toFloat(), r.toFloat())));
+			case Type::Int64:
+				return CalcValue(toInt64() % r.toInt64());
+			case Type::Int: default:
+				return CalcValue(toInt() % r.toInt());
+		}
+	}
+
+	bool operator==(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		switch(rt) {
+			case Type::Double: return toDouble() == r.toDouble();
+			case Type::Float:  return toFloat() == r.toFloat();
+			default:           return toInt64() == r.toInt64();
+		}
+	}
+	bool operator!=(const CalcValue& r) const { return !(*this == r); }
+	bool operator<(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		switch(rt) {
+			case Type::Double: return toDouble() < r.toDouble();
+			case Type::Float:  return toFloat() < r.toFloat();
+			default:           return toInt64() < r.toInt64();
+		}
+	}
+	bool operator>(const CalcValue& r) const { return r < *this; }
+	bool operator<=(const CalcValue& r) const { return !(*this > r); }
+	bool operator>=(const CalcValue& r) const { return !(*this < r); }
+
+	CalcValue operator&(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		if (rt == Type::Int64) return CalcValue(toInt64() & r.toInt64());
+		return CalcValue(static_cast<int>(toInt()) & static_cast<int>(r.toInt()));
+	}
+	CalcValue operator|(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		if (rt == Type::Int64) return CalcValue(toInt64() | r.toInt64());
+		return CalcValue(static_cast<int>(toInt()) | static_cast<int>(r.toInt()));
+	}
+	CalcValue operator^(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		if (rt == Type::Int64) return CalcValue(toInt64() ^ r.toInt64());
+		return CalcValue(static_cast<int>(toInt()) ^ static_cast<int>(r.toInt()));
+	}
+	CalcValue operator<<(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		if (rt == Type::Int64) return CalcValue(toInt64() << r.toInt64());
+		return CalcValue(static_cast<int>(toInt()) << static_cast<int>(r.toInt()));
+	}
+	CalcValue operator>>(const CalcValue& r) const {
+		Type rt = widen(type, r.type);
+		if (rt == Type::Int64) return CalcValue(toInt64() >> r.toInt64());
+		return CalcValue(static_cast<int>(toInt()) >> static_cast<int>(r.toInt()));
+	}
+
+private:
+	Type type;
+	union {
+		int i;
+		long long i64;
+		float f;
+		double d;
+	} val;
+};
+
+using CALCVAR = CalcValue;
 #define LINEBUF_MAX 0x10000
 
 // line mode type
