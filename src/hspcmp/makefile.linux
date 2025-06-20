@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -std=c++11 --input-charset=cp932 --exec-charset=cp932 -DHSPLINUX -DHSPDEBUG
 OBJS = ahtmodel.o ahtobj.o codegen.o comutil.o errormsg.o hsc3.o \
-    hspcmd.o label.o localinfo.o main.o membuf.o strnote.o \
+    hspcmd.o label.o localinfo.o main.o membuf.o strnote.o literal.o \
     hsmanager.o tagstack.o token.o linux/supio_linux.o
 TARGET = hspcmp
 LIBS = 

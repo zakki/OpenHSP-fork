@@ -13,6 +13,7 @@
 
 #include "../hsp3/hsp3config.h"
 #include "supio.h"
+#include "literal.h"
 #include "token.h"
 #include "label.h"
 #include "tagstack.h"
@@ -2226,37 +2227,37 @@ ppresult_t CToken::PP_Define( void )
 			flg = 2;
 			macdef->index[prms] = macptr;		// 初期値ポインタの設定
 			type = GetToken();
-			switch(type) {
-			case TK_NUM:
-#ifdef HSPWIN
-				_itoa( val, word, 10 );
-#else
-				sprintf( word, "%d", val );
-#endif
-				break;
-			case TK_DNUM:
-				strcpy( word, (char *)s3 );
-				break;
+                       switch(type) {
+                       case TK_NUM: {
+                               std::string tmp = to_hsp_literal_int(val);
+                               strcpy(word, tmp.c_str());
+                               break;
+                       }
+                       case TK_DNUM:
+                               strcpy( word, (char *)s3 );
+                               break;
 			case TK_STRING:
 				sprintf( strtmp,"\"%s\"", word );
 				strcpy( word, strtmp );
 				break;
 			case TK_OBJ:
 				break;
-			case '-':
-				type = GetToken();
-				if ( type == TK_DNUM ) {
-					sprintf( strtmp,"-%s", s3 );
-					strcpy( word, strtmp );
-					break;
-				}
-				if ( type != TK_NUM ) {
-					SetError("bad default value");
-					return PPRESULT_ERROR;
-				}
-				//_itoa( val, word, 10 );
-				sprintf( word,"-%d",val );
-				break;
+                       case '-':
+                               type = GetToken();
+                               if ( type == TK_DNUM ) {
+                                       sprintf( strtmp,"-%s", s3 );
+                                       strcpy( word, strtmp );
+                                       break;
+                               }
+                               if ( type != TK_NUM ) {
+                                       SetError("bad default value");
+                                       return PPRESULT_ERROR;
+                               }
+                               {
+                                       std::string tmp = to_hsp_literal_int(-val);
+                                       strcpy(word, tmp.c_str());
+                               }
+                               break;
 			default:
 				SetError("bad default value");
 				return PPRESULT_ERROR;

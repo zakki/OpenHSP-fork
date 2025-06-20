@@ -60,10 +60,11 @@ OBJS_CMP = \
 	src/hspcmp/label.o \
 	src/hspcmp/localinfo.o \
 	src/hspcmp/main.o \
-	src/hspcmp/membuf.o \
-	src/hspcmp/strnote.o \
-	src/hspcmp/tagstack.o \
-	src/hspcmp/hsmanager.o \
+        src/hspcmp/membuf.o \
+        src/hspcmp/strnote.o \
+        src/hspcmp/literal.o \
+        src/hspcmp/tagstack.o \
+        src/hspcmp/hsmanager.o \
 	src/hspcmp/token.o \
 	src/hspcmp/linux/supio_linux.o
 

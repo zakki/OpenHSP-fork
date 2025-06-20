@@ -1,0 +1,3 @@
+mes "hello"
+mes 42
+mes 3.5
