@@ -1,0 +1,51 @@
+; Test for #const addition mixing int, float normal, float exponent, and string
+#include "hsp3cl.as"
+
+; Basic combinations: int + int
+#const add_ii   10 + 5
+; int + float (normal)
+#const add_if   10 + 5.25
+; int + float (exponent, lowercase e)
+#const add_ie   10 + 1e2
+; int + float (exponent, uppercase E)
+; #const add_ie2  10 + 1E2
+
+; float (normal) + int
+#const add_fi   5.25 + 10
+; float (normal) + float (normal)
+#const add_ff   5.25 + 2.5
+; float (normal) + float (exponent)
+#const add_fe   5.25 + 1e2
+
+; float (exponent) + int
+#const add_ei   1e2 + 10
+; float (exponent) + float (normal)
+#const add_ef   1e2 + 5.25
+; float (exponent) + float (exponent)
+#const add_ee   1e2 + 2e1
+
+; Results output
+mes "add_ii="  + str(add_ii)
+mes "add_if="  + str(add_if)
+mes "add_ie="  + str(add_ie)
+mes "add_ie2=" + str(add_ie2)
+mes "add_fi="  + str(add_fi)
+mes "add_ff="  + str(add_ff)
+mes "add_fe="  + str(add_fe)
+mes "add_ei="  + str(add_ei)
+mes "add_ef="  + str(add_ef)
+mes "add_ee="  + str(add_ee)
+
+; Complex nested expressions
+#const add_complex1  (10 + 5.25) * 2
+#const add_complex2  2 * (1e1 + 3)
+mes "add_complex1=" + str(add_complex1)
+mes "add_complex2=" + str(add_complex2)
+
+; String combinations (commented out: expected to error)
+;#const add_si   "abc" + 10
+;#const add_is   10 + "abc"
+;#const add_ss   "a" + "b"
+;mes "add_si="  + str(add_si)
+;mes "add_is=" + str(add_is)
+;mes "add_ss=" + str(add_ss)

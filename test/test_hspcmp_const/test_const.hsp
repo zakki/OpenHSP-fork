@@ -1,0 +1,89 @@
+; Test for #const directive covering data types and operators
+#include "hsp3cl.as"
+
+; Basic data types
+#const a               123
+#const b               -123
+#const c               1.5
+#const double d        2.5
+#const int    e        3.7
+#const global f        4+5*6
+#const global double g 7.5
+#const global  int   h 8.9
+
+; Arithmetic operators
+#const op_add      1+2
+#const op_sub      5-3
+#const op_mul      2*3
+#const op_div      7/2
+#const op_mod      7\2
+#const op_neg     -5
+#const op_par    (1+2)*3
+
+; Bitwise and shift
+#const op_shl     2<<3
+#const op_shr    16>>2
+#const op_and     6&3
+#const op_or      6|3
+#const op_xor     6^3
+
+; Comparison operators
+#const op_lt       2<3
+#const op_le       2<=2
+#const op_gt       3>2
+#const op_ge       3>=3
+#const op_eq       4=4
+#const op_ne       4!5
+
+; Output all constants to verify
+mes "a="      + str(a)
+mes "b="      + str(b)
+mes "c="      + str(c)
+mes "d="      + str(d)
+mes "e="      + str(e)
+mes "f="      + str(f)
+mes "g="      + str(g)
+mes "h="      + str(h)
+mes "op_add="  + str(op_add)
+mes "op_sub="  + str(op_sub)
+mes "op_mul="  + str(op_mul)
+mes "op_div="  + str(op_div)
+mes "op_mod="  + str(op_mod)
+mes "op_neg="  + str(op_neg)
+mes "op_par="  + str(op_par)
+mes "op_shl="  + str(op_shl)
+mes "op_shr="  + str(op_shr)
+mes "op_and="  + str(op_and)
+mes "op_or="   + str(op_or)
+mes "op_xor="  + str(op_xor)
+mes "op_lt="   + str(op_lt)
+mes "op_le="   + str(op_le)
+mes "op_gt="   + str(op_gt)
+mes "op_ge="   + str(op_ge)
+mes "op_eq="   + str(op_eq)
+mes "op_ne="   + str(op_ne)
+
+; Additional complex and mixed-type expressions
+#const op_mod_space   10 \ 2
+#const expr1          (1 + 2.0) / 3.4
+#const expr2          (1 + 2.0) / 3.4d
+#const expr3          10 + 20.5 * 2 - 3 / 2 \ 1
+#const expr4          ((1 + 2.0) / 3.4d) + 5 * (6 - 1)
+#const expr5          1.2f + 3.4d
+
+mes "op_mod_space=" + str(op_mod_space)
+mes "expr1="        + str(expr1)
+mes "expr2="        + str(expr2)
+mes "expr3="        + str(expr3)
+mes "expr4="        + str(expr4)
+mes "expr5="        + str(expr5)
+;
+; String plus number mix (unsupported in #const, demonstrates error)
+;#const strnum   "abc" + 1
+;mes "strnum=" + str(strnum)
+
+; Test basic #const with explicit type and simple literal
+#const double dnum    1
+mes "dnum="         + str(dnum)
+#const int inum       1
+mes "inum="         + str(inum)
