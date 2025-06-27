@@ -360,12 +360,30 @@ static void hsp3dish_initwindow( engine* p_engine, int sx, int sy, char *windowt
 		printf("Unable to set window: %s\n", SDL_GetError());
 		return;
 	}
+#if 0
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	context = SDL_GL_CreateContext(window);
-	if ( window==NULL ) {
+	if ( context==NULL ) {
 		printf("Unable to set GLContext: %s\n", SDL_GetError());
 		return;
 	}
+#else
+	if (!emscripten_supports_offscreencanvas())
+	{
+		printf("Current browser does not support OffscreenCanvas. Skipping this test.\n");
+		return;
+	}
+	EmscriptenWebGLContextAttributes attr;
+	emscripten_webgl_init_context_attributes(&attr);
+	attr.explicitSwapControl = EM_TRUE;
+	// attr.renderViaOffscreenBackBuffer = EM_TRUE;
+	EM_ASM_({
+		GL.offscreenCanvases["dummycanvas"] = new OffscreenCanvas(960, 640);
+	});
+	EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#dummycanvas", &attr);
+	printf("Created context with handle %u\n", (unsigned int)ctx);
+	emscripten_webgl_make_context_current(ctx);
+#endif
 
 	// 描画APIに渡す
 	hgio_init( 0, sx, sy, p_engine );
@@ -496,7 +514,10 @@ void hsp3dish_msgfunc( HSPCTX *hspctx )
 			tick = hgio_gettick();
 			if ( code_exec_await( tick ) != RUNMODE_RUN ) {
 				//MsgWaitForMultipleObjects(0, NULL, FALSE, hspctx->waittick - tick, QS_ALLINPUT );
-				//printf("AWAIT WAIT %d < %d\n", tick, ctx->waittick);
+				int i = 0;
+				for (; hgio_gettick() < hspctx->waittick; i++ ) {
+				}
+				printf("AWAIT WAIT %d < %d spinlock:%d\n", tick, ctx->waittick, i);
 			} else {
 				//printf("AWAIT RUN %d < %d\n", tick, ctx->waittick);
 				ctx->runmode = RUNMODE_AWAIT;
@@ -900,7 +921,7 @@ char *hsp3dish_getlog(void)
 #endif
 }
 
-
+#if 0
 extern int code_execcmd_one( int& prev );
 
 void hsp3dish_exec_one( void )
@@ -973,6 +994,8 @@ void hsp3dish_exec_one( void )
 	hsp3dish_bye();
 	exit(0);
 }
+#else
+#endif
 
 extern "C"
 {
@@ -1004,9 +1027,32 @@ int hsp3dish_exec( void )
 	//
 	hsp3dish_msgfunc( ctx );
 
+#if 0
 	//		実行の開始
 	//
+	printf("RUN %d %d\n", hsp_fps, hsp_limit_step_per_frame);
 	emscripten_set_main_loop(hsp3dish_exec_one, hsp_fps, 1);
+#else
+	int runmode;
+	int endcode;
+
+	printf("CALL code_execcmd\n");
+	runmode = code_execcmd();
+	printf("runmode %d\n", runmode);
+	if ( runmode == RUNMODE_ERROR ) {
+		try {
+				hsp3dish_error();
+		}
+		catch( ... ) {
+		}
+		hsp3dish_bye();
+		return -1;
+	}
+
+	endcode = ctx->endcode;
+	hsp3dish_bye();
+	return endcode;
+#endif
 
 	return 0;
 }

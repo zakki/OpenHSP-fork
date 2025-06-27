@@ -3136,7 +3136,7 @@ rerun:
 #ifdef HSPERR_HANDLE
 	try {
 #endif
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && 0
 		{
 #else
 		while(1) {
@@ -3162,7 +3162,7 @@ rerun:
 					return hspctx->runmode;
 				}
 			}
-#ifdef HSPEMSCRIPTEN
+#if defined(HSPEMSCRIPTEN) && 0
 			return RUNMODE_RUN;
 #else
 #endif

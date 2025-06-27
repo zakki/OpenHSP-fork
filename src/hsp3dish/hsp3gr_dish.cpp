@@ -38,7 +38,7 @@ char *hsp3dish_getlog(void);		// for gameplay3d log
 #endif
 
 #define USE_WEBTASK
-#define USE_MMAN
+// #define USE_MMAN
 #define USE_ESSPRITE
 
 /*------------------------------------------------------------*/
@@ -4522,16 +4522,20 @@ void hsp3excmd_init_mmsystem(int flag)
 	//		flag=0:OFF/1:ON
 	//
 	if (flag) {
+#ifdef USE_MMAN
 		if (mmman == NULL) {
 			mmman = new MMMan;
 			mmman->Reset(ctx->wnd_parent);
 		}
+#endif
 	}
 	else {
+#ifdef USE_MMAN
 		if (mmman) {
 			delete mmman;
 			mmman = NULL;
 		}
+#endif
 	}
 }
 

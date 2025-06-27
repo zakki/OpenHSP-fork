@@ -8,19 +8,26 @@ CFLAGS_CORE = -Wall -DNDEBUG -DHSPDISH -DHSPEMSCRIPTEN -DHSPDEBUG \
 	   -fpermissive \
 	   -s DISABLE_EXCEPTION_CATCHING=0 \
 	   -lidbfs.js
-CFLAGS_DEBUG =
-#CFLAGS_DEBUG = -g3 --js-opts 0
+# CFLAGS_DEBUG =
+CFLAGS_DEBUG = -g3 --js-opts 0
 #CFLAGS_DEBUG = -g3 --js-opts 0 -s SAFE_HEAP=1
 
-CFLAGS = $(CFLAGS_CORE) $(CFLAGS_DEBUG) -DUSE_OBAQ\
+CFLAGS = $(CFLAGS_CORE) $(CFLAGS_DEBUG) -DUSE_OBAQ \
 	   -s USE_SDL=2 -s USE_SDL_TTF=2 -s USE_SDL_IMAGE=2 -s USE_SDL_MIXER=2 \
 	   -s "SDL2_MIXER_FORMATS=['ogg', 'mp3']" \
+	   -pthread -sPTHREAD_POOL_SIZE=1 -sOFFSCREENCANVAS_SUPPORT -sOFFSCREEN_FRAMEBUFFER \
+	   -sASSERTIONS \
+	   -sEXIT_RUNTIME \
 	   -O3 \
 	   -s LEGACY_GL_EMULATION=1
+
+	   # -sOFFSCREENCANVAS_SUPPORT
 
 CFLAGS_GP = $(CFLAGS_CORE) $(CFLAGS_DEBUG) \
 		  -s USE_SDL=2 -s USE_SDL_TTF=2 -s USE_SDL_MIXER=2 \
 		  -s "SDL2_MIXER_FORMATS=['ogg', 'mp3']" \
+		  -pthread -sPTHREAD_POOL_SIZE=1 -sOFFSCREENCANVAS_SUPPORT -sOFFSCREEN_FRAMEBUFFER \
+		  -sEXIT_RUNTIME \
 		  -D_LARGEFILE64_SOURCE -O3\
 		  -DHSPDISHGP \
 		  -I src/hsp3dish/emscripten/extlib/include -I src/hsp3dish/extlib/src -I src/hsp3dish/gameplay/src -I src/hsp3dish/win32gp
@@ -426,7 +433,7 @@ LIBS_GP = \
 	libBulletCollision.js.a \
 	libLinearMath.js.a
 
-TARGETS = hsp3dish.js hsp3dish-gp.js
+TARGETS = hsp3dish.js hsp3dish-gp.js hsp3dish.html hsp3dish-gp.html
 
 all: $(TARGETS)
 
@@ -439,6 +446,24 @@ hsp3dish.js: $(OBJS) src/hsp3dish/emscripten/license.js
 hsp3dish-gp.js: $(OBJS_GP) $(LIBS_GP) src/hsp3dish/emscripten/license.js
 	$(CXX) $(CFLAGS_GP) $(LINK_FLAGS_GP) $(OBJS_GP) $(LIBS_GP) -o hsp3dish-gp.js \
 	--extern-pre-js src/hsp3dish/emscripten/license.js
+
+hsp3dish.html: $(OBJS) src/hsp3dish/emscripten/license.js makefile.emscripten
+	$(CXX) $(CFLAGS) $(LINK_FLAGS) $(OBJS) -o $@ \
+	-sMINIFY_HTML=0 \
+	--shell-file=src/hsp3dish/emscripten/shell_minimal.html \
+	--extern-pre-js src/hsp3dish/emscripten/license.js \
+	--post-js test-post.js
+
+hsp3dish-gp.html: $(OBJS_GP) $(LIBS_GP) src/hsp3dish/emscripten/license.js makefile.emscripten
+	$(CXX) $(CFLAGS_GP) $(LINK_FLAGS_GP) $(OBJS_GP) $(LIBS_GP) \
+	-o $@ \
+	-sMINIFY_HTML=0 \
+	--shell-file=src/hsp3dish/emscripten/shell_minimal.html \
+	--extern-pre-js src/hsp3dish/emscripten/license.js \
+	--post-js test-post.js
+
+		# -sPROXY_TO_WORKER_FILENAME=hsp3dish-gp-ptw.js
+
 
 libgameplay.js.a: $(OBJS_GAMEPLAY)
 	rm -f $@
@@ -472,5 +497,6 @@ libLinearMath.js.a: $(OBJS_LINEAR_MATH)
 	$(CXX) $(CFLAGS_GP) -std=c++11 -c $< -o $*.g.o
 
 clean:
-	rm -f $(OBJS) $(OBJS_GP) $(OBJS_GAMEPLAY) $(TARGETS)
+	rm -f $(OBJS) $(OBJS_GP) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
+	rm -f $(OBJS_GAMEPLAY) $(OBJS_BULLET_COLLISION) $(OBJS_BULLET_DYNAMICS) $(OBJS_LINEAR_MATH)
 

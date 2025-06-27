@@ -793,21 +793,25 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 	//
 
 	EM_ASM_({
-		let canvas = document.getElementById('hsp3dishFontCanvas');
+		// let canvas = document.getElementById('hsp3dishFontCanvas');
+		let canvas = globalThis.hsp3dishFontCanvas;// document.getElementById('hsp3dishFontCanvas');
 		if (!canvas) {
-			canvas = document.createElement("canvas");
-			canvas.id = 'hsp3dishFontCanvas';
-			canvas.style.setProperty("visibility", "hidden");
-			canvas.style.setProperty("position", "absolute");
-			canvas.style.setProperty("top", "0");
-			canvas.style.setProperty("left", "0");
-			document.body.appendChild(canvas);
+			canvas = new OffscreenCanvas(256, 256);
+			// canvas = document.createElement("canvas");
+			// canvas.id = 'hsp3dishFontCanvas';
+			// canvas.style.setProperty("visibility", "hidden");
+			// canvas.style.setProperty("position", "absolute");
+			// canvas.style.setProperty("top", "0");
+			// canvas.style.setProperty("left", "0");
+			// document.body.appendChild(canvas);
+			globalThis.hsp3dishFontCanvas = canvas;
 		}
 	});
 
 	if (buffer == NULL) {
 		EM_ASM_({
-			const canvas = document.getElementById('hsp3dishFontCanvas');
+			// const offscreen = new OffscreenCanvas(256, 256);
+			const canvas = globalThis.hsp3dishFontCanvas;// document.getElementById('hsp3dishFontCanvas');
 			const context = canvas.getContext("2d", { willReadFrequently: true });
 			const msg = UTF8ToString($0);
 			const fontname = UTF8ToString($1);
@@ -847,7 +851,9 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 	int sy = Get2N(fontsystem_sy);
 
 	EM_ASM_({
-		const canvas = document.getElementById('hsp3dishFontCanvas');
+			// const offscreen = new OffscreenCanvas(256, 256);
+		const canvas = globalThis.hsp3dishFontCanvas;// document.getElementById('hsp3dishFontCanvas');
+		// const canvas = document.getElementById('hsp3dishFontCanvas');
 		if (canvas.width < $4)
 			canvas.width = $4;
 		if (canvas.height < $5)

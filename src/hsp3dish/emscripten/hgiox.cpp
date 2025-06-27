@@ -2286,8 +2286,16 @@ int hgio_render_end( void )
 #endif
 
 #if defined(HSPEMSCRIPTEN)
+/*
+    EMSCRIPTEN_RESULT r = emscripten_webgl_commit_frame();
+    if (r != EMSCRIPTEN_RESULT_SUCCESS)
+    {
+        GP_ERROR("Failed to commit frame: %d", r);
+    }
 	SDL_GL_SwapWindow(window);
+		*/
 	//SDL_GL_SwapBuffers();
+	printf("hgio_render_end: %d\n", r);
 #endif
 #if defined(HSPLINUX)
 

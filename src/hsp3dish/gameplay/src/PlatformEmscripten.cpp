@@ -16,6 +16,11 @@
 #include "SDL2/SDL_image.h"
 //#include "SDL2/SDL_opengl.h"
 
+#ifdef HSPEMSCRIPTEN
+#include <emscripten/html5_webgl.h>
+#include <emscripten/html5.h>
+#endif
+
 extern SDL_Window *window;
 
 #define TOUCH_COUNT_MAX     4
@@ -26,6 +31,9 @@ using namespace std;
 int __argc = 0;
 char** __argv = 0;
 
+std::vector<int> renderResult;
+std::vector<int> renderBuffer;
+
 struct timespec __timespec;
 static double __timeStart;
 static double __timeAbsolute;
@@ -35,7 +43,7 @@ static float __mouseCapturePointX = 0;
 static float __mouseCapturePointY = 0;
 static bool __multiSampling = false;
 static bool __cursorVisible = true;
-static int __windowSize[2];
+int __windowSize[2];
 static void* __attachToWindow;
 
 namespace gameplay
@@ -180,7 +188,66 @@ namespace gameplay
 
     void Platform::swapBuffers()
     {
-	  SDL_GL_SwapWindow(window);
+#ifdef HSPEMSCRIPTEN
+/*
+        EMSCRIPTEN_RESULT r = emscripten_webgl_commit_frame();
+        if (r != EMSCRIPTEN_RESULT_SUCCESS)
+        {
+            printf("Failed to commit frame: %d", r);
+        }*/
+
+        if (renderResult.size() != __windowSize[0] * __windowSize[1])
+        {
+            // Allocate memory for the render result buffer
+            renderResult.resize(__windowSize[0] * __windowSize[1] );
+            renderBuffer.resize(__windowSize[0] * __windowSize[1] );
+        }
+        /*
+        static uint32_t callCount = 0;
+        callCount++;
+        int fillColor = 0xff000000;
+        if (callCount / 256 % 3 == 0)
+        {
+            fillColor = fillColor | ((callCount % 256) << 16); // Red
+        } else if (callCount / 256 % 3 == 1)
+        {
+            fillColor = fillColor | ((callCount % 256) << 8); // Green
+        } 
+        else if (callCount / 256 % 3 == 2)
+        {
+            fillColor = fillColor | (callCount % 256); // Blue
+        }
+        int* pixels = (int*)renderResult;
+        for (int i = 0; i < __windowSize[0] * __windowSize[1]; i++)
+        {
+            pixels[i] = fillColor;
+        }*/
+
+        //glReadBuffer( GL_BACK );
+        GL_ASSERT(glReadPixels(
+            0,
+            0,
+            __windowSize[0],
+            __windowSize[1],
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            renderBuffer.data()
+        ));
+        // 上下反転
+        for (int y = 0; y < __windowSize[1]; y++)
+        {
+            for (int x = 0; x < __windowSize[0]; x++)
+            {
+                int srcIndex = (y * __windowSize[0]) + x;
+                int dstIndex = ((__windowSize[1] - 1 - y) * __windowSize[0]) + x;
+                renderResult[dstIndex] = renderBuffer[srcIndex];
+            }
+        }
+
+#else
+        printf("Platform::swapBuffers\n");
+#endif
+        SDL_GL_SwapWindow(window);
     }
 
     void Platform::sleep(long ms)
