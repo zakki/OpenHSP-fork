@@ -1,21 +1,23 @@
 goto *MAIN
 // #define global M_PI            3.14159265358979323846
-#defcfunc drand
-	return double(rnd(32768)) / 32768.0
 
 #chsp_module "ao_opt"
-#chsp_defcfunc double vdot double array v0, double array v1
+#chsp_defcfunc double drand
+	return double(rnd(32768)) / 32768.0
+#chsp_end
+
+#chsp_defcfunc double vdot array[double] v0, array[double] v1
 	return v0(0) * v1(0) + v0(1) * v1(1) + v0(2) * v1(2)
 #chsp_end
 
-#chsp_deffunc vcross double array c, double array v0, double array v1
+#chsp_deffunc vcross array[double] c, array[double] v0, array[double] v1
 	c(0) = v0(1) * v1(2) - v0(2) * v1(1)
 	c(1) = v0(2) * v1(0) - v0(0) * v1(2)
 	c(2) = v0(0) * v1(1) - v0(1) * v1(0)
 	return
 #chsp_end
 
-##chsp_deffunc vnormalize double array c, local double len
+##chsp_deffunc vnormalize array[double] c, local[double] len
 	len = chsp_sqrt(vdot(c, c))
 	c(0) /= len
 	c(1) /= len
@@ -27,18 +29,18 @@ goto *MAIN
 	mes "(" + vec(0) + ", " + vec(1) + ", " + vec(2) + ")"
 	return
 
-#chsp_defcfunc double vadot double array v0, int i0, double array v1, int i1
+#chsp_defcfunc double vadot array[double] v0, int i0, array[double] v1, int i1
 	return v0(i0*3+0) * v1(i1*3+0) + v0(i0*3+1) * v1(i1*3+1) + v0(i0*3+2) * v1(i1*3+2)
 #chsp_end
 
-#chsp_deffunc vacross double array c, int ci, double array v0, int i0, double array v1, int i1
+#chsp_deffunc vacross array[double] c, int ci, array[double] v0, int i0, array[double] v1, int i1
 	c(ci*3+0) = v0(i0*3+1) * v1(i1*3+2) - v0(i0*3+2) * v1(i1*3+1)
 	c(ci*3+1) = v0(i0*3+2) * v1(i1*3+0) - v0(i0*3+0) * v1(i1*3+2)
 	c(ci*3+2) = v0(i0*3+0) * v1(i1*3+1) - v0(i0*3+1) * v1(i1*3+0)
 	return
 #chsp_end
 
-#chsp_deffunc vanormalize double array c, int i, local double len
+#chsp_deffunc vanormalize array[double] c, int i, local[double] len
 	len = chsp_sqrt(vadot(c, i, c, i))
 	c(i*3+0) /= len
 	c(i*3+1) /= len
@@ -50,7 +52,7 @@ goto *MAIN
 	mes "(" + vec(i*3+0) + ", " + vec(i*3+1) + ", " + vec(i*3+2) + ")"
 	return
 
-#chsp_deffunc ray_sphere_intersect double array spheres_center, double array spheres_radius, double array spheres_col, double array isect, double array isect_p, double array isect_n, double array ray_org, double array ray_dir, int no, local double rs, local double b, local double c, local double d, local double t
+#chsp_deffunc ray_sphere_intersect array[double] spheres_center, array[double] spheres_radius, array[double] spheres_col, array[double] isect, array[double] isect_p, array[double] isect_n, array[double] ray_org, array[double] ray_dir, int no, local[double[3]] rs, local[double] b, local[double] c, local[double] d, local[double] t
 	ddim rs, 3
 	rs(0) = ray_org(0) - spheres_center(no, 0)
 	rs(1) = ray_org(1) - spheres_center(no, 1)
@@ -61,7 +63,6 @@ goto *MAIN
 	d = b * b - c
 	if (d > 0) {
 		t = -b - sqrt(d)
-//			color 255,0,0 : pos 0,0 : mes "d = " + d + ", " + t
 		if ((t > 0) && (t < isect(0))) {
 			isect(0) = t
 			isect(1) += 1.0
@@ -84,7 +85,7 @@ goto *MAIN
 	return
 #chsp_end
 
-#deffunc ray_plane_intersect array double plane_p, array double plane_n, array double plane_col, array double isect, array double isect_p, array double isect_n, array double ray_org, array double ray_dir, local double rs, local d, local v, local t
+#chsp_deffunc ray_plane_intersect array[double] plane_p, array[double] plane_n, array[double] plane_col, array[double] isect, array[double] isect_p, array[double] isect_n, array[double] ray_org, array[double] ray_dir, local[double] rs, local[double] d, local[double] v, local[double] t
 	d = - vdot(plane_p, plane_n)
 	v = vdot(ray_dir, plane_n)
 
@@ -109,13 +110,11 @@ goto *MAIN
 		isect_n(0) = plane_n(0)
 		isect_n(1) = plane_n(1)
 		isect_n(2) = plane_n(2)
-
-//color 255, 0, 0 : mes " " + isect(2) + "." + isect(3) + "." + isect(4)
 	}
 	return
 #chsp_end
 
-#deffunc ortho_basis array basis, array n
+#chsp_deffunc ortho_basis array[double] basis, array[double] n
 	basis(2*3+0) = n(0)
 	basis(2*3+1) = n(1)
 	basis(2*3+2) = n(2)
@@ -140,13 +139,19 @@ goto *MAIN
 	vanormalize basis, 1
 
 	return
+#chsp_end
 
 #define eps 0.0001
 
-#deffunc ambient_occlusion array col, array isect, array isect_p, array isect_n,\
-				local p, local occlusion, local theta, local phi,\
-				local x, local y, local z, local rx, local ry, local rz,\
-				local oray_org, local oray_dir, local occIsect, local occIsect_p, local occIsect_n
+#chsp_deffunc ambient_occlusion \
+				int nao_samples,\
+				array[double] spheres_center, array[double] spheres_radius, array[double] spheres_col,\
+				array[double] plane_p, array[double] plane_n, array[double] plane_col,\
+				array[double] col, array[double] isect, array[double] isect_p, array[double] isect_n,\
+				local[int] i, local[int] j,\
+				local[double[3]] p, local[double[9]] basis, local[double] occlusion, local[double] theta, local[double] phi,\
+				local[double] x, local[double] y, local[double] z, local[double] rx, local[double] ry, local[double] rz,\
+				local[double[3]] oray_org, local[double[3]] oray_dir, local[double[5]] occIsect, local[double[3]] occIsect_p, local[double[3]] occIsect_n
 
 	ddim oray_org, 3
 	ddim oray_dir, 3
@@ -155,7 +160,6 @@ goto *MAIN
 	ddim occIsect_n, 3
 	ddim p, 3
 	ddim basis, 3*3
-	ddim occlusion, 3
 
 	p(0) = isect_p(0) + eps * isect_n(0)
 	p(1) = isect_p(1) + eps * isect_n(1)
@@ -163,13 +167,11 @@ goto *MAIN
 
 	ortho_basis basis, isect_n
 
-	occlusion(0) = 0.0
-	occlusion(1) = 0.0
-	occlusion(2) = 0.0
+	occlusion = 0.0
 
-	repeat nao_samples@
+	repeat nao_samples
 		j = cnt
-		repeat nao_samples@
+		repeat nao_samples
 			i = cnt
 			theta = sqrt(1.0 * drand())
 			phi = 2.0 * M_PI * drand()
@@ -196,23 +198,23 @@ goto *MAIN
 			occIsect(3) = 0.0
 			occIsect(4) = 0.0
 
-			ray_sphere_intersect spheres_center@, spheres_radius@, spheres_col@, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir, 0
-			ray_sphere_intersect spheres_center@, spheres_radius@, spheres_col@, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir, 1
-			ray_sphere_intersect spheres_center@, spheres_radius@, spheres_col@, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir, 2
-			ray_plane_intersect plane_p@, plane_n@, plane_col@, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir
+			ray_sphere_intersect spheres_center, spheres_radius, spheres_col, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir, 0
+			ray_sphere_intersect spheres_center, spheres_radius, spheres_col, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir, 1
+			ray_sphere_intersect spheres_center, spheres_radius, spheres_col, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir, 2
+			ray_plane_intersect plane_p, plane_n, plane_col, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir
 			if (occIsect(1) > 0) {
 				occlusion += 1.0
 			}
 		loop
 	loop
 
-	occlusion = double(nao_samples@ * nao_samples@ - occlusion) / double(nao_samples@ * nao_samples@)
+	occlusion = double(nao_samples * nao_samples - occlusion) / double(nao_samples * nao_samples)
 	col(0) = occlusion
 	col(1) = occlusion
 	col(2) = occlusion
 	return
 
-#global
+#chsp_module_end
 
 
 *MAIN
@@ -223,15 +225,6 @@ goto *MAIN
 	screen 0, w, h
 	randomize
 
-	/*repeat w * h
-		x = int(drand() * w)
-		y = int(drand() * h)
-
-		color 0, 0, 255
-		boxf x, y, x+1, y+1
-	loop
-	mes "OK"
-	wait 1000 */
 	repeat
 	gosub *INIT
 	gosub *RENDER
@@ -322,9 +315,7 @@ goto *MAIN
 					ray_plane_intersect plane_p, plane_n, plane_col, isect, isect_p, isect_n, ray_org, ray_dir
 
 					if (isect(1) > 0) {
-						ambient_occlusion col, isect, isect_p, isect_n
-//zz = 0.02 * isect_p(2) + 0.2
-//cr += zz
+						ambient_occlusion nao_samples, spheres_center, spheres_radius, spheres_col, plane_p, plane_n, plane_col, col, isect, isect_p, isect_n
 						cr += col(0)
 						cg += col(1)
 						cb += col(2)
@@ -364,5 +355,3 @@ goto *MAIN
 	endtime = (gettime(5) * 60 + gettime(6)) * 1000 + gettime(7)
 	prev = "" + double(endtime - starttime) / 1000 + "sec"
 	goto *MAIN
-	// stop
-	// return
