@@ -4,27 +4,29 @@
 //			onion software/onitama 2002/10
 //
 #include "tagstack.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 //-------------------------------------------------------------
 //		Routines
 //-------------------------------------------------------------
 
-int CTagStack::StrCmp( char *str1, char *str2 )
+int CTagStack::StrCmp( const char *str1, const char *str2 )
 {
 	//	string compare (0=not same/-1=same)
 	//  (case sensitive)
 	int ap;
 	char as;
 	ap = 0;
-	while ( 1 ) {
+	while ( true ) {
 		as = str1[ap];
-		if ( as != str2[ap] )
+		if ( as != str2[ap] ) {
 			return 0;
-		if ( as == 0 )
+		}
+		if ( as == 0 ) {
 			break;
+		}
 		ap++;
 	}
 	return -1;
@@ -36,11 +38,13 @@ int CTagStack::SearchTagID( char *tag )
 	//		タグを検索
 	//
 	int i;
-	if ( tagent == 0 )
+	if ( tagent == 0 ) {
 		return -1;
+	}
 	for ( i = 0; i < tagent; i++ ) {
-		if ( StrCmp( mem_tag[i].name, tag ) )
+		if ( StrCmp( mem_tag[i].name, tag ) != 0 ) {
 			return i;
+		}
 	}
 	return -1;
 }
@@ -50,14 +54,17 @@ int CTagStack::RegistTagID( char *tag )
 {
 	//		タグを登録
 	//
-	int i, len;
-	if ( tagent >= TAGSTK_TAGMAX )
+	int i;
+	int len;
+	if ( tagent >= TAGSTK_TAGMAX ) {
 		return -1;
+	}
 	i = tagent;
 	tagent++;
 	len = strlen( tag );
-	if ( len >= TAGSTK_TAGSIZE )
+	if ( len >= TAGSTK_TAGSIZE ) {
 		tag[TAGSTK_TAGSIZE - 1] = 0;
+	}
 	strcpy( mem_tag[i].name, tag );
 	return i;
 }
@@ -94,8 +101,9 @@ char *CTagStack::GetTagName( int tagid )
 {
 	//		タグID->タグ名 に変換する
 	//
-	if ( ( tagid < 0 ) || ( tagid >= TAGSTK_TAGMAX ) )
+	if ( ( tagid < 0 ) || ( tagid >= TAGSTK_TAGMAX ) ) {
 		return tagerr;
+	}
 	return mem_tag[tagid].name;
 }
 
@@ -105,28 +113,33 @@ int CTagStack::StackCheck( char *res )
 	//		すべてのスタックが解決されているかをチェック
 	//			0=OK/1>=NG (resにエラースタックを含むタグ一覧)
 	//
-	int i, n;
+	int i;
+	int n;
 	TAGDATA *t;
 	strcpy( res, "\t" );
 	for ( i = 0; i < TAGSTK_TAGMAX; i++ ) {
 		mem_tag[i].check = 0;
 	}
-	if ( lastidx < 1 )
+	if ( lastidx < 1 ) {
 		return 0;
+	}
 	i = lastidx;
-	while ( 1 ) {
+	while ( true ) {
 		i--;
-		if ( i < 0 )
+		if ( i < 0 ) {
 			break;
+		}
 		t = &mem_buf[i];
-		if ( t->tagid >= 0 )
+		if ( t->tagid >= 0 ) {
 			mem_tag[t->tagid].check = -1;
+		}
 	}
 	n = 0;
 	for ( i = 0; i < TAGSTK_TAGMAX; i++ ) {
-		if ( mem_tag[i].check ) {
-			if ( n )
+		if ( mem_tag[i].check != 0 ) {
+			if ( n != 0 ) {
 				strcat( res, ", " );
+			}
 			strcat( res, mem_tag[i].name );
 			n++;
 		}
@@ -139,19 +152,23 @@ int CTagStack::PushTag( int tagid, char *str )
 {
 	//		タグID,strをスタックに入れる
 	//
-	int i, len;
+	int i;
+	int len;
 	TAGDATA *t;
-	if ( ( tagid < 0 ) || ( tagid >= TAGSTK_TAGMAX ) )
+	if ( ( tagid < 0 ) || ( tagid >= TAGSTK_TAGMAX ) ) {
 		return -1;
-	if ( lastidx >= TAGSTK_MAX )
+	}
+	if ( lastidx >= TAGSTK_MAX ) {
 		return -1;
+	}
 	i = lastidx;
 	lastidx++;
 	t = &mem_buf[i];
 	t->tagid = tagid;
 	len = strlen( str );
-	if ( len >= TAGSTK_SIZE )
+	if ( len >= TAGSTK_SIZE ) {
 		str[TAGSTK_SIZE - 1] = 0;
+	}
 	strcpy( t->data, str );
 	return i;
 }
@@ -164,27 +181,33 @@ char *CTagStack::PopTag( int tagid )
 	int i;
 	TAGDATA *t;
 	char *p;
-	if ( ( tagid < 0 ) || ( tagid >= TAGSTK_TAGMAX ) )
-		return NULL;
-	if ( lastidx < 1 )
-		return NULL;
+	if ( ( tagid < 0 ) || ( tagid >= TAGSTK_TAGMAX ) ) {
+		return nullptr;
+	}
+	if ( lastidx < 1 ) {
+		return nullptr;
+	}
 	i = lastidx;
-	while ( 1 ) { // スタックを辿る
+	while ( true ) { // スタックを辿る
 		i--;
-		if ( i < 0 )
-			return NULL;
+		if ( i < 0 ) {
+			return nullptr;
+		}
 		t = &mem_buf[i];
-		if ( t->tagid == tagid )
+		if ( t->tagid == tagid ) {
 			break;
+		}
 	}
 	p = t->data;
 	t->tagid = -1;
 	i = lastidx - 1;
-	while ( 1 ) {
-		if ( i < 0 )
+	while ( true ) {
+		if ( i < 0 ) {
 			break;
-		if ( mem_buf[i].tagid != -1 )
+		}
+		if ( mem_buf[i].tagid != -1 ) {
 			break;
+		}
 		lastidx = i;
 		i--;
 	}
@@ -197,22 +220,27 @@ char *CTagStack::LookupTag( int tagid, int level )
 	//		タグIDに対応したスタックstrを取り出す(POPしない)
 	//				(level=スタック段数0,1,2…)
 	//
-	int i, lv;
+	int i;
+	int lv;
 	TAGDATA *t;
-	if ( ( tagid < 0 ) || ( tagid >= TAGSTK_TAGMAX ) )
-		return NULL;
-	if ( lastidx < 1 )
-		return NULL;
+	if ( ( tagid < 0 ) || ( tagid >= TAGSTK_TAGMAX ) ) {
+		return nullptr;
+	}
+	if ( lastidx < 1 ) {
+		return nullptr;
+	}
 	lv = level;
 	i = lastidx;
-	while ( 1 ) { // スタックを辿る
+	while ( true ) { // スタックを辿る
 		i--;
-		if ( i < 0 )
-			return NULL;
+		if ( i < 0 ) {
+			return nullptr;
+		}
 		t = &mem_buf[i];
 		if ( t->tagid == tagid ) {
-			if ( lv == 0 )
+			if ( lv == 0 ) {
 				break;
+			}
 			lv--;
 		}
 	}
@@ -224,24 +252,19 @@ char *CTagStack::LookupTag( int tagid, int level )
 //		Interfaces
 //-------------------------------------------------------------
 
-CTagStack::CTagStack()
+CTagStack::CTagStack() : tagent( 0 ), lastidx( 0 ), gcount( 0 )
 {
-	int i;
-	for ( i = 0; i < TAGSTK_TAGMAX; i++ ) {
-		mem_tag[i].name[0] = 0;
-		mem_tag[i].uid = 0;
+	for ( auto &i : mem_tag ) {
+		i.name[0] = 0;
+		i.uid = 0;
 	}
-	for ( i = 0; i < TAGSTK_MAX; i++ ) {
-		mem_buf[i].data[0] = 0;
-		mem_buf[i].tagid = -1;
+	for ( auto &i : mem_buf ) {
+		i.data[0] = 0;
+		i.tagid = -1;
 	}
-	tagent = 0;
-	lastidx = 0;
-	gcount = 0;
+
 	strcpy( tagerr, "%err%" );
 }
 
 
-CTagStack::~CTagStack()
-{
-}
+CTagStack::~CTagStack() = default;

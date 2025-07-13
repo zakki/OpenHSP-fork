@@ -5,9 +5,9 @@
 //
 #include "hsmanager.h"
 #include "../hsp3/hsp3config.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 //-------------------------------------------------------------
 //		Routines
@@ -19,7 +19,7 @@ void HspHelpManager::strsp_ini( char *src )
 	srcstr = src;
 }
 
-char *HspHelpManager::strsp_getptr( void )
+char *HspHelpManager::strsp_getptr()
 {
 	return srcstr + splc;
 }
@@ -39,31 +39,39 @@ int HspHelpManager::strsp_get( char splitchr )
 	char *dststr = spltmp;
 	int len = SPLTMP_MAX;
 
-	while ( 1 ) {
+	while ( true ) {
 		utf8cnt = 0;
 		a1 = srcstr[splc];
-		if ( a1 == 0 )
+		if ( a1 == 0 ) {
 			break;
+		}
 		splc++;
 		if ( a1 >= 128 ) { // 多バイト文字チェック
-			if ( ( a1 >= 192 ) && ( srcstr[splc + utf8cnt] != 0 ) )
+			if ( ( a1 >= 192 ) && ( srcstr[splc + utf8cnt] != 0 ) ) {
 				utf8cnt++;
-			if ( ( a1 >= 224 ) && ( srcstr[splc + utf8cnt] != 0 ) )
+			}
+			if ( ( a1 >= 224 ) && ( srcstr[splc + utf8cnt] != 0 ) ) {
 				utf8cnt++;
-			if ( ( a1 >= 240 ) && ( srcstr[splc + utf8cnt] != 0 ) )
+			}
+			if ( ( a1 >= 240 ) && ( srcstr[splc + utf8cnt] != 0 ) ) {
 				utf8cnt++;
-			if ( ( a1 >= 248 ) && ( srcstr[splc + utf8cnt] != 0 ) )
+			}
+			if ( ( a1 >= 248 ) && ( srcstr[splc + utf8cnt] != 0 ) ) {
 				utf8cnt++;
-			if ( ( a1 >= 252 ) && ( srcstr[splc + utf8cnt] != 0 ) )
+			}
+			if ( ( a1 >= 252 ) && ( srcstr[splc + utf8cnt] != 0 ) ) {
 				utf8cnt++;
+			}
 		}
 
-		if ( a1 == splitchr )
+		if ( a1 == splitchr ) {
 			break;
+		}
 		if ( a1 == 13 ) {
 			a2 = srcstr[splc];
-			if ( a2 == 10 )
+			if ( a2 == 10 ) {
 				splc++;
+			}
 			break;
 		}
 		if ( a1 == 10 ) {
@@ -77,8 +85,9 @@ int HspHelpManager::strsp_get( char splitchr )
 				utf8cnt--;
 			}
 		}
-		if ( a >= len - 5 )
+		if ( a >= len - 5 ) {
 			break;
+		}
 	}
 	for ( int i = a; i < a + 6; i++ ) {
 		dststr[i] = 0;
@@ -140,10 +149,8 @@ int HspHelpManager::strsp_get( char splitchr )
 //		Interfaces
 //-------------------------------------------------------------
 
-HspHelpManager::HspHelpManager()
+HspHelpManager::HspHelpManager() : hsbuf( nullptr ), indexbuf( nullptr )
 {
-	hsbuf = NULL;
-	indexbuf = NULL;
 }
 
 
@@ -153,15 +160,15 @@ HspHelpManager::~HspHelpManager()
 }
 
 
-void HspHelpManager::terminate( void )
+void HspHelpManager::terminate()
 {
-	if ( hsbuf ) {
+	if ( hsbuf != nullptr ) {
 		delete hsbuf;
-		hsbuf = NULL;
+		hsbuf = nullptr;
 	}
-	if ( indexbuf ) {
+	if ( indexbuf != nullptr ) {
 		delete indexbuf;
-		indexbuf = NULL;
+		indexbuf = nullptr;
 	}
 
 	m_pathname.clear();
@@ -191,7 +198,7 @@ int HspHelpManager::initalize( char *pathname )
 	if ( res < 0 ) {
 		m_message += "Index not found.\r\n";
 		delete indexbuf;
-		indexbuf = NULL;
+		indexbuf = nullptr;
 		return res;
 	}
 	note.Select( indexbuf->GetBuffer() );
@@ -210,8 +217,9 @@ int HspHelpManager::searchIndex( char *key )
 	//		(返値が0の場合は成功、詳細が取得可能になる、それ以外はエラー)
 	//
 	int offset;
-	if ( indexbuf == NULL )
+	if ( indexbuf == nullptr ) {
 		return -1;
+	}
 
 	m_message.clear();
 	// m_message = "search : ";
@@ -231,8 +239,9 @@ int HspHelpManager::searchIndex( char *key )
 	// m_message += "\r\n";
 
 	int res = openHSFile( (char *)m_id_hsfile.c_str(), offset );
-	if ( res < 0 )
+	if ( res < 0 ) {
 		return -3;
+	}
 
 	// m_message += "result : \r\n";
 	// m_message += m_id_line + "\r\n";
@@ -249,22 +258,27 @@ int HspHelpManager::getKeywordFromIndex( char *key )
 	//		keywordをindexから検索する
 	//		(返値が0の場合は成功、それ以外はエラー)
 	//
-	int i, cur, max;
+	int i;
+	int cur;
+	int max;
 
 	m_key.clear();
 	m_dll.clear();
 	m_title.clear();
 
-	if ( indexbuf == NULL )
+	if ( indexbuf == nullptr ) {
 		return -1;
+	}
 	max = note.GetMaxLine();
 	cur = -1;
 	i = 0;
-	while ( 1 ) {
-		if ( i >= max )
+	while ( true ) {
+		if ( i >= max ) {
 			break;
-		if ( cur >= 0 )
+		}
+		if ( cur >= 0 ) {
 			break;
+		}
 		char *p = note.GetLineDirect( i );
 		if ( strcmp( key, p ) == 0 ) {
 			cur = i;
@@ -305,9 +319,9 @@ int HspHelpManager::openHSFile( char *fname, int offset )
 	//		.HSファイルを読み込む
 	//
 	int res;
-	if ( hsbuf ) {
+	if ( hsbuf != nullptr ) {
 		delete hsbuf;
-		hsbuf = NULL;
+		hsbuf = nullptr;
 	}
 	hsbuf = new CMemBuf();
 
@@ -319,7 +333,7 @@ int HspHelpManager::openHSFile( char *fname, int offset )
 		m_message += m_hsfilename;
 		m_message += "]\r\n";
 		delete hsbuf;
-		hsbuf = NULL;
+		hsbuf = nullptr;
 		return res;
 	}
 
@@ -348,7 +362,7 @@ int HspHelpManager::openHSFile( char *fname, int offset )
 }
 
 
-char *HspHelpManager::getMessage( void )
+char *HspHelpManager::getMessage()
 {
 	return (char *)m_message.c_str();
 }
@@ -358,7 +372,8 @@ int HspHelpManager::getTaggedInfoFromHS( int target_line )
 {
 	//	読み込んだ.HS内で任意のlineから1つのtag情報を取得する
 	//
-	int i, max;
+	int i;
+	int max;
 	bool addline;
 	bool tabbed;
 	bool tagline;
@@ -382,16 +397,18 @@ int HspHelpManager::getTaggedInfoFromHS( int target_line )
 	// m_message += tagname;
 	// m_message += "\r\n";
 
-	if ( tagline == false )
+	if ( !tagline ) {
 		return -1; // %タグではない
+	}
 	i++;
 
 	max = hsnote.GetMaxLine();
 	tabbed = false;
 
-	while ( 1 ) {
-		if ( i >= max )
+	while ( true ) {
+		if ( i >= max ) {
 			break;
+		}
 
 		addline = true;
 		tagline = false;
@@ -399,8 +416,9 @@ int HspHelpManager::getTaggedInfoFromHS( int target_line )
 		if ( p[0] == 0x25 ) { // %の場合
 			addline = false;
 			tagline = true;
-			if ( strcmp( p + 1, "index" ) == 0 )
+			if ( strcmp( p + 1, "index" ) == 0 ) {
 				i = 0;
+			}
 		}
 		if ( p[0] == 0x3b ) { // ;の場合
 			addline = false;
@@ -412,13 +430,16 @@ int HspHelpManager::getTaggedInfoFromHS( int target_line )
 			}
 		}
 
-		if ( p[0] == 0 )
+		if ( p[0] == 0 ) {
 			addline = false;
+		}
 		if ( addline ) {
-			if ( infbuf != "" )
+			if ( !infbuf.empty() ) {
 				infbuf += "\r\n";
-			if ( tabbed )
+			}
+			if ( tabbed ) {
 				infbuf += "    ";
+			}
 			infbuf += p;
 		}
 
@@ -439,8 +460,9 @@ int HspHelpManager::getInfoFromHS( int target_line )
 	//
 	int i;
 
-	if ( hsbuf == NULL )
+	if ( hsbuf == nullptr ) {
 		return -1;
+	}
 
 	i = target_line;
 
@@ -450,26 +472,32 @@ int HspHelpManager::getInfoFromHS( int target_line )
 		return -2; // 最初のタグは%indexのはず
 	}
 
-	while ( 1 ) {
-		if ( i <= 0 )
+	while ( true ) {
+		if ( i <= 0 ) {
 			break;
+		}
 		i = getTaggedInfoFromHS( i );
-		if ( tagname == "group" )
+		if ( tagname == "group" ) {
 			m_group = infbuf;
-		if ( tagname == "prm" )
+		}
+		if ( tagname == "prm" ) {
 			m_prm = infbuf;
-		if ( tagname == "inst" )
+		}
+		if ( tagname == "inst" ) {
 			m_info = infbuf;
-		if ( tagname == "sample" )
+		}
+		if ( tagname == "sample" ) {
 			m_sample = infbuf;
-		if ( tagname == "href" )
+		}
+		if ( tagname == "href" ) {
 			m_ref = infbuf;
+		}
 	}
 
 	m_message += m_title + " \r\n\r\n";
 	m_message += m_key + " " + m_prm + "\r\n";
 
-	if ( m_dll != "" ) {
+	if ( !m_dll.empty() ) {
 		m_message += "\r\n( プラグイン/モジュール : ";
 		m_message += m_dll + " )\r\n";
 	}
@@ -477,12 +505,12 @@ int HspHelpManager::getInfoFromHS( int target_line )
 	m_message += "\r\n解説 :\r\n";
 	m_message += m_info + "\r\n";
 
-	if ( m_ref != "" ) {
+	if ( !m_ref.empty() ) {
 		m_message += "\r\n関連項目 :\r\n";
 		m_message += m_ref + "\r\n";
 	}
 
-	if ( m_sample != "" ) {
+	if ( !m_sample.empty() ) {
 		m_message += "\r\nサンプル :\r\n";
 		m_message += m_sample + "\r\n";
 	}
@@ -507,19 +535,21 @@ int HspHelpManager::getInfoFromHS( int target_line )
 }
 
 
-int HspHelpManager::getTypesFromHS( char *start, char *limit_addr )
+int HspHelpManager::getTypesFromHS( char *start, const char *limit_addr )
 {
 	//	読み込んだ.HS内でstart～limit_addrまでの定義を取得する
 	//
-	int i, max;
+	int i;
+	int max;
 	char *p;
 	bool tagline;
 	hsnote.Select( start );
 	i = 0;
 	max = hsnote.GetMaxLine();
-	while ( 1 ) {
-		if ( i >= max )
+	while ( true ) {
+		if ( i >= max ) {
 			break;
+		}
 		tagline = false;
 		p = hsnote.GetLineDirect( i );
 		if ( p[0] == 0x25 ) { // %の場合
@@ -537,18 +567,24 @@ int HspHelpManager::getTypesFromHS( char *start, char *limit_addr )
 			infbuf = p;
 			hsnote.ResumeLineDirect();
 			i++;
-			if ( tagname == "type" )
+			if ( tagname == "type" ) {
 				m_type = infbuf;
-			if ( tagname == "ver" )
+			}
+			if ( tagname == "ver" ) {
 				m_ver = infbuf;
-			if ( tagname == "note" )
+			}
+			if ( tagname == "note" ) {
 				m_note = infbuf;
-			if ( tagname == "date" )
+			}
+			if ( tagname == "date" ) {
 				m_date = infbuf;
-			if ( tagname == "author" )
+			}
+			if ( tagname == "author" ) {
 				m_author = infbuf;
-			if ( tagname == "url" )
+			}
+			if ( tagname == "url" ) {
 				m_url = infbuf;
+			}
 		}
 	}
 	return 0;

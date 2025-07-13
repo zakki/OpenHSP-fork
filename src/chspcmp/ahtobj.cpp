@@ -3,10 +3,10 @@
 //		AHT manager class
 //			onion software/onitama 2006/3
 //
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "../hsp3/hsp3config.h"
 #include "../hsp3/strnote.h"
@@ -65,8 +65,9 @@ void CAht::Mesf( char *format, ... )
 {
 	char textbf[1024];
 
-	if ( stdbuf == NULL )
+	if ( stdbuf == nullptr ) {
 		return;
+	}
 
 	va_list args;
 	va_start( args, format );
@@ -76,7 +77,7 @@ void CAht::Mesf( char *format, ... )
 	stdbuf->PutStr( textbf );
 }
 
-void CAht::Reset( void )
+void CAht::Reset()
 {
 	char p[512];
 
@@ -90,29 +91,29 @@ void CAht::Reset( void )
 	SetPage( 0, 0 );
 }
 
-void CAht::DisposeModel( void )
+void CAht::DisposeModel()
 {
 	int i;
 
-	if ( mem_ahtmodel_size ) {
+	if ( mem_ahtmodel_size != 0 ) {
 		for ( i = 0; i < model_cnt; i++ ) {
 			DeleteModel( i );
 		}
-		if ( mem_ahtmodel != NULL ) {
+		if ( mem_ahtmodel != nullptr ) {
 			mem_bye( mem_ahtmodel );
 		}
 		model_cnt = 0;
 	}
-	mem_ahtmodel = NULL; // model data
+	mem_ahtmodel = nullptr; // model data
 	mem_ahtmodel_size = 0;
 }
 
-AHTMODEL *CAht::AddModel( void )
+AHTMODEL *CAht::AddModel()
 {
 	//			モデルを新規IDに追加
 	int i;
 	for ( i = 0; i < model_cnt; i++ ) {
-		if ( mem_ahtmodel[i] == NULL ) {
+		if ( mem_ahtmodel[i] == nullptr ) {
 			return EntryModel( i );
 		}
 	}
@@ -127,24 +128,27 @@ void CAht::DeleteModel( int id )
 	AHTMODEL *model;
 	AHTMODEL *m;
 	model = GetModel( id );
-	if ( model == NULL )
+	if ( model == nullptr ) {
 		return;
+	}
 
 	//			自分にリンクしているIDを探す
 	myid = model->GetId();
 	for ( i = 0; i < model_cnt; i++ ) {
 		m = GetModel( i );
-		if ( m != NULL ) {
-			if ( m->GetNextID() == myid )
+		if ( m != nullptr ) {
+			if ( m->GetNextID() == myid ) {
 				m->SetNextID( -1 );
-			if ( m->GetPrevID() == myid )
+			}
+			if ( m->GetPrevID() == myid ) {
 				m->SetPrevID( -1 );
+			}
 		}
 	}
 
 	//			完全に削除
 	delete model;
-	mem_ahtmodel[id] = NULL;
+	mem_ahtmodel[id] = nullptr;
 
 	//			全体の情報を更新
 	BuildGlobalID();
@@ -154,7 +158,8 @@ AHTMODEL *CAht::EntryModel( int id )
 {
 	//			指定IDにモデルを追加
 	//			(バッファは自動確保される)
-	int i, sz;
+	int i;
+	int sz;
 	AHTMODEL *model;
 
 	i = id;
@@ -165,8 +170,9 @@ AHTMODEL *CAht::EntryModel( int id )
 		mem_ahtmodel_size = sz;
 	}
 
-	if ( mem_ahtmodel[i] != NULL )
+	if ( mem_ahtmodel[i] != nullptr ) {
 		DeleteModel( i );
+	}
 
 	model = new AHTMODEL;
 	model->SetId( i );
@@ -178,8 +184,9 @@ AHTMODEL *CAht::GetModel( int id )
 {
 	//		モデルオブジェクを取得
 	AHTMODEL *model;
-	if ( ( id < 0 ) || ( id >= model_cnt ) )
-		return NULL;
+	if ( ( id < 0 ) || ( id >= model_cnt ) ) {
+		return nullptr;
+	}
 	model = mem_ahtmodel[id];
 	return model;
 }
@@ -190,20 +197,25 @@ void CAht::LinkModel( int id, int next_id )
 	AHTMODEL *model;
 	AHTMODEL *model2;
 	model = GetModel( id );
-	if ( model == NULL )
+	if ( model == nullptr ) {
 		return;
+	}
 	model2 = GetModel( next_id );
-	if ( model2 == NULL )
+	if ( model2 == nullptr ) {
 		return;
-	if ( id == next_id )
+	}
+	if ( id == next_id ) {
 		return;
+	}
 
 	UnlinkModel( id );
 
-	if ( model->GetFlag() & AHTMODEL_FLAG_NOLINK )
+	if ( ( model->GetFlag() & AHTMODEL_FLAG_NOLINK ) != 0 ) {
 		return;
-	if ( model2->GetFlag() & AHTMODEL_FLAG_NOLINK )
+	}
+	if ( ( model2->GetFlag() & AHTMODEL_FLAG_NOLINK ) != 0 ) {
 		return;
+	}
 
 	model->SetNextID( next_id );
 	model2->SetPrevID( id );
@@ -216,15 +228,18 @@ void CAht::UnlinkModel( int id )
 	AHTMODEL *model;
 	AHTMODEL *model2;
 	model = GetModel( id );
-	if ( model == NULL )
+	if ( model == nullptr ) {
 		return;
+	}
 	next_id = model->GetNextID();
-	if ( next_id < 0 )
+	if ( next_id < 0 ) {
 		return;
+	}
 
 	model2 = GetModel( next_id );
-	if ( model2 == NULL )
+	if ( model2 == nullptr ) {
 		return;
+	}
 
 	model->SetNextID( -1 );
 	model2->SetPrevID( -1 );
@@ -232,18 +247,20 @@ void CAht::UnlinkModel( int id )
 
 int CAht::BuildGlobalIDSub( char *fname, char *pname, int i )
 {
-	int j, myid;
+	int j;
+	int myid;
 	AHTMODEL *m;
 	j = i + 1;
 	myid = 0;
-	while ( 1 ) { // 同じファイル、パスを探す
-		if ( j >= model_cnt )
+	while ( true ) { // 同じファイル、パスを探す
+		if ( j >= model_cnt ) {
 			break;
+		}
 		m = GetModel( j );
-		if ( m != NULL ) {
+		if ( m != nullptr ) {
 			if ( m->GetGlobalId() == -1 ) {
-				if ( tstrcmp( m->GetSource(), fname ) ) {
-					if ( tstrcmp( m->GetSourcePath(), pname ) ) {
+				if ( tstrcmp( m->GetSource(), fname ) != 0 ) {
+					if ( tstrcmp( m->GetSourcePath(), pname ) != 0 ) {
 						myid++;
 						m->SetGlobalId( myid );
 					}
@@ -255,24 +272,25 @@ int CAht::BuildGlobalIDSub( char *fname, char *pname, int i )
 	return myid;
 }
 
-void CAht::BuildGlobalID( void )
+void CAht::BuildGlobalID()
 {
 	//		モデルのグローバルIDの更新
 	//
-	int i, myid;
+	int i;
+	int myid;
 	AHTMODEL *model;
 	for ( i = 0; i < model_cnt; i++ ) {
 		model = GetModel( i );
-		if ( model != NULL ) {
+		if ( model != nullptr ) {
 			model->SetGlobalId( -1 );
 		}
 	}
 	for ( i = 0; i < model_cnt; i++ ) {
 		model = GetModel( i );
-		if ( model != NULL ) {
+		if ( model != nullptr ) {
 			if ( model->GetGlobalId() == -1 ) {
 				myid = BuildGlobalIDSub( model->GetSource(), model->GetSourcePath(), i );
-				if ( myid ) {
+				if ( myid != 0 ) {
 					model->SetGlobalId( 0 );
 				}
 			}
@@ -289,13 +307,14 @@ char *CAht::SearchModelByClassName( char *clsname )
 	char tmp[64];
 	AHTMODEL *model;
 
-	if ( objlist != NULL )
-		delete objlist;
+
+	delete objlist;
+
 	objlist = new CMemBuf;
 
 	for ( i = 0; i < model_cnt; i++ ) {
 		model = GetModel( i );
-		if ( model != NULL ) {
+		if ( model != nullptr ) {
 			if ( strncmp( clsname, model->GetClass(), strlen( clsname ) ) == 0 ) {
 				sprintf( tmp, "%d:", i );
 				objlist->PutStr( tmp );
@@ -309,7 +328,7 @@ char *CAht::SearchModelByClassName( char *clsname )
 }
 
 
-void CAht::FindModelStart( void )
+void CAht::FindModelStart()
 {
 	//		モデル検索開始(スクリプト生成用)
 	//
@@ -318,7 +337,7 @@ void CAht::FindModelStart( void )
 }
 
 
-int CAht::FindModel( void )
+int CAht::FindModel()
 {
 	//		モデル検索実行(スクリプト生成用)
 	//		(有効なモデルIDを返す、-1ならば終了)
@@ -330,7 +349,7 @@ refind:
 	case AHTMODELFIND_MODE_START: // 検索の初期化
 		for ( i = 0; i < model_cnt; i++ ) {
 			model = GetModel( i );
-			if ( model != NULL ) {
+			if ( model != nullptr ) {
 				model->ClearFindCheck();
 			}
 		}
@@ -339,9 +358,9 @@ refind:
 	case AHTMODELFIND_MODE_ARRAYSEEK: // リンクの先頭を調べる
 		for ( i = 0; i < model_cnt; i++ ) {
 			model = GetModel( i );
-			if ( model != NULL ) {
+			if ( model != nullptr ) {
 				if ( ( model->GetNextID() != -1 ) && ( model->GetPrevID() == -1 ) ) {
-					if ( model->GetFindCheck() == false ) {
+					if ( !model->GetFindCheck() ) {
 						model->SetFindCheck();
 						findmode = AHTMODELFIND_MODE_ARRAYPICK;
 						findid = i;
@@ -357,7 +376,7 @@ refind:
 	case AHTMODELFIND_MODE_ARRAYPICK: // リンクを辿る
 
 		model = GetModel( findid );
-		if ( model == NULL ) {
+		if ( model == nullptr ) {
 			findmode = AHTMODELFIND_MODE_ARRAYSEEK;
 			goto refind; // ありえないはず
 		}
@@ -373,8 +392,8 @@ refind:
 	case AHTMODELFIND_MODE_LEFTPICK: // その他モデル検索
 		for ( i = 0; i < model_cnt; i++ ) {
 			model = GetModel( i );
-			if ( model != NULL ) {
-				if ( model->GetFindCheck() == false ) {
+			if ( model != nullptr ) {
+				if ( !model->GetFindCheck() ) {
 					model->SetFindCheck();
 					parentid = i;
 					return i;
@@ -407,8 +426,9 @@ void CAht::UpdateModelProperty( int id )
 	char tmp[256];
 
 	model = GetModel( id );
-	if ( model == NULL )
+	if ( model == nullptr ) {
 		return;
+	}
 	target = id;
 
 	for ( i = 0; i < model->GetPropCount(); i++ ) {
@@ -416,7 +436,7 @@ void CAht::UpdateModelProperty( int id )
 		switch ( p->ahttype ) {
 		case AHTTYPE_PARTS_INT:
 			res = p->newval;
-			if ( res == NULL ) {
+			if ( res == nullptr ) {
 				list = SearchModelByClassName( p->defval2 );
 				note.Select( list );
 				note.GetLine( tmp, 0, 255 );
@@ -426,13 +446,14 @@ void CAht::UpdateModelProperty( int id )
 			break;
 		case AHTTYPE_PARTS_PROP_STRING:
 			a = target;
-			if ( *p->defval3 == 'm' )
+			if ( *p->defval3 == 'm' ) {
 				a = id; // 自分を参照するオプション
+			}
 			m = GetModel( a );
-			if ( m != NULL ) {
+			if ( m != nullptr ) {
 				p2 = m->GetProperty( p->defval2 );
 				// Alertf( "%d:%d:%s:%s:%x",i,a,p->defval, p->defval2,p2 );
-				if ( p2 != NULL ) {
+				if ( p2 != nullptr ) {
 					res = p2->GetValue();
 					p->SetNewVal( res );
 				}
@@ -440,12 +461,13 @@ void CAht::UpdateModelProperty( int id )
 			break;
 		case AHTTYPE_PARTS_OPT_STRING:
 			a = target;
-			if ( *p->defval3 == 'm' )
+			if ( *p->defval3 == 'm' ) {
 				a = id; // 自分を参照するオプション
+			}
 			m = GetModel( a );
-			if ( m != NULL ) {
+			if ( m != nullptr ) {
 				res = m->GetAHTOption( p->defval2 );
-				if ( res != NULL ) {
+				if ( res != nullptr ) {
 					p->SetNewVal( res );
 				}
 			}
@@ -461,28 +483,22 @@ void CAht::UpdateModelProperty( int id )
 //		Interfaces
 //-------------------------------------------------------------
 
-CAht::CAht( void )
+CAht::CAht()
+	: stdbuf( new CMemBuf( 0x1000 ) ), mem_ahtmodel( nullptr ), model_cnt( 0 ), mem_ahtmodel_size( 0 ),
+	  mem_parts( nullptr ), objlist( nullptr ), ahtwrt_buf( nullptr ), ahtini_buf( nullptr )
 {
-	stdbuf = new CMemBuf( 0x1000 ); // debug message buffer
+	// debug message buffer
 	Mesf( "AHT processor ready.\r\n" );
-	mem_ahtmodel = NULL; // model data
-	model_cnt = 0;
-	mem_ahtmodel_size = 0;
-	mem_parts = NULL;
-	objlist = NULL;
-	ahtwrt_buf = NULL;
-	ahtini_buf = NULL;
+	// model data
 
 	Reset();
 }
 
 
-CAht::~CAht( void )
+CAht::~CAht()
 {
-	if ( objlist != NULL )
-		delete objlist;
-	if ( stdbuf != NULL )
-		delete stdbuf;
+	delete objlist;
+	delete stdbuf;
 
 	DisposeMakeBuffer();
 	DisposeModel();
@@ -490,7 +506,7 @@ CAht::~CAht( void )
 }
 
 
-char *CAht::GetStdBuffer( void )
+char *CAht::GetStdBuffer()
 {
 	return stdbuf->GetBuffer();
 }
@@ -501,14 +517,16 @@ int CAht::LoadProject( char *fname )
 	FILE *fp;
 	char *p;
 	int res;
-	int bufsize, strsize;
+	int bufsize;
+	int strsize;
 
 	Reset();
 
 	res = 0;
 	fp = fopen( fname, "rb" );
-	if ( fp == NULL )
+	if ( fp == nullptr ) {
 		return -1;
+	}
 
 	fread( &hed, 1, sizeof( HTPHED ), fp );
 
@@ -527,11 +545,11 @@ int CAht::LoadProject( char *fname )
 	objbuf = new CMemBuf;
 	strbuf = new CMemBuf;
 
-	if ( bufsize ) {
+	if ( bufsize != 0 ) {
 		p = objbuf->PreparePtr( bufsize );
 		fread( p, 1, bufsize, fp );
 	}
-	if ( strsize ) {
+	if ( strsize != 0 ) {
 		p = strbuf->PreparePtr( strsize );
 		fread( p, 1, strsize, fp );
 	}
@@ -548,20 +566,22 @@ int CAht::LoadProjectApply( int modelid, int fileid )
 	AHTMODEL *model;
 
 	model = GetModel( modelid );
-	if ( model == NULL )
+	if ( model == nullptr ) {
 		return -1;
+	}
 
 	obj = GetProjectFileObject( fileid );
 	model->SetObj( (AHTOBJ *)GetProjectFileString( obj->ahtobj ) );
 	obj++;
 
 	//			プロパティ全設定
-	while ( 1 ) {
-		if ( obj->ahtsource != -1 )
+	while ( true ) {
+		if ( obj->ahtsource != -1 ) {
 			break;
+		}
 		// Alertf( "%s=%s", GetProjectFileString( obj->propname), GetProjectFileString( obj->defvalue )  );
 		prop = model->GetProperty( GetProjectFileString( obj->propname ) );
-		if ( prop != NULL ) {
+		if ( prop != nullptr ) {
 			prop->SetNewVal( GetProjectFileString( obj->defvalue ) );
 		}
 		// model->SetPropertyDefault( GetProjectFileString( obj->propname), GetProjectFileString( obj->defvalue )  );
@@ -571,14 +591,14 @@ int CAht::LoadProjectApply( int modelid, int fileid )
 }
 
 
-void CAht::LoadProjectEnd( void )
+void CAht::LoadProjectEnd()
 {
 	delete objbuf;
 	delete strbuf;
 }
 
 
-int CAht::GetProjectFileModelMax( void )
+int CAht::GetProjectFileModelMax()
 {
 	int i;
 	int res;
@@ -587,8 +607,9 @@ int CAht::GetProjectFileModelMax( void )
 
 	res = 0;
 	for ( i = 0; i < hed.max_mod; i++ ) {
-		if ( obj->ahtsource >= 0 )
+		if ( obj->ahtsource >= 0 ) {
 			res++;
+		}
 		obj++;
 	}
 	return res;
@@ -635,19 +656,21 @@ HTPOBJ *CAht::GetProjectFileObject( int id )
 	HTPOBJ *obj;
 
 	obj = (HTPOBJ *)( objbuf->GetBuffer() );
-	if ( id < 0 )
-		return NULL;
+	if ( id < 0 ) {
+		return nullptr;
+	}
 
 	res = 0;
 	for ( i = 0; i < hed.max_mod; i++ ) {
 		if ( obj->ahtsource >= 0 ) {
-			if ( id == res )
+			if ( id == res ) {
 				return obj;
+			}
 			res++;
 		}
 		obj++;
 	}
-	return NULL;
+	return nullptr;
 }
 
 
@@ -656,10 +679,12 @@ void CAht::SaveProjectSub( AHTMODEL *model )
 	int i;
 	HTPOBJ obj;
 	AHTPROP *prop;
-	if ( model == NULL )
+	if ( model == nullptr ) {
 		return;
-	if ( model->GetFlag() == AHTMODEL_FLAG_NONE )
+	}
+	if ( model->GetFlag() == AHTMODEL_FLAG_NONE ) {
 		return;
+	}
 
 	// Alertf( "[%s][%s]",model->GetSourcePath(),model->GetSource() );
 
@@ -701,8 +726,10 @@ int CAht::SaveProject( char *fname )
 {
 	FILE *fp;
 	HTPOBJ *obj;
-	int i, res;
-	int bufsize, strsize;
+	int i;
+	int res;
+	int bufsize;
+	int strsize;
 
 	strbuf = new CMemBuf;
 	objbuf = new CMemBuf;
@@ -716,7 +743,7 @@ int CAht::SaveProject( char *fname )
 
 	//	Send Modules
 	//
-	if ( mem_ahtmodel_size ) {
+	if ( mem_ahtmodel_size != 0 ) {
 		for ( i = 0; i < model_cnt; i++ ) {
 			SaveProjectSub( mem_ahtmodel[i] );
 		}
@@ -726,7 +753,7 @@ int CAht::SaveProject( char *fname )
 	//
 	res = 0;
 	fp = fopen( fname, "wb" );
-	if ( fp != NULL ) {
+	if ( fp != nullptr ) {
 
 		strsize = strbuf->GetSize() & 15;
 		if ( strsize > 0 ) { // strbufを切りのいいサイズにする
@@ -752,10 +779,12 @@ int CAht::SaveProject( char *fname )
 		hed.opt4 = 0;
 
 		fwrite( &hed, sizeof( HTPHED ), 1, fp );
-		if ( bufsize )
+		if ( bufsize != 0 ) {
 			fwrite( obj, bufsize, 1, fp );
-		if ( strsize )
+		}
+		if ( strsize != 0 ) {
 			fwrite( strbuf->GetBuffer(), strsize, 1, fp );
+		}
 
 		fclose( fp );
 
@@ -776,23 +805,23 @@ void CAht::SetPage( int cur, int max )
 }
 
 
-int CAht::GetCurrentPage( void )
+int CAht::GetCurrentPage()
 {
 	return curpage;
 }
 
 
-int CAht::GetMaxPage( void )
+int CAht::GetMaxPage()
 {
 	return maxpage;
 }
 
 
-void CAht::DisposeParts( void )
+void CAht::DisposeParts()
 {
-	if ( mem_parts != NULL ) {
+	if ( mem_parts != nullptr ) {
 		mem_bye( mem_parts );
-		mem_parts = NULL;
+		mem_parts = nullptr;
 	}
 }
 
@@ -804,12 +833,14 @@ void CAht::PickLineBuffer( char *out )
 	char a1;
 	a = 0;
 	dq = 0;
-	while ( 1 ) {
+	while ( true ) {
 		a1 = linebuf[pickptr];
-		if ( a1 == 0 )
+		if ( a1 == 0 ) {
 			break;
-		if ( ( a1 != 9 ) && ( a1 != 32 ) )
+		}
+		if ( ( a1 != 9 ) && ( a1 != 32 ) ) {
 			break;
+		}
 		pickptr++;
 	}
 	if ( a1 == 0x22 ) {
@@ -817,19 +848,22 @@ void CAht::PickLineBuffer( char *out )
 		pickptr++;
 	}
 
-	while ( 1 ) {
+	while ( true ) {
 		a1 = linebuf[pickptr];
-		if ( ( a1 == 0 ) || ( a1 == 10 ) || ( a1 == 13 ) )
+		if ( ( a1 == 0 ) || ( a1 == 10 ) || ( a1 == 13 ) ) {
 			break;
+		}
 		pickptr++;
-		if ( ( a1 == 9 ) || ( a1 == 32 ) )
+		if ( ( a1 == 9 ) || ( a1 == 32 ) ) {
 			break;
-		if ( dq ) {
-			if ( a1 == 0x22 )
+		}
+		if ( dq != 0 ) {
+			if ( a1 == 0x22 ) {
 				break;
+			}
 		}
 		out[a++] = a1;
-		if ( a1 & 128 ) {
+		if ( ( a1 & 128 ) != 0 ) {
 			a1 = linebuf[pickptr++];
 			out[a++] = a1;
 		}
@@ -842,15 +876,18 @@ int CAht::BuildPartsSub( int id, char *fname )
 {
 	//		簡易ahtパース
 	//
-	int i, res, maxline;
+	int i;
+	int res;
+	int maxline;
 	CStrNote note;
 	CMemBuf tmp;
 	AHTPARTS *p;
 	char s1[256];
 
 	p = GetParts( id );
-	if ( p == NULL )
+	if ( p == nullptr ) {
 		return -2;
+	}
 
 	p->classname[0] = 0;
 	p->name[0] = 0;
@@ -868,17 +905,17 @@ int CAht::BuildPartsSub( int id, char *fname )
 		pickptr = 0;
 		note.GetLine( linebuf, i, 255 );
 		PickLineBuffer( s1 );
-		if ( tstrcmp( s1, "#aht" ) ) {
+		if ( tstrcmp( s1, "#aht" ) != 0 ) {
 			PickLineBuffer( s1 );
-			if ( tstrcmp( s1, "iconid" ) ) {
+			if ( tstrcmp( s1, "iconid" ) != 0 ) {
 				PickLineBuffer( s1 );
 				p->icon = atoi( s1 );
 			}
-			if ( tstrcmp( s1, "name" ) ) {
+			if ( tstrcmp( s1, "name" ) != 0 ) {
 				PickLineBuffer( s1 );
 				strcpy( p->name, s1 );
 			}
-			if ( tstrcmp( s1, "class" ) ) {
+			if ( tstrcmp( s1, "class" ) != 0 ) {
 				PickLineBuffer( s1 );
 				strcpy( p->classname, s1 );
 			}
@@ -913,8 +950,9 @@ int CAht::BuildParts( char *list, char *path )
 
 AHTPARTS *CAht::GetParts( int id )
 {
-	if ( ( id < 0 ) || ( id >= maxparts ) )
-		return NULL;
+	if ( ( id < 0 ) || ( id >= maxparts ) ) {
+		return nullptr;
+	}
 	return &mem_parts[id];
 }
 
@@ -941,7 +979,7 @@ int CAht::GetPartsIconID( int id )
 //		Routines for Make Buffer
 //-------------------------------------------------------------
 
-void CAht::InitMakeBuffer( void )
+void CAht::InitMakeBuffer()
 {
 	DisposeMakeBuffer();
 	ahtwrt_buf = new CMemBuf;
@@ -949,15 +987,15 @@ void CAht::InitMakeBuffer( void )
 }
 
 
-void CAht::DisposeMakeBuffer( void )
+void CAht::DisposeMakeBuffer()
 {
-	if ( ahtwrt_buf != NULL ) {
+	if ( ahtwrt_buf != nullptr ) {
 		delete ahtwrt_buf;
-		ahtwrt_buf = NULL;
+		ahtwrt_buf = nullptr;
 	}
-	if ( ahtini_buf != NULL ) {
+	if ( ahtini_buf != nullptr ) {
 		delete ahtini_buf;
-		ahtini_buf = NULL;
+		ahtini_buf = nullptr;
 	}
 }
 
@@ -970,8 +1008,9 @@ int CAht::SaveMakeBuffer( char *fname )
 	ahtwrt_buf->Put( 0 ); // 終端を登録
 	ahtini_buf->PutStr( ahtwrt_buf->GetBuffer() );
 	res = ahtini_buf->SaveFile( fname );
-	if ( res < 0 )
+	if ( res < 0 ) {
 		return -1;
+	}
 	return 0;
 }
 
@@ -980,18 +1019,21 @@ void CAht::AddMakeBufferInit( char *str, int size )
 {
 	//		初期化スクリプトバッファに追加(重複は無視される)
 	//
-	int i, sz, len;
+	int i;
+	int sz;
+	int len;
 	char *p;
 	len = size;
 	if ( size <= 0 ) {
 		len = strlen( str );
 	}
-	if ( len ) {
+	if ( len != 0 ) {
 		sz = ahtini_buf->GetSize() - len;
 		p = ahtini_buf->GetBuffer();
 		for ( i = 0; i < sz; i++ ) {
-			if ( strncmp( str, p, len ) == 0 )
+			if ( strncmp( str, p, len ) == 0 ) {
 				return;
+			}
 			p++;
 		}
 		if ( size <= 0 ) {
@@ -1024,12 +1066,14 @@ int CAht::tstrcmp( const char *str1, const char *str2 )
 	int ap;
 	char as;
 	ap = 0;
-	while ( 1 ) {
+	while ( true ) {
 		as = str1[ap];
-		if ( as != str2[ap] )
+		if ( as != str2[ap] ) {
 			return 0;
-		if ( as == 0 )
+		}
+		if ( as == 0 ) {
 			break;
+		}
 		ap++;
 	}
 	return -1;

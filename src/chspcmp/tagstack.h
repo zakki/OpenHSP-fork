@@ -53,7 +53,7 @@ private:
 
 	//		Private members
 	//
-	int StrCmp( char *str1, char *str2 );
+	int StrCmp( const char *str1, const char *str2 );
 	int SearchTagID( char *tag );
 	int RegistTagID( char *tag );
 };

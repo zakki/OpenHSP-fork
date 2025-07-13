@@ -29,7 +29,7 @@ public:
 	int GetIndex( int idx );
 	int GetIndexBufferSize( void );
 	int SearchIndexValue( int val );
-	int SearchIndexedData( char *data, int size );
+	int SearchIndexedData( const char *data, int size );
 
 	void RegistIndex( int val );
 	void Index( void );
@@ -40,14 +40,14 @@ public:
 	void Put( unsigned char data );
 	void Put( float data );
 	void Put( double data );
-	void PutStr( char *data );
-	void PutStrDQ( char *data );
-	void PutStrBlock( char *data );
+	void PutStr( const char *data );
+	void PutStrDQ( const char *data );
+	void PutStrBlock( const char *data );
 	void PutCR( void );
-	void PutData( void *data, int sz );
-	void PutStrf( char *format, ... );
-	int PutFile( char *fname );
-	int SaveFile( char *fname );
+	void PutData( const void *data, int sz );
+	void PutStrf( const char *format, ... );
+	int PutFile( const char *fname );
+	int SaveFile( const char *fname );
 	char *GetFileName( void );
 	int GetSize( void )
 	{

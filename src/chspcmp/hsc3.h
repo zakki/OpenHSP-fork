@@ -1,9 +1,9 @@
-
 //
 //	hsc3.cpp structures
 //
-#ifndef __hsc3_h
-#define __hsc3_h
+#pragma once
+
+#include <memory>
 
 #define HSC3TITLE "HSP script preprocessor"
 #define HSC3TITLE2 "HSP code generator"
@@ -24,7 +24,8 @@
 #define HSC3_MODE_LABOUT 16 // キーワードを出力
 
 class CMemBuf;
-class CToken;
+class CCodeGenerator;
+class CPreProcessor;
 
 /*
 	rev 54
@@ -74,9 +75,9 @@ public:
 
 	//		Data
 	//
-	CMemBuf *errbuf;
+	std::shared_ptr<CMemBuf> errbuf;
 	CMemBuf *pfbuf;
-	CMemBuf *addkw;
+	std::shared_ptr<CMemBuf> addkw;
 	CMemBuf *outbuf;
 	CMemBuf *ahtbuf;
 	CMemBuf *anabuf;
@@ -85,7 +86,7 @@ private:
 	//		Private Data
 	//
 	int process_option;
-	void AddSystemMacros( CToken *tk, int option );
+	void AddSystemMacros( CPreProcessor &lexer, int option );
 
 	char common_path[512]; // common path
 
@@ -95,7 +96,7 @@ private:
 
 	//		for Compile Optimize
 	int cmpopt;
-	CLabel *lb_info;
+	std::unique_ptr<CLabel> lb_info;
 
 	//		for Analyse
 	int analyse_mode;
@@ -105,6 +106,3 @@ private:
 	char analyse_module[256];
 	char analyse_keyword[256];
 };
-
-
-#endif

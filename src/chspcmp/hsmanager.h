@@ -74,7 +74,7 @@ private:
 	int openHSFile( char *fname, int offset = 0 );
 	int getTaggedInfoFromHS( int target_line = 0 );
 	int getInfoFromHS( int target_line = 0 );
-	int getTypesFromHS( char *start, char *limit_addr );
+	int getTypesFromHS( char *start, const char *limit_addr );
 	int getKeywordFromIndex( char *key );
 
 	void strsp_ini( char *src );

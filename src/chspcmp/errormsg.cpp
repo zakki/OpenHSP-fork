@@ -4,9 +4,9 @@
 //	(エラーメッセージ)
 //	onion software/onitama 2004/6
 //
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "../hsp3/hsp3config.h"
 #include "errormsg.h"
@@ -119,7 +119,8 @@ static char *err[] = { "",									 // 0
 
 char *cg_geterror( CGERROR error )
 {
-	if ( ( error < 0 ) || ( error >= CGERROR_MAX ) )
+	if ( ( error < 0 ) || ( error >= CGERROR_MAX ) ) {
 		return err[0];
+	}
 	return err[error];
 }

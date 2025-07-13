@@ -4,11 +4,11 @@
 //			onion software/onitama 2002/2
 //
 #include "membuf.h"
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 //-------------------------------------------------------------
 //		Routines
@@ -34,7 +34,7 @@ void CMemBuf::InitMemBuf( int sz )
 	idxflag = 0;
 	idxmax = -1;
 	curidx = 0;
-	idxbuf = NULL;
+	idxbuf = nullptr;
 }
 
 
@@ -63,8 +63,9 @@ char *CMemBuf::PreparePtr( int sz )
 	}
 	//	expand buffer (VCのreallocは怖いので使わない)
 	i = size;
-	while ( i <= ( cur + sz ) )
+	while ( i <= ( cur + sz ) ) {
 		i += limit_size;
+	}
 	p = (char *)malloc( i );
 	memcpy( p, mem_buf, size );
 	free( mem_buf );
@@ -80,8 +81,9 @@ void CMemBuf::RegistIndex( int val )
 {
 	//	インデックスを登録
 	int *p;
-	if ( idxflag == 0 )
+	if ( idxflag == 0 ) {
 		return;
+	}
 	idxbuf[curidx++] = val;
 	if ( curidx >= idxmax ) {
 		idxmax += 256;
@@ -93,13 +95,13 @@ void CMemBuf::RegistIndex( int val )
 }
 
 
-void CMemBuf::Index( void )
+void CMemBuf::Index()
 {
 	RegistIndex( cur );
 }
 
 
-void CMemBuf::IndexExclusive( void )
+void CMemBuf::IndexExclusive()
 {
 	if ( SearchIndexValue( cur ) < 0 ) {
 		RegistIndex( cur );
@@ -155,7 +157,7 @@ void CMemBuf::Put( double data )
 }
 
 
-void CMemBuf::PutStr( char *data )
+void CMemBuf::PutStr( const char *data )
 {
 	char *p;
 	p = PreparePtr( strlen( data ) );
@@ -163,7 +165,7 @@ void CMemBuf::PutStr( char *data )
 }
 
 
-void CMemBuf::PutStrDQ( char *data )
+void CMemBuf::PutStrDQ( const char *data )
 {
 	//		ダブルクォート内専用str
 	//
@@ -174,10 +176,11 @@ void CMemBuf::PutStrDQ( char *data )
 	int fl;
 	src = (unsigned char *)data;
 
-	while ( 1 ) {
+	while ( true ) {
 		a1 = *src++;
-		if ( a1 == 0 )
+		if ( a1 == 0 ) {
 			break;
+		}
 
 		fl = 0;
 		if ( a1 == '\\' ) { // \を\\に
@@ -187,8 +190,9 @@ void CMemBuf::PutStrDQ( char *data )
 		if ( a1 == 13 ) { // CRを\nに
 			fl = 1;
 			a2 = 10;
-			if ( *src == 10 )
+			if ( *src == 10 ) {
 				src++;
+			}
 		}
 
 		if ( a1 >= 129 ) { // 全角文字チェック
@@ -199,10 +203,11 @@ void CMemBuf::PutStrDQ( char *data )
 				fl = 1;
 				a2 = *src++;
 			}
-			if ( a2 == 0 )
+			if ( a2 == 0 ) {
 				break;
+			}
 		}
-		if ( fl ) {
+		if ( fl != 0 ) {
 			p = (unsigned char *)PreparePtr( 2 );
 			p[0] = a1;
 			p[1] = a2;
@@ -214,7 +219,7 @@ void CMemBuf::PutStrDQ( char *data )
 }
 
 
-void CMemBuf::PutStrBlock( char *data )
+void CMemBuf::PutStrBlock( const char *data )
 {
 	char *p;
 	p = PreparePtr( strlen( data ) + 1 );
@@ -222,7 +227,7 @@ void CMemBuf::PutStrBlock( char *data )
 }
 
 
-void CMemBuf::PutCR( void )
+void CMemBuf::PutCR()
 {
 	char *p;
 	p = PreparePtr( 2 );
@@ -231,7 +236,7 @@ void CMemBuf::PutCR( void )
 }
 
 
-void CMemBuf::PutData( void *data, int sz )
+void CMemBuf::PutData( const void *data, int sz )
 {
 	char *p;
 	p = PreparePtr( sz );
@@ -245,12 +250,12 @@ void CMemBuf::PutData( void *data, int sz )
 #define VSNPRINTF vsnprintf
 #endif
 
-void CMemBuf::PutStrf( char *format, ... )
+void CMemBuf::PutStrf( const char *format, ... )
 {
 	va_list args;
 	int c = cur;
 	int space = size - cur;
-	while ( 1 ) {
+	while ( true ) {
 		char *p = PreparePtr( space - 1 );
 		cur = c;
 		space = size - cur;
@@ -271,7 +276,7 @@ void CMemBuf::PutStrf( char *format, ... )
 }
 
 
-int CMemBuf::PutFile( char *fname )
+int CMemBuf::PutFile( const char *fname )
 {
 	//		バッファに指定ファイルの内容を追加
 	//		(return:ファイルサイズ(-1=error))
@@ -281,13 +286,15 @@ int CMemBuf::PutFile( char *fname )
 	FILE *ff;
 
 	ff = fopen( fname, "rb" );
-	if ( ff == NULL )
+	if ( ff == nullptr ) {
 		return -1;
+	}
 	fseek( ff, 0, SEEK_END );
 	length = (int)ftell( ff ); // normal file size
 	fclose( ff );
-	if ( length < 0 )
+	if ( length < 0 ) {
 		return -1;
+	}
 
 	p = PreparePtr( length + 1 );
 	ff = fopen( fname, "rb" );
@@ -311,7 +318,7 @@ void CMemBuf::ReduceSize( int new_cur )
 //		Interfaces
 //-------------------------------------------------------------
 
-CMemBuf::CMemBuf( void )
+CMemBuf::CMemBuf()
 {
 	//		空のバッファを初期化(64K)
 	//
@@ -327,20 +334,20 @@ CMemBuf::CMemBuf( int sz )
 }
 
 
-CMemBuf::~CMemBuf( void )
+CMemBuf::~CMemBuf()
 {
-	if ( mem_buf != NULL ) {
+	if ( mem_buf != nullptr ) {
 		free( mem_buf );
-		mem_buf = NULL;
+		mem_buf = nullptr;
 	}
-	if ( idxbuf != NULL ) {
+	if ( idxbuf != nullptr ) {
 		free( idxbuf );
-		idxbuf = NULL;
+		idxbuf = nullptr;
 	}
 }
 
 
-void CMemBuf::AddIndexBuffer( void )
+void CMemBuf::AddIndexBuffer()
 {
 	InitIndexBuf( 256 );
 }
@@ -352,19 +359,19 @@ void CMemBuf::AddIndexBuffer( int sz )
 }
 
 
-char *CMemBuf::GetBuffer( void )
+char *CMemBuf::GetBuffer()
 {
 	return mem_buf;
 }
 
 
-int CMemBuf::GetBufferSize( void )
+int CMemBuf::GetBufferSize()
 {
 	return size;
 }
 
 
-int *CMemBuf::GetIndexBuffer( void )
+int *CMemBuf::GetIndexBuffer()
 {
 	return idxbuf;
 }
@@ -372,26 +379,30 @@ int *CMemBuf::GetIndexBuffer( void )
 
 void CMemBuf::SetIndex( int idx, int val )
 {
-	if ( idxflag == 0 )
+	if ( idxflag == 0 ) {
 		return;
+	}
 	idxbuf[idx] = val;
 }
 
 
 int CMemBuf::GetIndex( int idx )
 {
-	if ( idxflag == 0 )
+	if ( idxflag == 0 ) {
 		return 0;
-	if ( ( idx < 0 ) || ( idx >= curidx ) )
+	}
+	if ( ( idx < 0 ) || ( idx >= curidx ) ) {
 		return 0;
+	}
 	return idxbuf[idx];
 }
 
 
-int CMemBuf::GetIndexBufferSize( void )
+int CMemBuf::GetIndexBufferSize()
 {
-	if ( idxflag == 0 )
+	if ( idxflag == 0 ) {
 		return -1;
+	}
 	return curidx;
 }
 
@@ -399,39 +410,45 @@ int CMemBuf::GetIndexBufferSize( void )
 int CMemBuf::SearchIndexValue( int val )
 {
 	int i;
-	if ( idxflag == 0 )
+	if ( idxflag == 0 ) {
 		return -1;
+	}
 	for ( i = 0; i < curidx; i++ ) {
-		if ( idxbuf[i] == val )
+		if ( idxbuf[i] == val ) {
 			return i;
+		}
 	}
 	return -1;
 }
 
 
-int CMemBuf::SearchIndexedData( char *data, int size )
+int CMemBuf::SearchIndexedData( const char *data, int size )
 {
 	int i;
 	int j;
 	int sz = size;
-	if ( idxflag == 0 )
+	if ( idxflag == 0 ) {
 		return -1;
-	if ( sz < 0 )
+	}
+	if ( sz < 0 ) {
 		sz = (int)strlen( data ) + 1;
-	if ( sz == 0 )
+	}
+	if ( sz == 0 ) {
 		return -1;
+	}
 
 	j = -1;
 	for ( i = 0; i < curidx; i++ ) {
 		char *p = mem_buf + idxbuf[i];
-		if ( memcmp( p, data, sz ) == 0 )
+		if ( memcmp( p, data, sz ) == 0 ) {
 			j = idxbuf[i];
+		}
 	}
 	return j;
 }
 
 
-int CMemBuf::SaveFile( char *fname )
+int CMemBuf::SaveFile( const char *fname )
 {
 	//		バッファをファイルにセーブ
 	//		(return:ファイルサイズ(-1=error))
@@ -439,8 +456,9 @@ int CMemBuf::SaveFile( char *fname )
 	FILE *fp;
 	int flen;
 	fp = fopen( fname, "wb" );
-	if ( fp == NULL )
+	if ( fp == nullptr ) {
 		return -1;
+	}
 	flen = fwrite( mem_buf, 1, cur, fp );
 	fclose( fp );
 	strcpy( name, fname );
@@ -448,7 +466,7 @@ int CMemBuf::SaveFile( char *fname )
 }
 
 
-char *CMemBuf::GetFileName( void )
+char *CMemBuf::GetFileName()
 {
 	//		ファイル名を取得
 	//

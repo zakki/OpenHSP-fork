@@ -131,7 +131,7 @@ public:
 
 private:
 	int StrCase( char *str );
-	int StrCmp( char *str1, char *str2 );
+	int StrCmp( const char *str1, const char *str2 );
 	int GetHash( char *str );
 
 	char *Prt( char *str, char *str2 );

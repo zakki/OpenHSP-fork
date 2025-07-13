@@ -3,10 +3,10 @@
 //		AHT manager class
 //			onion software/onitama 2006/3
 //
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "../hsp3/hsp3config.h"
 #include "ahtmodel.h"
@@ -26,8 +26,9 @@ void AHTMODEL::Mesf( char *format, ... )
 {
 	char textbf[1024];
 
-	if ( stdbuf == NULL )
+	if ( stdbuf == nullptr ) {
 		return;
+	}
 
 	va_list args;
 	va_start( args, format );
@@ -46,13 +47,12 @@ void AHTMODEL::strcpy2( char *dest, const char *src, size_t size )
 	char *d = dest;
 	const char *s = src;
 	size_t n = size;
-	while ( --n ) {
+	while ( --n != 0u ) {
 		if ( ( *d++ = *s++ ) == '\0' ) {
 			return;
 		}
 	}
 	*d = '\0';
-	return;
 }
 
 
@@ -63,12 +63,14 @@ int AHTMODEL::tstrcmp( const char *str1, const char *str2 )
 	int ap;
 	char as;
 	ap = 0;
-	while ( 1 ) {
+	while ( true ) {
 		as = str1[ap];
-		if ( as != str2[ap] )
+		if ( as != str2[ap] ) {
 			return 0;
-		if ( as == 0 )
+		}
+		if ( as == 0 ) {
 			break;
+		}
 		ap++;
 	}
 	return -1;
@@ -84,11 +86,11 @@ AHTPROP *AHTMODEL::GetPropertyFromAlias( char *propname )
 	strcpy2( tmp, propname, 128 );
 	strcase( tmp );
 	for ( i = 0; i < prop_cnt; i++ ) {
-		if ( tstrcmp( mem_prop[i]->name, tmp ) ) {
+		if ( tstrcmp( mem_prop[i]->name, tmp ) != 0 ) {
 			return mem_prop[i];
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 AHTPROP *AHTMODEL::GetProperty( char *propname )
@@ -100,11 +102,11 @@ AHTPROP *AHTMODEL::GetProperty( char *propname )
 	strcpy2( tmp, propname, 128 );
 	strcase( tmp );
 	for ( i = 0; i < prop_cnt; i++ ) {
-		if ( tstrcmp( mem_prop[i]->orgname, tmp ) ) {
+		if ( tstrcmp( mem_prop[i]->orgname, tmp ) != 0 ) {
 			return mem_prop[i];
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 
@@ -117,7 +119,7 @@ int AHTMODEL::GetPropertyID( char *propname )
 	strcpy2( tmp, propname, 128 );
 	strcase( tmp );
 	for ( i = 0; i < prop_cnt; i++ ) {
-		if ( tstrcmp( mem_prop[i]->orgname, tmp ) ) {
+		if ( tstrcmp( mem_prop[i]->orgname, tmp ) != 0 ) {
 			return i;
 		}
 	}
@@ -125,17 +127,18 @@ int AHTMODEL::GetPropertyID( char *propname )
 }
 
 
-int AHTMODEL::GetGlobalId2( void )
+int AHTMODEL::GetGlobalId2()
 {
 	//		グローバルIDを返す
 	//
-	if ( global_id < 0 )
+	if ( global_id < 0 ) {
 		return 0;
+	}
 	return global_id;
 }
 
 
-int AHTMODEL::GetPropertyPossibleLines( void )
+int AHTMODEL::GetPropertyPossibleLines()
 {
 	//		プロパティ編集が使用する行数を計算する
 	//
@@ -185,42 +188,42 @@ int AHTMODEL::GetPropertyPossibleLines( void )
 
 void AHTMODEL::SetAHTOption( char *name, char *value )
 {
-	if ( tstrcmp( name, "flag" ) ) {
+	if ( tstrcmp( name, "flag" ) != 0 ) {
 		int i;
 		i = atoi( value );
 		flag = i | AHTMODEL_FLAG_READY;
 		return;
 	}
-	if ( tstrcmp( name, "name" ) ) {
+	if ( tstrcmp( name, "name" ) != 0 ) {
 		SetName( value );
 		return;
 	}
-	if ( tstrcmp( name, "class" ) ) {
+	if ( tstrcmp( name, "class" ) != 0 ) {
 		SetClass( value );
 		return;
 	}
-	if ( tstrcmp( name, "author" ) ) {
+	if ( tstrcmp( name, "author" ) != 0 ) {
 		SetAuthor( value );
 		return;
 	}
-	if ( tstrcmp( name, "ver" ) ) {
+	if ( tstrcmp( name, "ver" ) != 0 ) {
 		SetVersion( value );
 		return;
 	}
-	if ( tstrcmp( name, "icon" ) ) {
+	if ( tstrcmp( name, "icon" ) != 0 ) {
 		SetIconFile( value );
 		return;
 	}
-	if ( tstrcmp( name, "iconid" ) ) {
+	if ( tstrcmp( name, "iconid" ) != 0 ) {
 		SetIconId( atoi( value ) );
 		return;
 	}
-	if ( tstrcmp( name, "exp" ) ) {
+	if ( tstrcmp( name, "exp" ) != 0 ) {
 		exp->PutStr( value );
 		exp->PutCR();
 		return;
 	}
-	if ( tstrcmp( name, "helpkw" ) ) {
+	if ( tstrcmp( name, "helpkw" ) != 0 ) {
 		SetHelpKeyword( value );
 		return;
 	}
@@ -229,36 +232,36 @@ void AHTMODEL::SetAHTOption( char *name, char *value )
 
 char *AHTMODEL::GetAHTOption( char *name )
 {
-	if ( tstrcmp( name, "flag" ) ) {
+	if ( tstrcmp( name, "flag" ) != 0 ) {
 		sprintf( s_flag, "%d", GetFlag() );
 		return s_flag;
 	}
-	if ( tstrcmp( name, "glid" ) ) {
+	if ( tstrcmp( name, "glid" ) != 0 ) {
 		sprintf( s_glid, "%d", GetGlobalId2() );
 		return s_glid;
 	}
-	if ( tstrcmp( name, "name" ) ) {
+	if ( tstrcmp( name, "name" ) != 0 ) {
 		return GetName();
 	}
-	if ( tstrcmp( name, "class" ) ) {
+	if ( tstrcmp( name, "class" ) != 0 ) {
 		return GetClass();
 	}
-	if ( tstrcmp( name, "author" ) ) {
+	if ( tstrcmp( name, "author" ) != 0 ) {
 		return GetAuthor();
 	}
-	if ( tstrcmp( name, "ver" ) ) {
+	if ( tstrcmp( name, "ver" ) != 0 ) {
 		return GetVersion();
 	}
-	if ( tstrcmp( name, "icon" ) ) {
+	if ( tstrcmp( name, "icon" ) != 0 ) {
 		return GetIconFile();
 	}
-	if ( tstrcmp( name, "exp" ) ) {
+	if ( tstrcmp( name, "exp" ) != 0 ) {
 		return exp->GetBuffer();
 	}
-	if ( tstrcmp( name, "source" ) ) {
+	if ( tstrcmp( name, "source" ) != 0 ) {
 		return fname;
 	}
-	if ( tstrcmp( name, "helpkw" ) ) {
+	if ( tstrcmp( name, "helpkw" ) != 0 ) {
 		return GetHelpKeyword();
 	}
 	return (char *)&dummy;
@@ -269,7 +272,7 @@ AHTPROP *AHTMODEL::SetPropertyType( char *propname, int type )
 {
 	AHTPROP *p;
 	p = GetProperty( propname );
-	if ( p == NULL ) {
+	if ( p == nullptr ) {
 		char ptmp[128];
 		strcpy2( ptmp, propname, 128 );
 		strcase( ptmp );
@@ -293,10 +296,11 @@ AHTPROP *AHTMODEL::SetPropertyDefault( char *propname, char *value )
 	AHTPROP *prop;
 	vp = (unsigned char *)value;
 	qmode = 0;
-	while ( 1 ) {
+	while ( true ) {
 		a1 = *vp;
-		if ( ( a1 != 32 ) && ( a1 != 9 ) )
+		if ( ( a1 != 32 ) && ( a1 != 9 ) ) {
 			break;
+		}
 		vp++;
 	}
 
@@ -306,16 +310,19 @@ AHTPROP *AHTMODEL::SetPropertyDefault( char *propname, char *value )
 	}
 
 	pname = (char *)vp;
-	while ( 1 ) {
+	while ( true ) {
 		a1 = *vp;
-		if ( a1 == 0 )
+		if ( a1 == 0 ) {
 			break;
-		if ( qmode ) {
-			if ( a1 == 0x22 )
+		}
+		if ( qmode != 0 ) {
+			if ( a1 == 0x22 ) {
 				break;
+			}
 		} else {
-			if ( a1 <= 32 )
+			if ( a1 <= 32 ) {
 				break;
+			}
 		}
 		if ( a1 >= 129 ) { // 全角文字チェック
 			if ( ( a1 <= 159 ) || ( a1 >= 224 ) ) {
@@ -326,8 +333,9 @@ AHTPROP *AHTMODEL::SetPropertyDefault( char *propname, char *value )
 	}
 	*vp = 0;
 	prop = SetPropertyDefaultStr( propname, pname );
-	if ( qmode )
+	if ( qmode != 0 ) {
 		prop->SetMode( AHTMODE_QUOTATION | AHTMODE_OUTPUT_PURE );
+	}
 	// Alertf("%s(%d)",value,qmode);
 	return prop;
 }
@@ -366,7 +374,8 @@ AHTPROP *AHTMODEL::SetPropertyDefaultDouble( char *propname, double value )
 
 int AHTMODEL::SetProp( AHTPROP *prop, char *name, char *value )
 {
-	int i, type;
+	int i;
+	int type;
 	char tmp[32];
 	AHTPROP *p;
 
@@ -376,79 +385,89 @@ int AHTMODEL::SetProp( AHTPROP *prop, char *name, char *value )
 	strcase( tmp );
 	i = -1;
 	type = 0;
-	if ( tstrcmp( tmp, "name" ) )
+	if ( tstrcmp( tmp, "name" ) != 0 ) {
 		i = 0;
-	if ( tstrcmp( tmp, "help" ) )
+	}
+	if ( tstrcmp( tmp, "help" ) != 0 ) {
 		i = 1;
-	if ( tstrcmp( tmp, "default" ) )
+	}
+	if ( tstrcmp( tmp, "default" ) != 0 ) {
 		i = 2;
+	}
 
-	if ( tstrcmp( tmp, "sub" ) )
+	if ( tstrcmp( tmp, "sub" ) != 0 ) {
 		i = 3;
-	if ( tstrcmp( tmp, "sub2" ) )
+	}
+	if ( tstrcmp( tmp, "sub2" ) != 0 ) {
 		i = 4;
-	if ( tstrcmp( tmp, "min" ) )
+	}
+	if ( tstrcmp( tmp, "min" ) != 0 ) {
 		i = 3;
-	if ( tstrcmp( tmp, "max" ) )
+	}
+	if ( tstrcmp( tmp, "max" ) != 0 ) {
 		i = 4;
-	if ( tstrcmp( tmp, "prm" ) )
+	}
+	if ( tstrcmp( tmp, "prm" ) != 0 ) {
 		i = 3;
-	if ( tstrcmp( tmp, "opt" ) )
+	}
+	if ( tstrcmp( tmp, "opt" ) != 0 ) {
 		i = 4;
+	}
 
-	if ( tstrcmp( tmp, "int" ) ) {
+	if ( tstrcmp( tmp, "int" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_EDIT_INT;
 	}
-	if ( tstrcmp( tmp, "double" ) ) {
+	if ( tstrcmp( tmp, "double" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_EDIT_DOUBLE;
 	}
-	if ( tstrcmp( tmp, "str" ) ) {
+	if ( tstrcmp( tmp, "str" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_EDIT_STRING;
 	}
-	if ( tstrcmp( tmp, "combox" ) ) {
+	if ( tstrcmp( tmp, "combox" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_CBOX_STRING;
 	}
-	if ( tstrcmp( tmp, "chkbox" ) ) {
+	if ( tstrcmp( tmp, "chkbox" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_CHKB_INT;
 	}
-	if ( tstrcmp( tmp, "color" ) ) {
+	if ( tstrcmp( tmp, "color" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_COLS_INT;
 	}
-	if ( tstrcmp( tmp, "font" ) ) {
+	if ( tstrcmp( tmp, "font" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_FONT_STRING;
 	}
-	if ( tstrcmp( tmp, "file" ) ) {
+	if ( tstrcmp( tmp, "file" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_FILE_STRING;
 	}
-	if ( tstrcmp( tmp, "exec" ) ) {
+	if ( tstrcmp( tmp, "exec" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_EXTF_STRING;
 	}
 
-	if ( tstrcmp( tmp, "parts" ) ) {
+	if ( tstrcmp( tmp, "parts" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_PARTS_INT;
 	}
-	if ( tstrcmp( tmp, "pprop" ) ) {
+	if ( tstrcmp( tmp, "pprop" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_PARTS_PROP_STRING;
 	}
-	if ( tstrcmp( tmp, "popt" ) ) {
+	if ( tstrcmp( tmp, "popt" ) != 0 ) {
 		i = 5;
 		type = AHTTYPE_PARTS_OPT_STRING;
 	}
 
 	// Alertf( "%s=%s(%d)", tmp, value, i );
-	if ( i < 0 )
+	if ( i < 0 ) {
 		return -1;
+	}
 
 	switch ( i ) {
 	case 0:
@@ -479,17 +498,19 @@ AHTPROP *AHTMODEL::SetProperty( char *propname, char *name, char *value )
 {
 	AHTPROP *p;
 	p = GetProperty( propname );
-	if ( p == NULL ) {
+	if ( p == nullptr ) {
 		char ptmp[128];
 		strcpy2( ptmp, propname, 128 );
 		strcase( ptmp );
 		p = AddProperty();
 		SetPropOrgName( p, ptmp );
 	}
-	if ( ( name == NULL ) || ( value == NULL ) )
+	if ( ( name == nullptr ) || ( value == nullptr ) ) {
 		return p;
-	if ( SetProp( p, name, value ) < 0 )
-		return NULL;
+	}
+	if ( SetProp( p, name, value ) < 0 ) {
+		return nullptr;
+	}
 	return p;
 }
 
@@ -514,27 +535,32 @@ int AHTMODEL::SetAHTPropertyString( char *propname, char *str )
 	AHTPROP *p;
 	vp = str;
 	res = 0;
-	p = SetProperty( propname, NULL, NULL );
+	p = SetProperty( propname, nullptr, nullptr );
 
-	while ( 1 ) {
+	while ( true ) {
 		//		パラメーター名を抽出
-		while ( 1 ) {
+		while ( true ) {
 			a1 = *vp;
-			if ( ( a1 != 32 ) && ( a1 != 9 ) )
+			if ( ( a1 != 32 ) && ( a1 != 9 ) ) {
 				break;
+			}
 			vp++;
 		}
-		if ( a1 == 0 )
+		if ( a1 == 0 ) {
 			break;
+		}
 		pname = vp; // パラメーター名
-		while ( 1 ) {
+		while ( true ) {
 			a1 = *vp;
-			if ( a1 == 0 )
+			if ( a1 == 0 ) {
 				break;
-			if ( a1 == ',' )
+			}
+			if ( a1 == ',' ) {
 				break;
-			if ( a1 == '=' )
+			}
+			if ( a1 == '=' ) {
 				break;
+			}
 			if ( a1 >= 129 ) { // 全角文字チェック
 				if ( ( a1 <= 159 ) || ( a1 >= 224 ) ) {
 					vp++;
@@ -552,10 +578,11 @@ int AHTMODEL::SetAHTPropertyString( char *propname, char *str )
 				vp++;
 			}
 			pvalue = vp;
-			while ( 1 ) {
+			while ( true ) {
 				a1 = *vp;
-				if ( a1 == 0 )
+				if ( a1 == 0 ) {
 					break;
+				}
 				if ( qmode == 0 ) {
 					if ( a1 == ',' ) {
 						*vp++ = 0;
@@ -581,15 +608,16 @@ int AHTMODEL::SetAHTPropertyString( char *propname, char *str )
 				}
 				vp++;
 			}
-			if ( SetProp( p, pname, pvalue ) < 0 )
+			if ( SetProp( p, pname, pvalue ) < 0 ) {
 				res = 1;
+			}
 		} else {
 			//		単独タイプ
 			//
 			amb = 1;
-			if ( tstrcmp( pname, "withid" ) ) {
+			if ( tstrcmp( pname, "withid" ) != 0 ) {
 				p->SetMode( AHTMODE_WITH_ID );
-				if ( p->newval == NULL ) {
+				if ( p->newval == nullptr ) {
 					char tmp[512];
 					strcpy( tmp, p->defval );
 					sprintf( tmp, "%s_%d", p->defval, id );
@@ -597,33 +625,35 @@ int AHTMODEL::SetAHTPropertyString( char *propname, char *str )
 				}
 				amb = 0;
 			}
-			if ( tstrcmp( pname, "read" ) ) {
+			if ( tstrcmp( pname, "read" ) != 0 ) {
 				p->SetMode( AHTMODE_READ_ONLY );
 				amb = 0;
 			}
-			if ( tstrcmp( pname, "pure" ) ) {
+			if ( tstrcmp( pname, "pure" ) != 0 ) {
 				p->SetMode( AHTMODE_OUTPUT_PURE );
 				amb = 0;
 			}
-			if ( tstrcmp( pname, "raw" ) ) {
+			if ( tstrcmp( pname, "raw" ) != 0 ) {
 				p->SetMode( AHTMODE_OUTPUT_RAW );
 				amb = 0;
 			}
-			if ( tstrcmp( pname, "mes" ) ) {
+			if ( tstrcmp( pname, "mes" ) != 0 ) {
 				p->ClearMode( AHTMODE_OUTPUT_PURE );
 				amb = 0;
 			}
-			if ( tstrcmp( pname, "refname" ) ) {
+			if ( tstrcmp( pname, "refname" ) != 0 ) {
 				refprop = p;
 				amb = 0;
 			}
 
-			if ( amb ) {
-				if ( SetProp( p, pname, "" ) < 0 )
+			if ( amb != 0 ) {
+				if ( SetProp( p, pname, "" ) < 0 ) {
 					res = 1;
+				}
 			}
-			if ( a1 == ',' )
+			if ( a1 == ',' ) {
 				vp++;
+			}
 		}
 	}
 	return res;
@@ -634,10 +664,10 @@ int AHTMODEL::SetAHTPropertyString( char *propname, char *str )
 //		AHTModel Interfaces
 //-------------------------------------------------------------
 
-AHTMODEL::AHTMODEL( void )
+AHTMODEL::AHTMODEL()
+	: flag( AHTMODEL_FLAG_NONE ), dummy( 0 ), prop_cnt( 0 ), mem_prop_size( 0 ), mem_prop( nullptr ), source( nullptr ),
+	  propstr( nullptr ), exp( nullptr ), stdbuf( nullptr ), refprop( nullptr ), iconid( 0 )
 {
-	flag = AHTMODEL_FLAG_NONE;
-	dummy = 0;
 	SetCur( 0, 0 );
 	SetPage( 0 );
 	SetNextID( -1 );
@@ -649,46 +679,34 @@ AHTMODEL::AHTMODEL( void )
 	obj.option3 = 0;
 	obj.option4 = 0;
 
-	prop_cnt = 0;
-	mem_prop_size = 0;
-	mem_prop = NULL;
-
-	source = NULL;
-	propstr = NULL;
-	exp = NULL;
-	stdbuf = NULL;
-
 	*name = 0;
 	*classname = 0;
 	*author = 0;
 	*ver = 0;
 	*fname = 0;
 	*fpath = 0;
-	refprop = NULL;
 
 	*icon = 0;
-	iconid = 0;
 }
 
 
-AHTMODEL::~AHTMODEL( void )
+AHTMODEL::~AHTMODEL()
 {
 	int i;
 	for ( i = 0; i < prop_cnt; i++ ) {
 		delete mem_prop[i];
 	}
-	if ( source != NULL )
-		delete source;
-	if ( propstr != NULL )
-		delete propstr;
-	if ( exp != NULL )
-		delete exp;
+
+	delete source;
+	delete propstr;
+	delete exp;
 }
 
 
-AHTPROP *AHTMODEL::AddProperty( void )
+AHTPROP *AHTMODEL::AddProperty()
 {
-	int i, sz;
+	int i;
+	int sz;
 	AHTPROP *obj;
 	i = prop_cnt++;
 	sz = sizeof( void * ) * ( ( prop_cnt + 15 ) & 0xfff0 );
@@ -825,9 +843,9 @@ void AHTMODEL::SetPrevID( int id )
 }
 
 
-char *AHTMODEL::GetName( void )
+char *AHTMODEL::GetName()
 {
-	if ( refprop != NULL ) {
+	if ( refprop != nullptr ) {
 		return refprop->GetValue();
 	}
 	return name;
@@ -844,12 +862,13 @@ void AHTMODEL::SetHelpKeyword( char *name )
 //		AHTProperty Interfaces
 //-------------------------------------------------------------
 
-AHTPROP::AHTPROP( void )
+AHTPROP::AHTPROP()
+	: id( 0 ), ahttype( AHTTYPE_EDIT_INT ), ahtmode( 0 ), nvsize( 0 ), newval( nullptr ), outname( nullptr )
 {
 	char *p;
-	id = 0;
-	ahttype = AHTTYPE_EDIT_INT; // property type (AHTTYPE_*)
-	ahtmode = 0;
+
+	// property type (AHTTYPE_*)
+
 	p = (char *)&strdummy;
 	name = p;	 // property name
 	orgname = p; // property name(org)
@@ -857,18 +876,17 @@ AHTPROP::AHTPROP( void )
 	defval = p;	 // default value
 	defval2 = p; // default value (sub)
 	defval3 = p; // default value (sub2)
-	nvsize = 0;
-	newval = NULL;
-	outname = NULL;
 }
 
 
-AHTPROP::~AHTPROP( void )
+AHTPROP::~AHTPROP()
 {
-	if ( newval != NULL )
+	if ( newval != nullptr ) {
 		free( newval );
-	if ( outname != NULL )
+	}
+	if ( outname != nullptr ) {
 		free( outname );
+	}
 }
 
 
@@ -881,13 +899,14 @@ void AHTPROP::SetOutValue( char *data )
 	unsigned char *p;
 	unsigned char *src;
 
-	if ( outname != NULL ) {
+	if ( outname != nullptr ) {
 		free( outname );
-		outname = NULL;
+		outname = nullptr;
 	}
 	i = ( strlen( data ) * 2 ) + 1;
-	if ( i < 64 )
+	if ( i < 64 ) {
 		i = 64;
+	}
 	outname = (char *)malloc( i );
 	*outname = 0;
 	p = (unsigned char *)outname;
@@ -897,7 +916,7 @@ void AHTPROP::SetOutValue( char *data )
 	// strcpy( (char *)p, data );
 	// strcat( (char *)p, "\"" );
 
-	if ( ahtmode & AHTMODE_OUTPUT_PURE ) {
+	if ( ( ahtmode & AHTMODE_OUTPUT_PURE ) != 0 ) {
 		*p++ = 0x22;
 	} else {
 		*p++ = 0x22;
@@ -905,10 +924,11 @@ void AHTPROP::SetOutValue( char *data )
 		*p++ = 0x22;
 	}
 
-	while ( 1 ) {
+	while ( true ) {
 		a1 = *src++;
-		if ( a1 == 0 )
+		if ( a1 == 0 ) {
 			break;
+		}
 		if ( a1 == '\\' ) {
 			if ( ( ahtmode & AHTMODE_OUTPUT_PURE ) == 0 ) {
 				*p++ = a1;
@@ -918,8 +938,9 @@ void AHTPROP::SetOutValue( char *data )
 		}
 		if ( a1 == 13 ) {
 			*p++ = '\\';
-			if ( *src == 10 )
+			if ( *src == 10 ) {
 				src++;
+			}
 			a1 = 'n';
 		}
 		if ( a1 == 0x22 ) {
@@ -934,26 +955,27 @@ void AHTPROP::SetOutValue( char *data )
 				*p++ = a1;
 				a1 = *src++;
 			}
-			if ( a1 == 0 )
+			if ( a1 == 0 ) {
 				break;
+			}
 		}
 		*p++ = a1;
 	}
 
-	if ( ahtmode & AHTMODE_OUTPUT_PURE ) {
+	if ( ( ahtmode & AHTMODE_OUTPUT_PURE ) != 0 ) {
 		strcpy( (char *)p, "\"" );
 	} else {
-		strcpy( (char *)p, "\\\"\"" );
+		strcpy( (char *)p, R"(\"")" );
 	}
 }
 
 
-char *AHTPROP::GetOutValue( void )
+char *AHTPROP::GetOutValue()
 {
-	if ( ahtmode & AHTMODE_OUTPUT_RAW ) {
+	if ( ( ahtmode & AHTMODE_OUTPUT_RAW ) != 0 ) {
 		return GetValue();
 	}
-	if ( ahtmode & AHTMODE_QUOTATION ) {
+	if ( ( ahtmode & AHTMODE_QUOTATION ) != 0 ) {
 		SetOutValue( GetValue() );
 		return outname;
 	}
@@ -968,24 +990,27 @@ void AHTPROP::SetNewVal( char *data )
 	if ( i <= nvsize ) {
 		strcpy( newval, data );
 	}
-	if ( newval != NULL )
+	if ( newval != nullptr ) {
 		free( newval );
-	if ( i < 64 )
+	}
+	if ( i < 64 ) {
 		i = 64;
+	}
 	nvsize = i;
 	newval = (char *)malloc( i );
 	strcpy( newval, data );
 }
 
-char *AHTPROP::GetValue( void )
+char *AHTPROP::GetValue()
 {
-	if ( newval != NULL )
+	if ( newval != nullptr ) {
 		return newval;
+	}
 	return defval;
 }
 
 
-int AHTPROP::GetValueInt( void )
+int AHTPROP::GetValueInt()
 {
 	char *p;
 	p = GetValue();
@@ -993,7 +1018,7 @@ int AHTPROP::GetValueInt( void )
 }
 
 
-double AHTPROP::GetValueDouble( void )
+double AHTPROP::GetValueDouble()
 {
 	char *p;
 	p = GetValue();

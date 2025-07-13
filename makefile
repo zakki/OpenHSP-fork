@@ -6,8 +6,8 @@ AR = ar
 CFLAGS_ENV =  -DHSP64 # 64bit
 CFLAGS_DISH = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
 CFLAGS_GP = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11 $(CFLAGS_ENV)
-CFLAGS_CL = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
-CFLAGS_CMP = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
+CFLAGS_CL = -Wno-write-strings -std=c++17 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
+CFLAGS_CMP = -Wno-write-strings -std=c++17 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
 PKG_CONFIG = pkg-config
 
 OBJS = \
@@ -79,6 +79,7 @@ OBJS_CCMP = \
 	src/chspcmp/ahtmodel.o \
 	src/chspcmp/ahtobj.o \
 	src/chspcmp/codegen.o \
+	src/chspcmp/codegen_lexer.o \
 	src/chspcmp/comutil.o \
 	src/chspcmp/errormsg.o \
 	src/chspcmp/hsc3.o \
@@ -89,7 +90,10 @@ OBJS_CCMP = \
 	src/chspcmp/membuf.o \
 	src/chspcmp/tagstack.o \
 	src/chspcmp/hsmanager.o \
-	src/chspcmp/token.o \
+	src/chspcmp/preprocessor.o \
+	src/chspcmp/preprocessor_lexer.o \
+	src/chspcmp/lexer_util.o \
+	src/chspcmp/logger.o \
 	src/hsp3/strnote.o \
 	src/hsp3/strbuf.o \
 	src/hsp3/linux/supio_linux.o
@@ -495,7 +499,7 @@ hspcmp: $(OBJS_CMP)
 	$(CXX) $(CFLAGS_CMP) -c $< -o $*.o
 
 chspcmp: $(OBJS_CCMP)
-	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -s -o $@
+	$(CXX) $(CFLAGS_CMP) $(OBJS_CCMP) -s -o $@
 
 hsp3cl: $(OBJS_CL)
 	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -lcurl -lgpiod -lpthread -lffi -o $@
@@ -524,5 +528,5 @@ libLinearMath.a: $(OBJS_LINEAR_MATH)
 	$(AR) rcs $@ $(OBJS_LINEAR_MATH)
 
 clean:
-	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
+	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP) $(OBJS_CCMP)
 

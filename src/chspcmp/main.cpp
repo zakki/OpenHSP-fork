@@ -7,8 +7,8 @@
 #include <windows.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #ifdef HSPLINUX
 #include <unistd.h>
@@ -17,19 +17,19 @@
 #ifdef HSPWIN
 #include <direct.h>
 #endif
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 
 #include "../hsp3/hsp3config.h"
 #include "supio.h"
 
 #include "hsc3.h"
 #include "hsmanager.h"
-#include "token.h"
+#include "preprocessor.h"
 
 /*----------------------------------------------------------*/
 
-static void usage1( void )
+static void usage1()
 {
 	static char *p[] = { "usage: hspcmp [options] [filename]",
 						 "       -o??? set output file to ???",
@@ -54,29 +54,40 @@ static void usage1( void )
 						 "       ---------------------------------",
 						 "       --syspath=??? set system folder for execute",
 						 "       --compath=??? set common path to ???",
-						 NULL };
+						 nullptr };
 	int i;
-	for ( i = 0; p[i]; i++ )
+	for ( i = 0; p[i] != nullptr; i++ ) {
 		printf( "%s\n", p[i] );
+	}
 }
 
 /*----------------------------------------------------------*/
 
 int main( int argc, char *argv[] )
 {
-	char a1, a2, a3;
-	int b, st;
-	int cmpopt, ppopt, utfopt, pponly, execobj, strmap, hsphelp;
-	char *opt_lk = NULL;
-	char *opt_ls = NULL;
-	int opt_lsref, opt_lsmode;
+	char a1;
+	char a2;
+	char a3;
+	int b;
+	int st;
+	int cmpopt;
+	int ppopt;
+	int utfopt;
+	int pponly;
+	int execobj;
+	int strmap;
+	int hsphelp;
+	char *opt_lk = nullptr;
+	char *opt_ls = nullptr;
+	int opt_lsref;
+	int opt_lsmode;
 	char fname[HSP_MAX_PATH];
 	char fname2[HSP_MAX_PATH];
 	char oname[HSP_MAX_PATH];
 	char compath[HSP_MAX_PATH];
 	char syspath[HSP_MAX_PATH];
 	char helpkey[256];
-	CHsc3 *hsc3 = NULL;
+	CHsc3 *hsc3 = nullptr;
 
 	//	check switch and prm
 
@@ -165,13 +176,15 @@ int main( int argc, char *argv[] )
 				break;
 			case 'e':
 				execobj = 1;
-				if ( a3 == '0' )
+				if ( a3 == '0' ) {
 					execobj |= 8;
+				}
 				break;
 			case 'r':
 				execobj = 2;
-				if ( a3 == '0' )
+				if ( a3 == '0' ) {
 					execobj |= 8;
+				}
 				break;
 			case 'h':
 				hsphelp = 1;
@@ -214,13 +227,13 @@ int main( int argc, char *argv[] )
 		}
 	}
 
-	if ( st ) {
+	if ( st != 0 ) {
 		printf( "Illegal switch selected.\n" );
 		return 1;
 	}
 
 	//		help main
-	if ( hsphelp ) {
+	if ( hsphelp != 0 ) {
 		int res;
 		HspHelpManager hman;
 		strcat( syspath, "hsphelp" );
@@ -236,9 +249,10 @@ int main( int argc, char *argv[] )
 	hsc3->SetCommonPath( compath );
 
 	//		keyword main
-	if ( opt_lk ) {
-		if ( *opt_lk == 0 )
-			opt_lk = NULL;
+	if ( opt_lk != nullptr ) {
+		if ( *opt_lk == 0 ) {
+			opt_lk = nullptr;
+		}
 		st = hsc3->GetCmdList( 2, opt_lk );
 		puts( hsc3->GetError() );
 		delete hsc3;
@@ -253,7 +267,7 @@ int main( int argc, char *argv[] )
 	if ( oname[0] == 0 ) {
 		strcpy( oname, fname );
 		cutext( oname );
-		if ( strmap ) {
+		if ( strmap != 0 ) {
 			addext( oname, "strmap" );
 		} else {
 			addext( oname, "ax" );
@@ -265,9 +279,10 @@ int main( int argc, char *argv[] )
 	addext( fname, "hsp" ); // 拡張子がなければ追加する
 
 	//		label pick
-	if ( opt_ls ) {
-		if ( *opt_ls == 0 )
-			opt_ls = NULL;
+	if ( opt_ls != nullptr ) {
+		if ( *opt_ls == 0 ) {
+			opt_ls = nullptr;
+		}
 
 		//		通常のコンパイル
 		hsc3->InitAnalysisInfo( opt_lsmode | opt_lsref, opt_ls );
@@ -288,7 +303,7 @@ int main( int argc, char *argv[] )
 
 	//		call main
 
-	if ( execobj ) {
+	if ( execobj != 0 ) {
 		//		ランタイムを起動
 		char execmd[4096];
 		st = hsc3->GetRuntimeFromHeader( fname, oname );
@@ -298,7 +313,7 @@ int main( int argc, char *argv[] )
 
 #ifdef HSPLINUX
 		cutext( oname );
-		if ( execobj & 8 ) {
+		if ( ( execobj & 8 ) != 0 ) {
 			printf( "Runtime[%s].\n", oname );
 		} else {
 			int result;
@@ -312,10 +327,11 @@ int main( int argc, char *argv[] )
 				printf( "hsed: Process end %d.\n", result );
 				if ( execobj == 2 ) {
 					if ( result != 0 ) { // エラーがあった時
-						while ( 1 ) {
+						while ( true ) {
 							result = getchar();
-							if ( ( result == 13 ) || ( result == 10 ) )
+							if ( ( result == 13 ) || ( result == 10 ) ) {
 								break;
+							}
 						}
 					}
 				}
@@ -345,9 +361,9 @@ int main( int argc, char *argv[] )
 		hsc3->PreProcessEnd();
 	}
 
-	if ( hsc3 != NULL ) {
+	if ( hsc3 != nullptr ) {
 		delete hsc3;
-		hsc3 = NULL;
+		hsc3 = nullptr;
 	}
 	return st;
 }

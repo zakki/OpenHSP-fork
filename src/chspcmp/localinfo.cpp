@@ -13,26 +13,22 @@
 #endif
 
 #ifdef HSPLINUX
+#include <ctime>
 #include <sys/time.h>
-#include <time.h>
 #endif
 
 #include "localinfo.h"
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 //-------------------------------------------------------------
 //		Interfaces
 //-------------------------------------------------------------
 
-CLocalInfo::CLocalInfo()
-{
-}
+CLocalInfo::CLocalInfo() = default;
 
 
-CLocalInfo::~CLocalInfo()
-{
-}
+CLocalInfo::~CLocalInfo() = default;
 
 
 //-------------------------------------------------------------
@@ -64,7 +60,7 @@ int CLocalInfo::GetTime( int index )
 	struct timeval tv;
 	struct tm *lt;
 
-	gettimeofday( &tv, NULL ); // MinGWだとVerによって通りません
+	gettimeofday( &tv, nullptr ); // MinGWだとVerによって通りません
 	lt = localtime( &tv.tv_sec );
 
 	switch ( index ) {
@@ -93,14 +89,14 @@ int CLocalInfo::GetTime( int index )
 }
 
 
-char *CLocalInfo::CurrentTime( void )
+char *CLocalInfo::CurrentTime()
 {
 	sprintf( curtime, "\"%02d:%02d:%02d\"", GetTime( 4 ), GetTime( 5 ), GetTime( 6 ) );
 	return curtime;
 }
 
 
-char *CLocalInfo::CurrentDate( void )
+char *CLocalInfo::CurrentDate()
 {
 	sprintf( curdate, "\"%04d/%02d/%02d\"", GetTime( 0 ), GetTime( 1 ), GetTime( 3 ) );
 	return curdate;
