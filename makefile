@@ -75,6 +75,25 @@ OBJS_CMP = \
 	src/hsp3/strbuf.o \
 	src/hsp3/linux/supio_linux.o
 
+OBJS_CCMP = \
+	src/chspcmp/ahtmodel.o \
+	src/chspcmp/ahtobj.o \
+	src/chspcmp/codegen.o \
+	src/chspcmp/comutil.o \
+	src/chspcmp/errormsg.o \
+	src/chspcmp/hsc3.o \
+	src/chspcmp/hspcmd.o \
+	src/chspcmp/label.o \
+	src/chspcmp/localinfo.o \
+	src/chspcmp/main.o \
+	src/chspcmp/membuf.o \
+	src/chspcmp/tagstack.o \
+	src/chspcmp/hsmanager.o \
+	src/chspcmp/token.o \
+	src/hsp3/strnote.o \
+	src/hsp3/strbuf.o \
+	src/hsp3/linux/supio_linux.o
+
 OBJS_CL = \
 	src/hsp3/linux/main.o \
 	src/hsp3/hsp3.o \
@@ -442,7 +461,7 @@ OBJS_LINEAR_MATH = \
 	src/hsp3dish/extlib/src/LinearMath/btThreads.gpo \
 	src/hsp3dish/extlib/src/LinearMath/btVector3.gpo
 
-TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed
+TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed chspcmp
 LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
 LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
 LIBS_GP = \
@@ -474,6 +493,9 @@ hspcmp: $(OBJS_CMP)
 	$(CC) $(CFLAGS_CMP) -c $< -o $*.o
 %.o: %.cpp
 	$(CXX) $(CFLAGS_CMP) -c $< -o $*.o
+
+chspcmp: $(OBJS_CCMP)
+	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -s -o $@
 
 hsp3cl: $(OBJS_CL)
 	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -lcurl -lgpiod -lpthread -lffi -o $@
