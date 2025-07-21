@@ -33,10 +33,10 @@ public:
 	void PutCS( int type, double value, int exflg );
 	int PutOT( int value );
 	int PutDS( double value );
-	int PutDS( char *str );
-	int PutDSStr( char *str, bool converts_to_utf8 );
-	int PutDSBuf( char *str );
-	int PutDSBuf( char *str, int size );
+	int PutDS( const char *str );
+	int PutDSStr( const char *str, bool converts_to_utf8 );
+	int PutDSBuf( const char *str );
+	int PutDSBuf( const char *str, int size );
 	char *GetDS( int ptr );
 	void SetOT( int id, int value );
 	void PutDI( void );
@@ -53,6 +53,15 @@ public:
 	int PutStructEnd( char *name, int libindex, int otindex, int funcflag );
 	int PutStructEnd( int i, char *name, int libindex, int otindex, int funcflag );
 	int PutStructEndDll( char *name, int libindex, int subid, int otindex );
+
+	void PutCSInteger( int value, int exflag );
+	void PutCSDouble( double value, int exflag );
+	void PutCSString( const char *value, int exflag );
+	int PutCSLabel( const char *name, int exflag );
+	// void PutCSVariable(int var_id, int exflag);
+	int ReserveCSAddress();
+	void PatchCSAddress( int location, short address );
+	void PutCSMark( int mark, int exflag );
 
 private:
 	bool CG_optCode() const

@@ -73,65 +73,8 @@ void CCodeGenerator::CalcCG_regmark( int mark )
 {
 	//		演算子を登録する
 	//
-	int op;
-	op = 0;
-	switch ( mark ) {
-	case '+':
-		op = CALCCODE_ADD;
-		break;
-	case '-':
-		op = CALCCODE_SUB;
-		break;
-	case '*':
-		op = CALCCODE_MUL;
-		break;
-	case '/':
-		op = CALCCODE_DIV;
-		break;
-
-	case '=':
-		op = CALCCODE_EQ;
-		break;
-	case '!':
-		op = CALCCODE_NE;
-		break;
-	case '<':
-		op = CALCCODE_LT;
-		break;
-	case '>':
-		op = CALCCODE_GT;
-		break;
-	case 0x61: // '<='
-		op = CALCCODE_LTEQ;
-		break;
-	case 0x62: // '>='
-		op = CALCCODE_GTEQ;
-		break;
-
-	case '&':
-		op = CALCCODE_AND;
-		break;
-	case '|':
-		op = CALCCODE_OR;
-		break;
-	case '^':
-		op = CALCCODE_XOR;
-		break;
-
-	case 0x5c: // '\'
-		op = CALCCODE_MOD;
-		break;
-	case 0x63: // '<<'
-		op = CALCCODE_LR;
-		break;
-	case 0x64: // '>>'
-		op = CALCCODE_RR;
-		break;
-	default:
-		throw CGERROR_CALCEXP;
-	}
+	writer->PutCSMark( mark, texflag );
 	calccount++;
-	writer->PutCS( TK_NONE, op, texflag );
 }
 
 void CCodeGenerator::CalcCG_factor()
@@ -141,19 +84,19 @@ void CCodeGenerator::CalcCG_factor()
 	cs_lasttype = token->ttype;
 	switch ( token->ttype ) {
 	case TK_NUM:
-		writer->PutCS( TYPE_INUM, token->val, texflag );
+		writer->PutCSInteger( token->val, texflag );
 		texflag = 0;
 		CalcCG_token();
 		calccount++;
 		return;
 	case TK_DNUM:
-		writer->PutCS( TYPE_DNUM, token->val_d, texflag );
+		writer->PutCSDouble( token->val_d, texflag );
 		texflag = 0;
 		CalcCG_token();
 		calccount++;
 		return;
 	case TK_STRING:
-		writer->PutCS( TYPE_STRING, writer->PutDS( token->cg_str ), texflag );
+		writer->PutCSString( token->cg_str, texflag );
 		texflag = 0;
 		CalcCG_token();
 		calccount++;
@@ -634,18 +577,15 @@ void CCodeGenerator::GenerateCodeMethod()
 	}
 }
 
-void CCodeGenerator::GenerateCodeLabel( char *keyname, int ex )
+void CCodeGenerator::GenerateCodeLabel( const char *keyname, int ex )
 {
 	//		HSP3Codeを展開する(ラベル)
 	//
-	int id;
-	int t;
-	int i;
 	char lname[128];
-	char *name;
 
-	name = keyname;
+	const char *name = keyname;
 	if ( *name == '@' ) {
+		int i;
 		switch ( tolower( name[1] ) ) {
 		case 'f':
 			i = cg_locallabel;
@@ -660,19 +600,9 @@ void CCodeGenerator::GenerateCodeLabel( char *keyname, int ex )
 		name = lname;
 	}
 
-	id = symtab->lb->Search( name );
-	if ( id < 0 ) { // 仮のラベル
-		i = writer->PutOT( -1 );
-		id = symtab->lb->Regist( name, TYPE_XLABEL, i );
-		GenerateLabelListAndTagRef( id, LABBUF_FLAG_LABEL );
-	} else {
-		t = symtab->lb->GetType( id );
-		if ( ( t != TYPE_XLABEL ) && ( t != TYPE_LABEL ) ) {
-			throw CGERROR_LABELEXIST;
-		}
-		GenerateLabelListAndTagRef( id, LABBUF_FLAG_LABEL );
-	}
-	writer->PutCS( TYPE_LABEL, symtab->lb->GetOpt( id ), ex );
+	int id = writer->PutCSLabel( name, ex );
+
+	GenerateLabelListAndTagRef( id, LABBUF_FLAG_LABEL );
 }
 
 
@@ -710,10 +640,7 @@ void CCodeGenerator::CheckCMDIF_Set( int mode )
 	}
 
 	iftype[iflev] = mode;
-	ifptr[iflev] = writer->GetCS();
-
-	writer->cs_buf->Put( (short)0 );
-
+	ifptr[iflev] = writer->ReserveCSAddress();
 	ifmode[iflev] = writer->GetCS();
 	ifscope[iflev] = CG_IFCHECK_LINE;
 	ifterm[iflev] = 0;
@@ -743,8 +670,7 @@ finag:
 
 	if ( ifterm[iflev] == 0 ) {
 		ifterm[iflev] = 1;
-		p = (short *)writer->cs_buf->GetBuffer();
-		p[ifptr[iflev]] = (short)a;
+		writer->PatchCSAddress( ifptr[iflev], a );
 	}
 
 	// sprintf(tmp,"#IF FINISH [L=%d(%d)] [skip%d]\n",cline,iflev,a);
@@ -2246,12 +2172,7 @@ int CCodeGenerator::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 	//		mode			COMP_MODE_DEBUG Debug code (0=off 1=on)
 	//						COMP_MODE_UTF8  utf-8 out (0=off 1=on)
 	//
-	// int i;
-	// int orgcs;
 	int res;
-	// int adjsize;
-	// CMemBuf optbuf;	  // オプション文字列用バッファ
-	// CMemBuf exoptbuf; // 拡張オプション用バッファ
 	CMemBuf bakbuf; // プリプロセッサソース保存用バッファ
 
 	writer = std::make_unique<CCodeWriter>( compopt, logger, symtab );

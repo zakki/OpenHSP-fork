@@ -107,7 +107,7 @@ int CCodeWriter::PutDS( double value )
 }
 
 
-int CCodeWriter::PutDS( char *str )
+int CCodeWriter::PutDS( const char *str )
 {
 	//		Register strings to data segment (script string)
 	//
@@ -115,7 +115,7 @@ int CCodeWriter::PutDS( char *str )
 }
 
 
-int CCodeWriter::PutDSBuf( char *str )
+int CCodeWriter::PutDSBuf( const char *str )
 {
 	//		Register strings to data segment (direct)
 	//
@@ -123,11 +123,10 @@ int CCodeWriter::PutDSBuf( char *str )
 }
 
 
-int CCodeWriter::PutDSStr( char *str, bool converts_to_utf8 )
+int CCodeWriter::PutDSStr( const char *str, bool converts_to_utf8 )
 {
 	//		Register strings to data segment (caching)
-
-	char *p;
+	const char *p;
 
 	// output as UTF8 format
 	if ( converts_to_utf8 ) {
@@ -167,12 +166,11 @@ int CCodeWriter::PutDSStr( char *str, bool converts_to_utf8 )
 }
 
 
-int CCodeWriter::PutDSBuf( char *str, int size )
+int CCodeWriter::PutDSBuf( const char *str, int size )
 {
 	//		Register strings to data segment (direct)
 	//
-	int i;
-	i = ds_buf->GetSize();
+	int i = ds_buf->GetSize();
 	ds_buf->PutData( str, size );
 	return i;
 }
@@ -182,8 +180,7 @@ int CCodeWriter::PutOT( int value )
 {
 	//		Register object temp
 	//
-	int i;
-	i = ot_buf->GetSize() / sizeof( int );
+	int i = ot_buf->GetSize() / sizeof( int );
 	ot_buf->Put( value );
 	return i;
 }
@@ -193,8 +190,7 @@ void CCodeWriter::SetOT( int id, int value )
 {
 	//		Modify object temp
 	//
-	int *p;
-	p = (int *)( ot_buf->GetBuffer() );
+	int *p = (int *)( ot_buf->GetBuffer() );
 	p[id] = value;
 }
 
@@ -210,8 +206,7 @@ void CCodeWriter::PutDI()
 	//			254,x(24),y(16) = new filename accepted (x=mds ptr.)
 	//			255             = end of debug data
 	//
-	int ofs;
-	ofs = (int)( GetCS() - cg_lastcs );
+	int ofs = (int)( GetCS() - cg_lastcs );
 	if ( ofs <= 250 ) {
 		di_buf->Put( (unsigned char)ofs );
 	} else {
@@ -567,6 +562,122 @@ void CCodeWriter::PutHPI( short flag, short option, char *libname, char *funcnam
 	hpi.p_libptr = 0;
 #endif
 	hpi_buf->PutData( &hpi, sizeof( HPIDAT ) );
+}
+
+
+void CCodeWriter::PutCSInteger( int value, int exflag )
+{
+	PutCS( TYPE_INUM, value, exflag );
+}
+
+
+void CCodeWriter::PutCSDouble( double value, int exflag )
+{
+	PutCS( TYPE_DNUM, value, exflag );
+}
+
+
+void CCodeWriter::PutCSString( const char *value, int exflag )
+{
+	PutCS( TYPE_STRING, PutDS( value ), exflag );
+}
+
+
+int CCodeWriter::PutCSLabel( const char *name, int exflag )
+{
+	std::string lname = name;
+	int id = symtab->lb->Search( lname.data() );
+	if ( id < 0 ) { // 仮のラベル
+		int i = PutOT( -1 );
+		id = symtab->lb->Regist( lname.data(), TYPE_XLABEL, i );
+	} else {
+		int t = symtab->lb->GetType( id );
+		if ( ( t != TYPE_XLABEL ) && ( t != TYPE_LABEL ) ) {
+			throw CGERROR_LABELEXIST;
+		}
+	}
+	PutCS( TYPE_LABEL, symtab->lb->GetOpt( id ), exflag );
+
+	return id;
+}
+
+
+int CCodeWriter::ReserveCSAddress()
+{
+	int pos = GetCS();
+	cs_buf->Put( (short)0 );
+	return pos;
+}
+
+
+void CCodeWriter::PatchCSAddress( int location, short address )
+{
+	auto *p = (short *)cs_buf->GetBuffer();
+	p[location] = (short)address;
+}
+
+
+void CCodeWriter::PutCSMark( int mark, int exflag )
+{
+	//		演算子を登録する
+	//
+	int op = 0;
+	switch ( mark ) {
+	case '+':
+		op = CALCCODE_ADD;
+		break;
+	case '-':
+		op = CALCCODE_SUB;
+		break;
+	case '*':
+		op = CALCCODE_MUL;
+		break;
+	case '/':
+		op = CALCCODE_DIV;
+		break;
+
+	case '=':
+		op = CALCCODE_EQ;
+		break;
+	case '!':
+		op = CALCCODE_NE;
+		break;
+	case '<':
+		op = CALCCODE_LT;
+		break;
+	case '>':
+		op = CALCCODE_GT;
+		break;
+	case 0x61: // '<='
+		op = CALCCODE_LTEQ;
+		break;
+	case 0x62: // '>='
+		op = CALCCODE_GTEQ;
+		break;
+
+	case '&':
+		op = CALCCODE_AND;
+		break;
+	case '|':
+		op = CALCCODE_OR;
+		break;
+	case '^':
+		op = CALCCODE_XOR;
+		break;
+
+	case 0x5c: // '\'
+		op = CALCCODE_MOD;
+		break;
+	case 0x63: // '<<'
+		op = CALCCODE_LR;
+		break;
+	case 0x64: // '>>'
+		op = CALCCODE_RR;
+		break;
+	default:
+		throw CGERROR_CALCEXP;
+	}
+	PutCS( TK_NONE, op, exflag );
 }
 
 

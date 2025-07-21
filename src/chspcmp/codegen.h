@@ -65,7 +65,7 @@ private:
 	void GenerateCodePRMF3( void );
 	int GenerateCodePRMF4( int t );
 	void GenerateCodeMethod( void );
-	void GenerateCodeLabel( char *name, int ex );
+	void GenerateCodeLabel( const char *name, int ex );
 
 	void GenerateCodePP_regcmd( void );
 	void GenerateCodePP_cmd( void );
@@ -106,14 +106,6 @@ private:
 	void CalcCG_compare( void );
 	void CalcCG_start( void );
 
-	bool CG_optCode() const
-	{
-		return ( compopt->hed_cmpmode & CMPMODE_OPTCODE ) != 0;
-	}
-	bool CG_optInfo() const
-	{
-		return ( compopt->hed_cmpmode & CMPMODE_OPTINFO ) != 0;
-	}
 	void CG_MesLabelDefinition( int label_id );
 
 	// int SaveStringMap( char *fname );
@@ -122,7 +114,6 @@ private:
 
 	//		Data
 	//
-	// unsigned char s2[4096];
 	int texflag;
 	CMemBuf *labbuf;
 
@@ -171,7 +162,4 @@ private:
 	//		for Error
 	//
 	int cg_errline;
-	// int cg_orgline;
-	// char cg_orgfile[HSP_MAX_PATH];
-	// char cg_orgfilefull[HSP_MAX_PATH];
 };
