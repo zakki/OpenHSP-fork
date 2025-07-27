@@ -352,6 +352,9 @@ int CCodeGenerator::GenerateCodePRMF()
 
 		if ( token->ttype == TK_NONE ) {
 			if ( token->val == ')' ) { // ')'の場合は終了
+				if ( ex != 0 ) {
+					writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
+				}
 				return ex;
 			}
 			if ( token->val == ',' ) { // 先頭が','の場合は省略
@@ -387,11 +390,7 @@ void CCodeGenerator::GenerateCodePRMF2()
 {
 	//		HSP3Codeを展開する('.'から始まる配列内のパラメーター)
 	//
-	int t;
-	int id;
-	int ex;
-	int tmp;
-	ex = 0;
+	int ex = 0;
 	while ( true ) {
 		if ( token->ttype >= TK_SEPARATE ) {
 			break;
@@ -416,9 +415,9 @@ void CCodeGenerator::GenerateCodePRMF2()
 			writer->PutCS( TYPE_INUM, token->val, ex );
 			lexer.GetTokenCG( GETTOKEN_NOFLOAT );
 			break;
-		case TK_OBJ:
-			id = SetVarsFixed( token->cg_str, cg_defvarfix );
-			t = symtab->lb->GetType( id );
+		case TK_OBJ: {
+			int id = SetVarsFixed( token->cg_str, cg_defvarfix );
+			int t = symtab->lb->GetType( id );
 			if ( ( t == TYPE_XLABEL ) || ( t == TYPE_LABEL ) ) {
 				throw CGERROR_LABELNAME;
 			}
@@ -429,10 +428,7 @@ void CCodeGenerator::GenerateCodePRMF2()
 				if ( token->val == '(' ) { // '(' 配列指定
 					lexer.GetTokenCG( GETTOKEN_DEFAULT );
 					writer->PutCS( TYPE_MARK, '(', 0 );
-					tmp = GenerateCodePRMF();
-					if ( tmp != 0 ) {
-						writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
-					}
+					GenerateCodePRMF();
 					writer->PutCS( TYPE_MARK, ')', 0 );
 					lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				}
@@ -440,6 +436,7 @@ void CCodeGenerator::GenerateCodePRMF2()
 
 			// GenerateCodeVAR( id, ex );
 			break;
+		}
 		default:
 			throw CGERROR_ARRAYEXP;
 		}
@@ -462,7 +459,7 @@ void CCodeGenerator::GenerateCodePRMF2()
 
 void CCodeGenerator::GenerateCodePRMF3()
 {
-	//		HSP3Codeを展開する('<'から始まる構造体参照元のパラメーター)
+	//		HSP3Codeを展開する('['から始まる構造体参照元のパラメーター)
 	//
 	int id;
 	int ex;
@@ -489,8 +486,6 @@ int CCodeGenerator::GenerateCodePRMF4( int t )
 {
 	//		HSP3Codeを展開する(構造体/配列指定パラメーター)
 	//
-	int tmp;
-
 	if ( token->ttype == TK_NONE ) {
 		if ( token->val == '.' ) {
 			lexer.GetTokenCG( GETTOKEN_NOFLOAT );
@@ -502,10 +497,7 @@ int CCodeGenerator::GenerateCodePRMF4( int t )
 		if ( token->val == '(' ) { // '(' 配列指定
 			lexer.GetTokenCG( GETTOKEN_DEFAULT );
 			writer->PutCS( TYPE_MARK, '(', 0 );
-			tmp = GenerateCodePRMF();
-			if ( tmp != 0 ) {
-				writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
-			}
+			GenerateCodePRMF();
 			writer->PutCS( TYPE_MARK, ')', 0 );
 			lexer.GetTokenCG( GETTOKEN_DEFAULT );
 			return 1;
@@ -1839,10 +1831,6 @@ int CCodeGenerator::GenerateCodeSub()
 	//		文字列(１行単位)からHSP3Codeを展開する
 	//		(エラー発生時は例外が発生します)
 	//
-	int i;
-	int t;
-	//	char tmp[512];
-
 	cg_errline = token->line;
 	cg_lastcmd = CG_LASTCMD_NONE;
 
@@ -1865,16 +1853,16 @@ int CCodeGenerator::GenerateCodeSub()
 	}
 
 	switch ( token->ttype ) {
-	case TK_OBJ:
+	case TK_OBJ: {
 		cg_lastcmd = CG_LASTCMD_LET;
-		i = symtab->lb->Search( token->cg_str );
+		int i = symtab->lb->Search( token->cg_str );
 		if ( i < 0 ) {
 			// logger->Mesf( "[%s][%d]", token->cg_str, cg_valcnt );
 			i = SetVarsFixed( token->cg_str, cg_defvarfix );
 			symtab->lb->SetInitFlag( i, LAB_INIT_DONE ); //	変数の初期化フラグをセットする
 			GenerateCodeLET( i, true );
 		} else {
-			t = symtab->lb->GetType( i );
+			int t = symtab->lb->GetType( i );
 			switch ( t ) {
 			case TYPE_VAR:
 			case TYPE_STRUCT:
@@ -1892,14 +1880,15 @@ int CCodeGenerator::GenerateCodeSub()
 		//			sprintf( tmp,"#obj:%s (%d)", token->cg_str,i );
 		//			logger->Mes( tmp );
 		break;
-	case TK_LABEL:
+	}
+	case TK_LABEL: {
 		// logger->Mesf( "#lab:%s", token->cg_str );
 		if ( *token->cg_str == '@' ) {
 			sprintf( token->cg_str, "@l%d", cg_locallabel ); // local label
 			cg_locallabel++;
 		}
 
-		i = symtab->lb->Search( token->cg_str );
+		int i = symtab->lb->Search( token->cg_str );
 		if ( i >= 0 ) {
 			LABOBJ *lab;
 			lab = symtab->lb->GetLabel( i );
@@ -1918,6 +1907,7 @@ int CCodeGenerator::GenerateCodeSub()
 		}
 		lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		break;
+	}
 	default:
 		throw CGERROR_SYNTAX;
 	}
