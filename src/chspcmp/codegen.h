@@ -29,10 +29,19 @@ public:
 	void ResetCompiler( void );
 	void SetLabelListBuffer( CMemBuf *buf, int mode, char *match, int line = 0, char *filename = nullptr );
 
+	void SetLabelInfo( std::unique_ptr<CLabel> lbinfo )
+	{
+		symtab->SetLabelInfo( std::move( lbinfo ) );
+	}
+	int LabelRegist( char **list, int mode )
+	{
+		return symtab->LabelRegist( list, mode );
+	}
+
 	//		For Code Generate
 	//
-	int GenerateCode( char *fname, char *oname, int mode );
-	int GenerateCode( CMemBuf *srcbuf, char *oname, int mode );
+	int GenerateCode( const std::string &fname, const std::string &oname, int mode );
+	int GenerateCode( CMemBuf *srcbuf, const std::string &oname, int mode );
 
 private:
 	void CalcCG( int ex );
@@ -41,11 +50,8 @@ private:
 	CCgLexer lexer;
 	CCgToken token;
 	std::unique_ptr<CCodeWriter> writer;
-
-public:
 	std::shared_ptr<CSymbolTable> symtab;
 
-private:
 	//		For Code Generate
 	//
 	void ResetGenerator( unsigned char *ptr );

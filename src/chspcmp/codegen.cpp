@@ -2147,10 +2147,10 @@ int CCodeGenerator::GenerateCodeMainSkipError( CMemBuf *buf )
 }
 
 
-int CCodeGenerator::GenerateCode( char *fname, char *oname, int mode )
+int CCodeGenerator::GenerateCode( const std::string &fname, const std::string &oname, int mode )
 {
 	CMemBuf srcbuf;
-	if ( srcbuf.PutFile( fname ) < 0 ) {
+	if ( srcbuf.PutFile( fname.c_str() ) < 0 ) {
 		logger->Mes( "#No file." );
 		return -1;
 	}
@@ -2158,7 +2158,7 @@ int CCodeGenerator::GenerateCode( char *fname, char *oname, int mode )
 }
 
 
-int CCodeGenerator::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
+int CCodeGenerator::GenerateCode( CMemBuf *srcbuf, const std::string &oname, int mode )
 {
 	//		ファイルをHSP3Codeに展開する
 	//		mode			COMP_MODE_DEBUG Debug code (0=off 1=on)
@@ -2208,11 +2208,10 @@ int CCodeGenerator::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 			logger->Mesf( "--> %s", tmp );
 		}
 	} else {
-		res = writer->Write( oname, mode, cg_valcnt, cg_varhpi, cg_putvars );
+		res = writer->Write( oname.c_str(), mode, cg_valcnt, cg_varhpi, cg_putvars );
 	}
 
 	writer = nullptr;
-	;
 
 	return res;
 }

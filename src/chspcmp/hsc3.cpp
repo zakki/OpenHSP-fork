@@ -372,11 +372,11 @@ int CHsc3::Compile( char *fname, char *outname, int mode )
 	}
 
 	if ( lb_info ) {
-		tk.symtab->SetLabelInfo( std::move( lb_info ) ); // プリプロセッサのラベル情報
+		tk.SetLabelInfo( std::move( lb_info ) ); // プリプロセッサのラベル情報
 	}
 
 	opts->SetCommonPath( common_path );
-	tk.symtab->LabelRegist( hsp_prestr, 1 );
+	tk.LabelRegist( hsp_prestr, 1 );
 	opts->SetHeaderOption( hed_option, hed_runtime );
 	opts->SetCmpOption( cmpopt );
 

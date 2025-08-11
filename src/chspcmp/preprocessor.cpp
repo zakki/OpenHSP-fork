@@ -2921,7 +2921,7 @@ ppresult_t CPreProcessor::PP_Struct()
 			return PPRESULT_ERROR;
 		}
 
-		sprintf( keyword, "%s_%s", tagname, word );
+		snprintf( keyword, sizeof( keyword ), "%s_%s", tagname, word );
 		if ( glmode != 0 ) {
 			FixModuleName( keyword );
 		} else {
@@ -3335,7 +3335,7 @@ ppresult_t CPreProcessor::PP_PackOpt()
 			logger->SetError( "illegal option parameter" );
 			return PPRESULT_ERROR;
 		}
-		sprintf( tmp, ";!%s=%s", optname, (char *)token->s3 );
+		snprintf( tmp, sizeof( tmp ), ";!%s=%s", optname, (char *)token->s3 );
 		AddPackfile( tmp, 2 );
 	}
 	return PPRESULT_SUCCESS;
