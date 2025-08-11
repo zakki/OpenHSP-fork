@@ -27,6 +27,8 @@ OBJS_CCMP = \
 	preprocessor_lexer.o \
 	lexer_util.o \
 	logger.o \
+	ext/hsp_parser.o \
+	ext/ast_serializer.o \
 	../hsp3/strnote.o \
 	../hsp3/strbuf.o \
 	../hsp3/linux/supio_linux.o

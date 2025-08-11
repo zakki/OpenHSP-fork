@@ -16,6 +16,7 @@
 #include "supio.h"
 
 #include "codegen.h"
+#include "ext/hsp_parser.h"
 #include "label.h"
 #include "localinfo.h"
 #include "membuf.h"
@@ -364,7 +365,8 @@ int CHsc3::Compile( char *fname, char *outname, int mode )
 	char mm[512];
 	auto opts = std::make_shared<CompileOptions>();
 	auto logger = std::make_shared<CLogger>( errbuf );
-	CCodeGenerator tk( opts, logger );
+	// CCodeGenerator tk( opts, logger );
+	CHspParser tk( opts, logger );
 
 	genmode = mode;
 	if ( ( cmpopt & CMPMODE_UTF8OUT ) != 0 ) {

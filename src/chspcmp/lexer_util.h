@@ -3,9 +3,12 @@
 //
 #pragma once
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "../hsp3/hsp3config.h"
 
 #include "token_def.h"
 
