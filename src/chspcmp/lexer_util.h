@@ -157,7 +157,6 @@ public:
 	int LabelRegist( char **list, int mode );
 	int LabelRegist2( char **list );
 	int LabelRegist3( char **list );
-	int GetLabelBufferSize( void );
 
 	std::unique_ptr<CLabel> lb;		// label object
 	std::unique_ptr<CLabel> tmp_lb; // label object (preprocessor reference)

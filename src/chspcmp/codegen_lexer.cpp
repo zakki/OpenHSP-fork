@@ -910,9 +910,11 @@ char *CCgLexer::GetLineCG()
 //-------------------------------------------------------------
 
 CCgLexer::CCgLexer( const std::shared_ptr<CompileOptions> &compopt, std::shared_ptr<CLogger> log )
-	: CCompilerUtil( compopt ), token(), logger( std::move( log ) )
+	: CCompilerUtil( compopt ), token(), logger( std::move( log ) ), cg_orgline( 0 )
 {
-	// ResetCompiler();
+
+	cg_orgfile.clear();
+	cg_orgfilefull.clear();
 }
 
 

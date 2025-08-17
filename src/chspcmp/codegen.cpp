@@ -1684,7 +1684,7 @@ void CCodeGenerator::GenerateCodePP_defvars( int fixedvalue )
 }
 
 
-int CCodeGenerator::SetVarsFixed( char *varname, int fixedvalue )
+int CCodeGenerator::SetVarsFixed( const char *varname, int fixedvalue )
 {
 	//		変数の固定型を設定する
 	//
@@ -1727,8 +1727,10 @@ void CCodeGenerator::GenerateCodePP( char *buf )
 		lexer.cg_orgline = token->val;
 		lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		if ( token->ttype == TK_STRING ) {
-			strcpy( lexer.cg_orgfilefull, token->cg_str );
-			getpath( lexer.cg_orgfilefull, lexer.cg_orgfile, 8 );
+			lexer.cg_orgfilefull = token->cg_str;
+			char temp_orgfile[HSP_MAX_PATH];
+			getpath( lexer.cg_orgfilefull.data(), temp_orgfile, 8 );
+			lexer.cg_orgfile = temp_orgfile;
 			if ( compopt->cg_debug() ) {
 				i = writer->PutDSBuf( token->cg_str );
 				writer->PutDI( 254, i, lexer.cg_orgline ); // ファイル名をデバッグ情報として登録
@@ -2007,7 +2009,7 @@ void CCodeGenerator::RegisterFuncLabels()
 	int len = symtab->tmp_lb->GetCount();
 	for ( int i = 0; i < len; i++ ) {
 		if ( symtab->tmp_lb->GetType( i ) == LAB_TYPE_PPMODFUNC && symtab->tmp_lb->GetFlag( i ) >= 0 ) {
-			char *name = symtab->tmp_lb->GetName( i );
+			auto name = symtab->tmp_lb->GetName( i );
 			if ( symtab->lb->Search( name ) >= 0 ) {
 				throw CGERROR_PP_ALREADY_USE_FUNC;
 			}
@@ -2031,7 +2033,7 @@ void CCodeGenerator::ResetGenerator( unsigned char *ptr )
 	lexer.cg_wp = ptr;
 	lexer.cg_ptr = lexer.GetLineCG();
 	lexer.cg_orgfile[0] = 0;
-	lexer.cg_orgfilefull[0] = 0;
+	lexer.cg_orgfilefull.clear();
 	cg_libindex = -1;
 	cg_libmode = CG_LIBMODE_NONE;
 	cg_localcur = 0;
@@ -2223,7 +2225,7 @@ void CCodeGenerator::CG_MesLabelDefinition( int label_id )
 	}
 
 	LABOBJ *const labobj = symtab->lb->GetLabel( label_id );
-	if ( labobj->def_file != nullptr ) {
+	if ( !labobj->def_file.empty() ) {
 #ifdef JPNMSG
 		logger->Mesf( "#識別子「%s」の定義位置: line %d in [%s]", symtab->lb->GetName( label_id ), labobj->def_line,
 					  labobj->def_file );
@@ -2254,7 +2256,7 @@ void CCodeGenerator::ResetCompiler()
 }
 
 
-void CCodeGenerator::GenerateLabelTag( char *name, int flag, int type, char *fname, int line )
+void CCodeGenerator::GenerateLabelTag( const std::string &name, int flag, int type, const std::string &fname, int line )
 {
 	//	クロスリファレンス用のメッセージを出力する
 	if ( labbuf == nullptr ) {
@@ -2264,11 +2266,11 @@ void CCodeGenerator::GenerateLabelTag( char *name, int flag, int type, char *fna
 	char textbf[4096];
 	if ( cg_labout_match != nullptr ) {
 		if ( ( cg_labout_mode & LABLIST_MODE_PARTMATCH ) != 0 ) {
-			if ( strstr2( name, cg_labout_match ) == nullptr ) {
+			if ( strstr2( const_cast<char *>( name.c_str() ), cg_labout_match ) == nullptr ) {
 				return;
 			}
 		} else {
-			if ( strcmp( name, cg_labout_match ) != 0 ) {
+			if ( name != cg_labout_match ) {
 				return;
 			}
 		}
@@ -2291,7 +2293,7 @@ void CCodeGenerator::GenerateLabelTag( char *name, int flag, int type, char *fna
 		break;
 	}
 
-	sprintf( textbf, "d%s %s %d:%s\r\n", GetLabelListHeader( flag ), name, line, fname );
+	sprintf( textbf, "d%s %s %d:%s\r\n", GetLabelListHeader( flag ), name, line, fname.c_str() );
 	if ( ( flag & LABBUF_FLAG_REFER ) != 0 ) {
 		textbf[0] = 'r';
 	}
@@ -2312,11 +2314,11 @@ void CCodeGenerator::GenerateLabelListAndTag( int labelid, int flag )
 		return;
 	}
 
-	GenerateLabelTag( lab->name, flag, lab->type, (char *)lab->def_file, lab->def_line );
+	GenerateLabelTag( lab->name, flag, lab->type, lab->def_file, lab->def_line );
 }
 
 
-void CCodeGenerator::GenerateLabelListAndTag( char *name, int flag )
+void CCodeGenerator::GenerateLabelListAndTag( const std::string &name, int flag )
 {
 	if ( labbuf == nullptr ) {
 		return;

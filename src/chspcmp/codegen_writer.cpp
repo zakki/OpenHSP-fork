@@ -248,22 +248,22 @@ void CCodeWriter::PutDIVars()
 
 	for ( int a = 0; a < symtab->lb->GetNumEntry(); a++ ) {
 		LABOBJ *lab = symtab->lb->GetLabel( a );
-		char *p;
+		const char *p;
 		if ( lab->type == TK_OBJ ) {
 			switch ( lab->typefix ) {
 			case LAB_TYPEFIX_INT:
 				vtmpname[0] = 'I';
+				strcpy( vtmpname + 2, lab->name.c_str() );
 				p = vtmpname;
-				strcpy( p + 2, lab->name );
 				break;
 			case LAB_TYPEFIX_DOUBLE:
 				vtmpname[0] = 'D';
+				strcpy( vtmpname + 2, lab->name.c_str() );
 				p = vtmpname;
-				strcpy( p + 2, lab->name );
 				break;
 			case LAB_TYPEFIX_NONE:
 			default:
-				p = lab->name;
+				p = lab->name.c_str();
 				break;
 			}
 			int i = PutDS( p );
@@ -292,8 +292,8 @@ void CCodeWriter::PutDILabels()
 		if ( table[i] == -1 ) {
 			continue;
 		}
-		char *name = symtab->lb->GetName( table[i] );
-		int dsPos = PutDSBuf( name );
+		auto name = symtab->lb->GetName( table[i] );
+		int dsPos = PutDSBuf( name.c_str() );
 		PutDI( 251, dsPos, i );
 	}
 	delete[] table;
@@ -310,8 +310,8 @@ void CCodeWriter::PutDIParams()
 			if ( id < 0 ) {
 				continue;
 			}
-			char *name = symtab->lb->GetName( i );
-			int dsPos = PutDSBuf( name );
+			auto name = symtab->lb->GetName( i );
+			int dsPos = PutDSBuf( name.c_str() );
 			PutDI( 251, dsPos, id );
 		}
 	}
@@ -586,10 +586,10 @@ void CCodeWriter::PutCSString( const char *value, int exflag )
 int CCodeWriter::PutCSLabel( const char *name, int exflag )
 {
 	std::string lname = name;
-	int id = symtab->lb->Search( lname.data() );
+	int id = symtab->lb->Search( lname );
 	if ( id < 0 ) { // 仮のラベル
 		int i = PutOT( -1 );
-		id = symtab->lb->Regist( lname.data(), TYPE_XLABEL, i );
+		id = symtab->lb->Regist( lname, TYPE_XLABEL, i );
 	} else {
 		int t = symtab->lb->GetType( id );
 		if ( ( t != TYPE_XLABEL ) && ( t != TYPE_LABEL ) ) {

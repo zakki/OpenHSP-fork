@@ -472,11 +472,3 @@ int CSymbolTable::LabelRegist3( char **list )
 	//
 	return lb->RegistList3( list );
 }
-
-
-int CSymbolTable::GetLabelBufferSize()
-{
-	//		ラベルバッファサイズを得る
-	//
-	return lb->GetSymbolSize();
-}

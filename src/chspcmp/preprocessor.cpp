@@ -1278,7 +1278,7 @@ char *CPreProcessor::ExpandToken( char *str, int *type, int ppmode )
 			//		通常キーワードはそのまま展開
 			if ( wrtbuf != nullptr ) {
 				if ( symtab.lb->GetEternal( id ) == 0 ) { // local func
-					strcpy( (char *)s2, symtab.lb->GetName( id ) );
+					strcpy( (char *)s2, symtab.lb->GetName( id ).c_str() );
 				}
 				FixModuleName( (char *)s2 );
 				wrtbuf->PutStr( (char *)s2 );
@@ -4410,14 +4410,6 @@ int CPreProcessor::IsGlobalMode()
 		return 1;
 	}
 	return 0;
-}
-
-
-int CPreProcessor::GetLabelBufferSize()
-{
-	//		ラベルバッファサイズを得る
-	//
-	return symtab.lb->GetSymbolSize();
 }
 
 

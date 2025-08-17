@@ -98,6 +98,6 @@ public:
 	//		for Error
 	//
 	int cg_orgline;
-	char cg_orgfile[HSP_MAX_PATH];
-	char cg_orgfilefull[HSP_MAX_PATH];
+	std::string cg_orgfile;
+	std::string cg_orgfilefull;
 };

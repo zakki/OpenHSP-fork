@@ -53,7 +53,6 @@ public:
 	int SetAdditionMode( int mode );
 
 	int LabelDump( CMemBuf &out, int option, char *match = nullptr );
-	int GetLabelBufferSize( void );
 	int RegistExtMacroPath( char *name, char *str );
 	int RegistExtMacro( char *name, char *str );
 	int RegistExtMacro( char *keyword, int val );

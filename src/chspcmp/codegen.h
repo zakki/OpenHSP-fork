@@ -80,9 +80,9 @@ private:
 	void GenerateCodePP_comfunc( void );
 	void GenerateCodePP_defvars( int fixedvalue );
 
-	void GenerateLabelTag( char *name, int flag, int type, char *fname, int line );
+	void GenerateLabelTag( const std::string &name, int flag, int type, const std::string &fname, int line );
 	void GenerateLabelListAndTag( int labelid, int flag = 0 );
-	void GenerateLabelListAndTag( char *name, int flag = 0 );
+	void GenerateLabelListAndTag( const std::string &name, int flag = 0 );
 	void GenerateLabelListAndTagRef( int labelid, int flag = 0 );
 
 	void CheckInternalListenerCMD( int opt );
@@ -91,7 +91,7 @@ private:
 	void CheckCMDIF_Set( int mode );
 	void CheckCMDIF_Fin( int mode );
 
-	int SetVarsFixed( char *varname, int fixedvalue );
+	int SetVarsFixed( const char *varname, int fixedvalue );
 
 	void CalcCG_token( void );
 	void CalcCG_token_exprbeg( void );

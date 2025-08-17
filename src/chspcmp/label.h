@@ -1,4 +1,3 @@
-
 //
 //	label.cpp structures
 //
@@ -8,11 +7,11 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 #define maxname 256			  // label name max
 #define def_maxsymbol 0x10000 // Symbol Table Size (default)
 #define def_maxblock 128	  // Symbol Table Block max (default)
-#define def_maxlab 4096		  // label object max (default)
 
 #define LAB_TYPE_MARK 0
 #define LAB_TYPE_SYSVAL 7
@@ -66,8 +65,7 @@ typedef struct LABOBJ
 	int opt;		  // option code
 	short eternal;	  // eternal flag
 	short ref;		  // reference flag
-	int hash;		  // hash code
-	char *name;		  // object name (lower case)
+	std::string name; // object name (lower case)
 	char *data;		  // data field
 	char *data2;	  // data field (opt)
 	LABREL *rel;	  // relation id
@@ -75,7 +73,7 @@ typedef struct LABOBJ
 	short typefix;	  // force type
 	bool skiplablist; // skip generate label list
 
-	char const *def_file;
+	std::string def_file;
 	int def_line;
 } LABOBJ;
 
@@ -84,11 +82,11 @@ class CLabel
 {
 public:
 	CLabel();
-	CLabel( int symmax, int worksize );
+	CLabel( int symmax );
 	~CLabel();
 	void Reset( void );
-	int Regist( char *name, int type, int opt );
-	int Regist( char *name, int type, int opt, char const *filename, int line );
+	int Regist( const std::string &name, int type, int opt );
+	int Regist( const std::string &name, int type, int opt, const std::string &filename, int line );
 	void SetEternal( int id );
 	int GetEternal( int id );
 	void SetOpt( int id, int val );
@@ -97,14 +95,13 @@ public:
 	void SetData2( int id, char *str, int size );
 	void SetInitFlag( int id, int val );
 	void SetForceType( int id, int val );
-	int Search( char *oname );
-	int SearchLocal( char *oname, char *loname );
+	int Search( const std::string &oname );
+	int SearchLocal( const std::string &oname, const std::string &loname );
 	int GetCount( void );
 	int GetFlag( int id );
 	int GetType( int id );
 	int GetOpt( int id );
-	int GetSymbolSize( void );
-	char *GetName( int id );
+	const std::string &GetName( int id );
 	char *GetData( int id );
 	char *GetData2( int id );
 	int GetInitFlag( int id );
@@ -113,48 +110,41 @@ public:
 	void DumpLabel( char *str );
 	int DumpHSPLabelById( int id, char *str, int option );
 	void DumpHSPLabel( char *str, int option, int maxsize );
-	int RegistList( char **list, char *modname );
-	int RegistList2( char **list, char *modname );
+	int RegistList( char **list, const std::string &modname );
+	int RegistList2( char **list, const std::string &modname );
 	int RegistList3( char **list );
 	int GetNumEntry( void )
 	{
-		return cur;
+		return mem_lab.size();
 	};
 	void AddReference( int id );
 	int GetReference( int id );
 	void AddRelation( int id, int rel_id );
-	void AddRelation( char *name, int rel_id );
+	void AddRelation( const std::string &name, int rel_id );
 	int SearchRelation( int id, int rel_id );
 	void SetCaseMode( int flag );
-	void SetDefinition( int id, char const *filename, int line );
+	void SetDefinition( int id, const std::string &filename, int line );
 	void SetSkipLabList( int id );
 
 private:
-	int StrCase( char *str );
-	int StrCmp( const char *str1, const char *str2 );
-	int GetHash( char *str );
+	void StrCase( char *str );
 
-	char *Prt( char *str, char *str2 );
+	char *Prt( char *str, const std::string &str2 );
 	int HtoI( void );
 	char *GetListToken( char *str );
 	char *ExpandSymbolBuffer( int size );
 	void DisposeSymbolBuffer( void );
 	void MakeSymbolBuffer( void );
 
-	char *RegistSymbol( char *str );
 	char *RegistTable( char *str, int size );
 
 	//	data
-	char *symbol;	 // Symbol Table
-	LABOBJ *mem_lab; // Label object
+	std::vector<std::vector<char>> symbol; // Symbol Table
+	std::vector<LABOBJ> mem_lab;		   // Label object
 
-	char *symblock[def_maxblock]; // Symbol Table Block
-	int curblock;				  // Current Block
+	int symcur;	   // Current Symbol Index
+	int maxsymbol; // Max Symbol Size
 
-	int cur;		// Current
-	int symcur;		// Current Symbol Index
-	int maxsymbol;	// Max Symbol Size
-	int maxlab;		// Max Label Size
 	char token[64]; // Token for RegistList
 	int casemode;	// Case sensitive (0=none/other=ON)
 
