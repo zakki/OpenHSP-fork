@@ -43,12 +43,11 @@ char *CCgLexer::PickLongStringCG( char *str )
 		if ( *psrc != 0 ) {
 			break;
 		}
-		ps = GetLineCG();
+		ps = NextLine();
 		if ( ps == nullptr ) {
 			throw CGERROR_MULTILINE_STR;
 		}
 		psrc = ps;
-		cg_orgline++;
 
 		//		行の終端にある0を改行に置き換える
 		p[0] = 13;
@@ -252,7 +251,6 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 	if ( a1 == 0 ) { // end
 		token.ttype = TK_EOL;
 		return (char *)vs;
-		// return GetLineCG();
 	}
 
 	if ( a1 < 0x20 ) { // 無効なコード
@@ -263,41 +261,40 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 	if ( a1 == 0x22 ) { // "～"
 		vs++;
 		token.ttype = TK_STRING;
+		char *p = PickStringCG( (char *)vs, 0x22 );
 		token.cg_str = (char *)vs;
-		return PickStringCG( (char *)vs, 0x22 );
+		return p;
 	}
 
 	if ( a1 == '{' ) { // {"～"}
 		if ( vs[1] == 0x22 ) {
 			vs += 2;
 			if ( *vs == 0 ) {
-				vs = (unsigned char *)GetLineCG();
-				cg_orgline++;
+				vs = (unsigned char *)NextLine();
 				if ( vs == nullptr ) {
 					return nullptr;
 				}
 			}
 			token.ttype = TK_STRING;
+			char *p = PickLongStringCG( (char *)vs );
 			token.cg_str = (char *)vs;
-			return PickLongStringCG( (char *)vs );
+			return p;
 		}
 	}
 
 	if ( a1 == 0x27 ) { // '～'
 		char *p;
 		vs++;
-		token.cg_str = (char *)vs;
 		p = PickStringCG( (char *)vs, 0x27 );
+		token.cg_str = (char *)vs;
 		token.ttype = TK_NUM;
-		token.val = ( (unsigned char *)token.cg_str )[0];
+		token.val = (unsigned char)( token.cg_str[0] );
 		return p;
 	}
 
 	if ( ( a1 == ':' ) || ( a1 == '{' ) || ( a1 == '}' ) ) { // multi statement
-		token.cg_str = (char *)s2;
 		token.ttype = TK_SEPARATE;
-		token.cg_str[0] = a1;
-		token.cg_str[1] = 0;
+		token.cg_str = a1;
 		return (char *)vs + 1;
 	}
 
@@ -316,7 +313,6 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 	if ( a1 == '$' ) { // when hex code ($)
 		vs++;
 		token.val = 0;
-		token.cg_str = (char *)s2;
 		a = 0;
 		while ( true ) {
 			a1 = toupper( *vs );
@@ -337,12 +333,13 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 				break;
 			}
 			if ( b >= 0 ) {
-				token.cg_str[a++] = (char)a1;
+				s2[a++] = (char)a1;
 				token.val = ( token.val << 4 ) + b;
 			}
 			vs++;
 		}
-		token.cg_str[a] = 0;
+		s2[a] = 0;
+		token.cg_str = (char *)s2;
 		token.ttype = TK_NUM;
 		return (char *)vs;
 	}
@@ -350,7 +347,6 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 	if ( a1 == '%' ) { // when bin code (%)
 		vs++;
 		token.val = 0;
-		token.cg_str = (char *)s2;
 		a = 0;
 		while ( true ) {
 			a1 = *vs;
@@ -368,12 +364,13 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 				break;
 			}
 			if ( b >= 0 ) {
-				token.cg_str[a++] = (char)a1;
+				s2[a++] = (char)a1;
 				token.val = ( token.val << 1 ) + b;
 			}
 			vs++;
 		}
-		token.cg_str[a] = 0;
+		s2[a] = 0;
+		token.cg_str = (char *)s2;
 		token.ttype = TK_NUM;
 		return (char *)vs;
 	}
@@ -697,46 +694,46 @@ char *CCgLexer::GetSymbolCG( char *str )
 
 //-----------------------------------------------------------------------------
 
-int CCgLexer::GetParameterTypeCG( const char *name ) const
+int CCgLexer::GetParameterTypeCG( const std::string &name ) const
 {
 	//		パラメーター名を認識する(deffunc)
 	//
-	if ( strcmp( token.cg_str, "int" ) == 0 ) {
+	if ( token.cg_str == "int" ) {
 		return MPTYPE_INUM;
 	}
-	if ( strcmp( token.cg_str, "var" ) == 0 ) {
+	if ( token.cg_str == "var" ) {
 		return MPTYPE_SINGLEVAR;
 	}
-	if ( strcmp( token.cg_str, "val" ) == 0 ) {
+	if ( token.cg_str == "val" ) {
 #ifdef JPNMSG
-		logger->Mesf( "警告:古いdeffunc表記があります 行%d.[%s]", cg_orgline, name );
+		logger->Mesf( "警告:古いdeffunc表記があります 行%d.[%s]", cg_orgline, name.c_str() );
 #else
-		logger->Mesf( "Warning:Old deffunc expression at %d.[%s]", cg_orgline, name );
+		logger->Mesf( "Warning:Old deffunc expression at %d.[%s]", cg_orgline, name.c_str() );
 #endif
 		return MPTYPE_SINGLEVAR;
 	}
-	if ( strcmp( token.cg_str, "str" ) == 0 ) {
+	if ( token.cg_str == "str" ) {
 		return MPTYPE_LOCALSTRING;
 	}
-	if ( strcmp( token.cg_str, "double" ) == 0 ) {
+	if ( token.cg_str == "double" ) {
 		return MPTYPE_DNUM;
 	}
-	if ( strcmp( token.cg_str, "label" ) == 0 ) {
+	if ( token.cg_str == "label" ) {
 		return MPTYPE_LABEL;
 	}
-	if ( strcmp( token.cg_str, "local" ) == 0 ) {
+	if ( token.cg_str == "local" ) {
 		return MPTYPE_LOCALVAR;
 	}
-	if ( strcmp( token.cg_str, "array" ) == 0 ) {
+	if ( token.cg_str == "array" ) {
 		return MPTYPE_ARRAYVAR;
 	}
-	if ( strcmp( token.cg_str, "modvar" ) == 0 ) {
+	if ( token.cg_str == "modvar" ) {
 		return MPTYPE_MODULEVAR;
 	}
-	if ( strcmp( token.cg_str, "modinit" ) == 0 ) {
+	if ( token.cg_str == "modinit" ) {
 		return MPTYPE_IMODULEVAR;
 	}
-	if ( strcmp( token.cg_str, "modterm" ) == 0 ) {
+	if ( token.cg_str == "modterm" ) {
 		return MPTYPE_TMODULEVAR;
 	}
 
@@ -744,80 +741,80 @@ int CCgLexer::GetParameterTypeCG( const char *name ) const
 }
 
 
-int CCgLexer::GetParameterStructTypeCG( const char *name ) const
+int CCgLexer::GetParameterStructTypeCG( const std::string &name ) const
 {
 	//		パラメーター名を認識する(struct)
 	//
-	if ( strcmp( token.cg_str, "int" ) == 0 ) {
+	if ( token.cg_str == "int" ) {
 		return MPTYPE_INUM;
 	}
-	if ( strcmp( token.cg_str, "var" ) == 0 ) {
+	if ( token.cg_str == "var" ) {
 		return MPTYPE_LOCALVAR;
 	}
-	if ( strcmp( token.cg_str, "str" ) == 0 ) {
+	if ( token.cg_str == "str" ) {
 		return MPTYPE_LOCALSTRING;
 	}
-	if ( strcmp( token.cg_str, "double" ) == 0 ) {
+	if ( token.cg_str == "double" ) {
 		return MPTYPE_DNUM;
 	}
-	if ( strcmp( token.cg_str, "label" ) == 0 ) {
+	if ( token.cg_str == "label" ) {
 		return MPTYPE_LABEL;
 	}
-	if ( strcmp( token.cg_str, "float" ) == 0 ) {
+	if ( token.cg_str == "float" ) {
 		return MPTYPE_FLOAT;
 	}
 	return MPTYPE_NONE;
 }
 
 
-int CCgLexer::GetParameterFuncTypeCG( const char *name ) const
+int CCgLexer::GetParameterFuncTypeCG( const std::string &name ) const
 {
 	//		パラメーター名を認識する(func)
 	//
-	if ( strcmp( token.cg_str, "int" ) == 0 ) {
+	if ( token.cg_str == "int" ) {
 		return MPTYPE_INUM;
 	}
-	if ( strcmp( token.cg_str, "var" ) == 0 ) {
+	if ( token.cg_str == "var" ) {
 		return MPTYPE_PVARPTR;
 	}
-	if ( strcmp( token.cg_str, "str" ) == 0 ) {
+	if ( token.cg_str == "str" ) {
 		return MPTYPE_LOCALSTRING;
 	}
-	if ( strcmp( token.cg_str, "double" ) == 0 ) {
+	if ( token.cg_str == "double" ) {
 		return MPTYPE_DNUM;
 	}
 	//	if ( !strcmp( token.cg_str,"label" ) ) return MPTYPE_LABEL;
-	if ( strcmp( token.cg_str, "float" ) == 0 ) {
+	if ( token.cg_str == "float" ) {
 		return MPTYPE_FLOAT;
 	}
-	if ( strcmp( token.cg_str, "pval" ) == 0 ) {
+	if ( token.cg_str == "pval" ) {
 		return MPTYPE_PPVAL;
 	}
-	if ( strcmp( token.cg_str, "bmscr" ) == 0 ) {
+	if ( token.cg_str == "bmscr" ) {
 		return MPTYPE_PBMSCR;
 	}
 
-	if ( strcmp( token.cg_str, "comobj" ) == 0 ) {
+	if ( token.cg_str == "comobj" ) {
 		return MPTYPE_IOBJECTVAR;
 	}
-	if ( strcmp( token.cg_str, "wstr" ) == 0 ) {
+	if ( token.cg_str == "wstr" ) {
 		return MPTYPE_LOCALWSTR;
 	}
 
-	if ( strcmp( token.cg_str, "sptr" ) == 0 ) {
+	if ( token.cg_str == "sptr" ) {
 		return MPTYPE_FLEXSPTR;
 	}
-	if ( strcmp( token.cg_str, "wptr" ) == 0 ) {
+	if ( token.cg_str == "wptr" ) {
 		return MPTYPE_FLEXWPTR;
 	}
 
-	if ( strcmp( token.cg_str, "prefstr" ) == 0 ) {
+	if ( token.cg_str == "prefstr" ) {
 		return MPTYPE_PTR_REFSTR;
 	}
-	if ( strcmp( token.cg_str, "pexinfo" ) == 0 ) {
+	if ( token.cg_str == "pexinfo" ) {
 		return MPTYPE_PTR_EXINFO;
 	}
-	if ( strcmp( token.cg_str, "nullptr" ) == 0 ) {
+	if ( token.cg_str == "nullptr" ) {
 		return MPTYPE_NULLPTR;
 	}
 
@@ -829,26 +826,36 @@ int CCgLexer::GetParameterFuncTypeCG( const char *name ) const
 }
 
 
-int CCgLexer::GetParameterResTypeCG( const char *name ) const
+int CCgLexer::GetParameterResTypeCG( const std::string &name ) const
 {
 	//		戻り値のパラメーター名を認識する(defcfunc)
 	//
-	if ( strcmp( token.cg_str, "int" ) == 0 ) {
+	if ( token.cg_str == "int" ) {
 		return MPTYPE_INUM;
 	}
-	if ( strcmp( token.cg_str, "str" ) == 0 ) {
+	if ( token.cg_str == "str" ) {
 		return MPTYPE_STRING;
 	}
-	if ( strcmp( token.cg_str, "double" ) == 0 ) {
+	if ( token.cg_str == "double" ) {
 		return MPTYPE_DNUM;
 	}
-	if ( strcmp( token.cg_str, "label" ) == 0 ) {
+	if ( token.cg_str == "label" ) {
 		return MPTYPE_LABEL;
 	}
-	if ( strcmp( token.cg_str, "float" ) == 0 ) {
+	if ( token.cg_str == "float" ) {
 		return MPTYPE_FLOAT;
 	}
 	return MPTYPE_NONE;
+}
+
+char *CCgLexer::NextLine()
+{
+	//		次の行へ移動
+	//
+	cg_ptr = GetLineCG();
+	cg_orgline++;
+
+	return cg_ptr;
 }
 
 char *CCgLexer::GetLineCG()
@@ -885,7 +892,7 @@ char *CCgLexer::GetLineCG()
 		if ( a1 == 13 ) {
 			*p = 0;
 			p++;
-			token.line++;
+			token.line = line++;
 			if ( *p == 10 ) {
 				*p = 0;
 				p++;
@@ -895,7 +902,7 @@ char *CCgLexer::GetLineCG()
 		if ( a1 == 10 ) {
 			*p = 0;
 			p++;
-			token.line++;
+			token.line = line++;
 			break;
 		}
 		p++;

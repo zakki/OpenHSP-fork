@@ -65,7 +65,7 @@ private:
 	void GenerateCodePRMF3( void );
 	int GenerateCodePRMF4( int t );
 	void GenerateCodeMethod( void );
-	void GenerateCodeLabel( const char *name, int ex );
+	void GenerateCodeLabel( const std::string &name, int ex );
 
 	void GenerateCodePP_regcmd( void );
 	void GenerateCodePP_cmd( void );
@@ -91,7 +91,7 @@ private:
 	void CheckCMDIF_Set( int mode );
 	void CheckCMDIF_Fin( int mode );
 
-	int SetVarsFixed( const char *varname, int fixedvalue );
+	int SetVarsFixed( const std::string &varname, int fixedvalue );
 
 	void CalcCG_token( void );
 	void CalcCG_token_exprbeg( void );

@@ -55,7 +55,7 @@ struct CCgToken
 	// double fpbit;
 	// unsigned char *s3;
 
-	char *cg_str;
+	std::string cg_str;
 };
 
 class CCgLexer : public CCompilerUtil
@@ -64,22 +64,22 @@ public:
 	explicit CCgLexer( const std::shared_ptr<CompileOptions> &compopt, std::shared_ptr<CLogger> log );
 	~CCgLexer() override;
 
-
 	CCgToken token;
 
-
-	int GetParameterTypeCG( const char *name ) const;
-	int GetParameterStructTypeCG( const char *name ) const;
-	int GetParameterFuncTypeCG( const char *name ) const;
-	int GetParameterResTypeCG( const char *name ) const;
+	int GetParameterTypeCG( const std::string &name ) const;
+	int GetParameterStructTypeCG( const std::string &name ) const;
+	int GetParameterFuncTypeCG( const std::string &name ) const;
+	int GetParameterResTypeCG( const std::string &name ) const;
 
 	char *GetTokenCG( const char *str, int option );
 	char *GetTokenCG( int option );
 	char *GetSymbolCG( char *str );
-	char *GetLineCG( void );
 	int PickNextCodeCG( void );
 
+	char *NextLine();
+
 private:
+	char *GetLineCG( void );
 	char *PickStringCG( char *str, int sep );
 	char *PickStringCG2( char *str, char **strsrc );
 	char *PickLongStringCG( char *str );
@@ -90,6 +90,7 @@ private:
 	unsigned char s2[4096];
 
 public:
+	int line;
 	char *cg_ptr;
 	char *cg_ptr_bak;
 	unsigned char *cg_wp;
