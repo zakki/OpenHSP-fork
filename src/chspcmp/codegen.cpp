@@ -33,17 +33,17 @@
 
 void CCodeGenerator::CalcCG_token()
 {
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype == TK_NONE ) {
-		token->ttype = token->val;
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype == TK_NONE ) {
+		token.ttype = token.val;
 	}
 }
 
 void CCodeGenerator::CalcCG_token_exprbeg()
 {
-	lexer.GetTokenCG( GETTOKEN_EXPRBEG );
-	if ( token->ttype == TK_NONE ) {
-		token->ttype = token->val;
+	token = lexer.GetTokenCG( GETTOKEN_EXPRBEG );
+	if ( token.ttype == TK_NONE ) {
+		token.ttype = token.val;
 	}
 }
 
@@ -54,10 +54,10 @@ void CCodeGenerator::CalcCG_token_exprbeg_redo()
 	//		GetTokenCG は 文字列リテラルや文字コードリテラルの場合、
 	//		cg_ptr のバッファを破壊するので常に取得し直すわけにはいかない
 	//
-	if ( token->ttype == TK_NONE ) {
-		token->ttype = token->val;
+	if ( token.ttype == TK_NONE ) {
+		token.ttype = token.val;
 	}
-	if ( token->ttype == '-' || token->ttype == '*' ) {
+	if ( token.ttype == '-' || token.ttype == '*' ) {
 		lexer.cg_ptr = lexer.cg_ptr_bak;
 		CalcCG_token_exprbeg();
 	}
@@ -81,40 +81,40 @@ void CCodeGenerator::CalcCG_factor()
 {
 	int id;
 
-	cs_lasttype = token->ttype;
-	switch ( token->ttype ) {
+	cs_lasttype = token.ttype;
+	switch ( token.ttype ) {
 	case TK_NUM:
-		writer->PutCSInteger( token->val, texflag );
+		writer->PutCSInteger( token.val, texflag );
 		texflag = 0;
 		CalcCG_token();
 		calccount++;
 		return;
 	case TK_DNUM:
-		writer->PutCSDouble( token->val_d, texflag );
+		writer->PutCSDouble( token.val_d, texflag );
 		texflag = 0;
 		CalcCG_token();
 		calccount++;
 		return;
 	case TK_STRING:
-		writer->PutCSString( token->cg_str.c_str(), texflag );
+		writer->PutCSString( token.cg_str.c_str(), texflag );
 		texflag = 0;
 		CalcCG_token();
 		calccount++;
 		return;
 	case TK_LABEL:
-		GenerateCodeLabel( token->cg_str, texflag );
+		GenerateCodeLabel( token.cg_str, texflag );
 		texflag = 0;
 		CalcCG_token();
 		calccount++;
 		return;
 	case TK_OBJ:
-		id = SetVarsFixed( token->cg_str, cg_defvarfix );
+		id = SetVarsFixed( token.cg_str, cg_defvarfix );
 		if ( symtab->lb->GetType( id ) == TYPE_VAR ) {
 			if ( symtab->lb->GetInitFlag( id ) == LAB_INIT_NO ) {
 #ifdef JPNMSG
-				logger->Mesf( "#未初期化の変数があります(%s)", token->cg_str.c_str() );
+				logger->Mesf( "#未初期化の変数があります(%s)", token.cg_str.c_str() );
 #else
-				logger->Mesf( "#Uninitalized variable (%s).", token->cg_str.c_str() );
+				logger->Mesf( "#Uninitalized variable (%s).", token.cg_str.c_str() );
 #endif
 				if ( ( compopt->hed_cmpmode & CMPMODE_VARINIT ) != 0 ) {
 					throw CGERROR_VAR_NOINIT;
@@ -124,8 +124,8 @@ void CCodeGenerator::CalcCG_factor()
 		}
 		GenerateCodeVAR( id, texflag );
 		texflag = 0;
-		if ( token->ttype == TK_NONE ) {
-			token->ttype = token->val; // CalcCG_token()に合わせるため
+		if ( token.ttype == TK_NONE ) {
+			token.ttype = token.val; // CalcCG_token()に合わせるため
 		}
 		calccount++;
 		return;
@@ -137,9 +137,9 @@ void CCodeGenerator::CalcCG_factor()
 		break;
 	}
 
-	if ( token->ttype != '(' ) {
-		// logger->Mesf("#Invalid%d", token->ttype);
-		token->ttype = TK_CALCERROR;
+	if ( token.ttype != '(' ) {
+		// logger->Mesf("#Invalid%d", token.ttype);
+		token.ttype = TK_CALCERROR;
 		return;
 	}
 
@@ -147,8 +147,8 @@ void CCodeGenerator::CalcCG_factor()
 	//
 	CalcCG_token_exprbeg();
 	CalcCG_start();
-	if ( token->ttype != ')' ) {
-		token->ttype = TK_CALCERROR;
+	if ( token.ttype != ')' ) {
+		token.ttype = TK_CALCERROR;
 		return;
 	}
 
@@ -159,10 +159,10 @@ void CCodeGenerator::CalcCG_unary()
 {
 	//		単項演算子
 	//
-	if ( token->ttype == '-' ) {
-		// int op = token->ttype;
+	if ( token.ttype == '-' ) {
+		// int op = token.ttype;
 		CalcCG_token_exprbeg();
-		if ( is_statement_end( token->ttype ) != 0 ) {
+		if ( is_statement_end( token.ttype ) != 0 ) {
 			throw CGERROR_CALCEXP;
 		}
 		CalcCG_unary();
@@ -179,10 +179,10 @@ void CCodeGenerator::CalcCG_muldiv()
 	int op;
 	CalcCG_unary();
 
-	while ( ( token->ttype == '*' ) || ( token->ttype == '/' ) || ( token->ttype == '\\' ) ) {
-		op = token->ttype;
+	while ( ( token.ttype == '*' ) || ( token.ttype == '/' ) || ( token.ttype == '\\' ) ) {
+		op = token.ttype;
 		CalcCG_token_exprbeg();
-		if ( is_statement_end( token->ttype ) != 0 ) {
+		if ( is_statement_end( token.ttype ) != 0 ) {
 			throw CGERROR_CALCEXP;
 		}
 		CalcCG_unary();
@@ -195,10 +195,10 @@ void CCodeGenerator::CalcCG_addsub()
 	int op;
 	CalcCG_muldiv();
 
-	while ( ( token->ttype == '+' ) || ( token->ttype == '-' ) ) {
-		op = token->ttype;
+	while ( ( token.ttype == '+' ) || ( token.ttype == '-' ) ) {
+		op = token.ttype;
 		CalcCG_token_exprbeg();
-		if ( is_statement_end( token->ttype ) != 0 ) {
+		if ( is_statement_end( token.ttype ) != 0 ) {
 			throw CGERROR_CALCEXP;
 		}
 		CalcCG_muldiv();
@@ -212,10 +212,10 @@ void CCodeGenerator::CalcCG_shift()
 	int op;
 	CalcCG_addsub();
 
-	while ( ( token->ttype == 0x63 ) || ( token->ttype == 0x64 ) ) {
-		op = token->ttype;
+	while ( ( token.ttype == 0x63 ) || ( token.ttype == 0x64 ) ) {
+		op = token.ttype;
 		CalcCG_token_exprbeg();
-		if ( is_statement_end( token->ttype ) != 0 ) {
+		if ( is_statement_end( token.ttype ) != 0 ) {
 			throw CGERROR_CALCEXP;
 		}
 		CalcCG_addsub();
@@ -229,11 +229,11 @@ void CCodeGenerator::CalcCG_compare()
 	int op;
 	CalcCG_shift();
 
-	while ( ( token->ttype == '<' ) || ( token->ttype == '>' ) || ( token->ttype == '=' ) || ( token->ttype == '!' ) ||
-			( token->ttype == 0x61 ) || ( token->ttype == 0x62 ) ) {
-		op = token->ttype;
+	while ( ( token.ttype == '<' ) || ( token.ttype == '>' ) || ( token.ttype == '=' ) || ( token.ttype == '!' ) ||
+			( token.ttype == 0x61 ) || ( token.ttype == 0x62 ) ) {
+		op = token.ttype;
 		CalcCG_token_exprbeg();
-		if ( is_statement_end( token->ttype ) != 0 ) {
+		if ( is_statement_end( token.ttype ) != 0 ) {
 			throw CGERROR_CALCEXP;
 		}
 		CalcCG_shift();
@@ -247,10 +247,10 @@ void CCodeGenerator::CalcCG_bool()
 	int op;
 	CalcCG_compare();
 
-	while ( ( token->ttype == '&' ) || ( token->ttype == '|' ) || ( token->ttype == '^' ) ) {
-		op = token->ttype;
+	while ( ( token.ttype == '&' ) || ( token.ttype == '|' ) || ( token.ttype == '^' ) ) {
+		op = token.ttype;
 		CalcCG_token_exprbeg();
-		if ( is_statement_end( token->ttype ) != 0 ) {
+		if ( is_statement_end( token.ttype ) != 0 ) {
 			throw CGERROR_CALCEXP;
 		}
 		CalcCG_compare();
@@ -278,7 +278,7 @@ void CCodeGenerator::CalcCG( int ex )
 
 	CalcCG_start();
 
-	if ( token->ttype == TK_CALCERROR ) {
+	if ( token.ttype == TK_CALCERROR ) {
 		throw CGERROR_CALCEXP;
 	}
 }
@@ -293,12 +293,12 @@ void CCodeGenerator::GenerateCodePRM()
 	ex = 0;
 	while ( true ) {
 
-		if ( token->ttype == TK_NONE ) {
-			if ( token->val == ',' ) { // 先頭が','の場合は省略
+		if ( token.ttype == TK_NONE ) {
+			if ( token.val == ',' ) { // 先頭が','の場合は省略
 				if ( ( ex & EXFLG_2 ) != 0 ) {
 					writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 				}
-				lexer.GetTokenCG( GETTOKEN_DEFAULT );
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				ex |= EXFLG_2;
 				continue;
 			}
@@ -324,16 +324,16 @@ void CCodeGenerator::GenerateCodePRM()
 			}
 		}
 
-		if ( token->ttype >= TK_SEPARATE ) {
+		if ( token.ttype >= TK_SEPARATE ) {
 			break;
 		}
-		if ( token->ttype != ',' ) {
+		if ( token.ttype != ',' ) {
 			throw CGERROR_CALCEXP;
 		}
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		ex |= EXFLG_2;
 
-		if ( token->ttype >= TK_SEPARATE ) {
+		if ( token.ttype >= TK_SEPARATE ) {
 			writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 			break;
 		}
@@ -350,18 +350,18 @@ int CCodeGenerator::GenerateCodePRMF()
 	ex = 0;
 	while ( true ) {
 
-		if ( token->ttype == TK_NONE ) {
-			if ( token->val == ')' ) { // ')'の場合は終了
+		if ( token.ttype == TK_NONE ) {
+			if ( token.val == ')' ) { // ')'の場合は終了
 				if ( ex != 0 ) {
 					writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 				}
 				return ex;
 			}
-			if ( token->val == ',' ) { // 先頭が','の場合は省略
+			if ( token.val == ',' ) { // 先頭が','の場合は省略
 				if ( ( ex & EXFLG_2 ) != 0 ) {
 					writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 				}
-				lexer.GetTokenCG( GETTOKEN_DEFAULT );
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				ex |= EXFLG_2;
 				continue;
 			}
@@ -369,17 +369,17 @@ int CCodeGenerator::GenerateCodePRMF()
 
 		CalcCG( ex );
 
-		if ( token->ttype >= TK_SEPARATE ) {
+		if ( token.ttype >= TK_SEPARATE ) {
 			throw CGERROR_PRMEND;
 		}
 
-		if ( token->ttype == ')' ) {
+		if ( token.ttype == ')' ) {
 			break;
 		}
-		if ( token->ttype != ',' ) {
+		if ( token.ttype != ',' ) {
 			throw CGERROR_CALCEXP;
 		}
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		ex |= EXFLG_2;
 	}
 	return 0;
@@ -392,45 +392,45 @@ void CCodeGenerator::GenerateCodePRMF2()
 	//
 	int ex = 0;
 	while ( true ) {
-		if ( token->ttype >= TK_SEPARATE ) {
+		if ( token.ttype >= TK_SEPARATE ) {
 			break;
 		}
 
-		// logger->Mesf( "(type:%d val:%d) line:%d", token->ttype, token->val, lexer.cg_orgline );
+		// logger->Mesf( "(type:%d val:%d) line:%d", token.ttype, token.val, lexer.cg_orgline );
 
-		switch ( token->ttype ) {
+		switch ( token.ttype ) {
 		case TK_NONE:
-			if ( token->val == '(' ) {
-				lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			if ( token.val == '(' ) {
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				CalcCG( ex );
-				if ( token->ttype != ')' ) {
+				if ( token.ttype != ')' ) {
 					throw CGERROR_CALCEXP;
 				}
 			} else {
 				throw CGERROR_ARRAYEXP;
 			}
-			lexer.GetTokenCG( GETTOKEN_NOFLOAT );
+			token = lexer.GetTokenCG( GETTOKEN_NOFLOAT );
 			break;
 		case TK_NUM:
-			writer->PutCS( TYPE_INUM, token->val, ex );
-			lexer.GetTokenCG( GETTOKEN_NOFLOAT );
+			writer->PutCS( TYPE_INUM, token.val, ex );
+			token = lexer.GetTokenCG( GETTOKEN_NOFLOAT );
 			break;
 		case TK_OBJ: {
-			int id = SetVarsFixed( token->cg_str, cg_defvarfix );
+			int id = SetVarsFixed( token.cg_str, cg_defvarfix );
 			int t = symtab->lb->GetType( id );
 			if ( ( t == TYPE_XLABEL ) || ( t == TYPE_LABEL ) ) {
 				throw CGERROR_LABELNAME;
 			}
 			writer->PutCSSymbol( id, ex );
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-			if ( token->ttype == TK_NONE ) {
-				if ( token->val == '(' ) { // '(' 配列指定
-					lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			if ( token.ttype == TK_NONE ) {
+				if ( token.val == '(' ) { // '(' 配列指定
+					token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 					writer->PutCS( TYPE_MARK, '(', 0 );
 					GenerateCodePRMF();
 					writer->PutCS( TYPE_MARK, ')', 0 );
-					lexer.GetTokenCG( GETTOKEN_DEFAULT );
+					token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				}
 			}
 
@@ -441,17 +441,17 @@ void CCodeGenerator::GenerateCodePRMF2()
 			throw CGERROR_ARRAYEXP;
 		}
 
-		if ( token->ttype >= TK_SEPARATE ) {
+		if ( token.ttype >= TK_SEPARATE ) {
 			return;
 		}
-		if ( token->ttype != TK_NONE && token->ttype != '.' ) {
+		if ( token.ttype != TK_NONE && token.ttype != '.' ) {
 			throw CGERROR_ARRAYEXP;
 		}
-		if ( token->val != '.' ) {
+		if ( token.val != '.' ) {
 			return;
 		}
 
-		lexer.GetTokenCG( GETTOKEN_NOFLOAT );
+		token = lexer.GetTokenCG( GETTOKEN_NOFLOAT );
 		ex |= EXFLG_2;
 	}
 }
@@ -464,21 +464,21 @@ void CCodeGenerator::GenerateCodePRMF3()
 	int id;
 	int ex;
 	ex = 0;
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_OBJ ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_OBJ ) {
 		throw CGERROR_PP_BAD_STRUCT_SOURCE;
 	}
 
-	id = SetVarsFixed( token->cg_str, cg_defvarfix );
+	id = SetVarsFixed( token.cg_str, cg_defvarfix );
 	GenerateCodeVAR( id, ex );
 
-	if ( token->ttype != TK_NONE ) {
+	if ( token.ttype != TK_NONE ) {
 		throw CGERROR_PP_BAD_STRUCT_SOURCE;
 	}
-	if ( token->val != ']' ) {
+	if ( token.val != ']' ) {
 		throw CGERROR_PP_BAD_STRUCT_SOURCE;
 	}
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 }
 
 
@@ -486,24 +486,24 @@ int CCodeGenerator::GenerateCodePRMF4( int t )
 {
 	//		HSP3Codeを展開する(構造体/配列指定パラメーター)
 	//
-	if ( token->ttype == TK_NONE ) {
-		if ( token->val == '.' ) {
-			lexer.GetTokenCG( GETTOKEN_NOFLOAT );
+	if ( token.ttype == TK_NONE ) {
+		if ( token.val == '.' ) {
+			token = lexer.GetTokenCG( GETTOKEN_NOFLOAT );
 			writer->PutCS( TYPE_MARK, '(', 0 ); // '.' 配列指定
 			GenerateCodePRMF2();
 			writer->PutCS( TYPE_MARK, ')', 0 );
 			return 1;
 		}
-		if ( token->val == '(' ) { // '(' 配列指定
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.val == '(' ) { // '(' 配列指定
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 			writer->PutCS( TYPE_MARK, '(', 0 );
 			GenerateCodePRMF();
 			writer->PutCS( TYPE_MARK, ')', 0 );
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 			return 1;
 		}
 		if ( t == TYPE_STRUCT ) {
-			if ( token->val == '[' ) { // '[' ソース指定
+			if ( token.val == '[' ) { // '[' ソース指定
 				writer->PutCS( TYPE_MARK, '[', 0 );
 				GenerateCodePRMF3();
 				return 0;
@@ -522,20 +522,20 @@ void CCodeGenerator::GenerateCodeMethod()
 	int ex;
 	ex = 0;
 
-	if ( token->ttype >= TK_SEPARATE ) {
+	if ( token.ttype >= TK_SEPARATE ) {
 		throw CGERROR_SYNTAX;
 	}
-	switch ( token->ttype ) {
+	switch ( token.ttype ) {
 	case TK_NUM:
-		writer->PutCS( TYPE_INUM, token->val, ex );
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		writer->PutCS( TYPE_INUM, token.val, ex );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		break;
 	case TK_STRING:
-		writer->PutCS( TYPE_STRING, writer->PutDS( token->cg_str.c_str() ), ex );
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		writer->PutCS( TYPE_STRING, writer->PutDS( token.cg_str.c_str() ), ex );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		break;
 	case TK_OBJ:
-		id = SetVarsFixed( token->cg_str, cg_defvarfix );
+		id = SetVarsFixed( token.cg_str, cg_defvarfix );
 		GenerateCodeVAR( id, ex );
 		break;
 	default:
@@ -545,12 +545,12 @@ void CCodeGenerator::GenerateCodeMethod()
 	ex |= EXFLG_2;
 	while ( true ) {
 
-		if ( token->ttype == TK_NONE ) {
-			if ( token->val == ',' ) { // 先頭が','の場合は省略
+		if ( token.ttype == TK_NONE ) {
+			if ( token.val == ',' ) { // 先頭が','の場合は省略
 				if ( ( ex & EXFLG_2 ) != 0 ) {
 					writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 				}
-				lexer.GetTokenCG( GETTOKEN_DEFAULT );
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				ex |= EXFLG_2;
 				continue;
 			}
@@ -558,13 +558,13 @@ void CCodeGenerator::GenerateCodeMethod()
 
 		CalcCG( ex ); // 式の評価
 
-		if ( token->ttype >= TK_SEPARATE ) {
+		if ( token.ttype >= TK_SEPARATE ) {
 			break;
 		}
-		if ( token->ttype != ',' ) {
+		if ( token.ttype != ',' ) {
 			throw CGERROR_CALCEXP;
 		}
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		ex |= EXFLG_2;
 	}
 }
@@ -613,7 +613,7 @@ void CCodeGenerator::GenerateCodeVAR( int id, int ex )
 
 	//
 	writer->PutCSSymbol( id, ex );
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 	if ( t == TYPE_SYSVAR ) {
 		return;
@@ -703,10 +703,10 @@ void CCodeGenerator::CheckInternalListenerCMD( int opt )
 	int i;
 	int t;
 	int o;
-	if ( token->ttype != TK_OBJ ) {
+	if ( token.ttype != TK_OBJ ) {
 		return;
 	}
-	i = symtab->lb->Search( token->cg_str );
+	i = symtab->lb->Search( token.cg_str );
 	if ( i < 0 ) {
 		return;
 	}
@@ -721,7 +721,7 @@ void CCodeGenerator::CheckInternalListenerCMD( int opt )
 	if ( o == 0x001 ) { // gosub
 		writer->PutCS( t, o & 0xffff, 0 );
 	}
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 }
 
 
@@ -781,12 +781,12 @@ int CCodeGenerator::CheckInternalProgCMD( int opt, int orgcs )
 		writer->PutCS( TYPE_LABEL, i, 0 );
 		break;
 	case 0x19: // on
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		CalcCG( 0 ); // 式の評価
-		if ( token->ttype != TK_OBJ ) {
+		if ( token.ttype != TK_OBJ ) {
 			throw CGERROR_SYNTAX;
 		}
-		i = symtab->lb->Search( token->cg_str );
+		i = symtab->lb->Search( token.cg_str );
 		if ( i < 0 ) {
 			throw CGERROR_SYNTAX;
 		}
@@ -815,8 +815,8 @@ int CCodeGenerator::CheckInternalProgCMD( int opt, int orgcs )
 	case 0x0e: // dup
 	case 0x0f: // dupptr
 	{
-		char *firstSymbolName = lexer.GetSymbolCG( lexer.cg_ptr );
-		if ( firstSymbolName == nullptr || ( isdigit( *reinterpret_cast<unsigned char *>( firstSymbolName ) ) != 0 ) ) {
+		auto firstSymbolName = lexer.GetSymbolCG( lexer.cg_ptr );
+		if ( firstSymbolName.empty() || ( isdigit( firstSymbolName[0] ) != 0 ) ) {
 			break;
 		}
 		i = SetVarsFixed( firstSymbolName, cg_defvarfix );
@@ -824,7 +824,7 @@ int CCodeGenerator::CheckInternalProgCMD( int opt, int orgcs )
 		symtab->lb->SetInitFlag( i, LAB_INIT_DONE );
 		GenerateLabelListAndTag( i, LABBUF_FLAG_VAR );
 		symtab->lb->SetSkipLabList( i ); // 次回のラベル参照リスト生成をスキップする
-		// logger->Mesf( "#initflag set [%s]", token->cg_str );
+		// logger->Mesf( "#initflag set [%s]", token.cg_str );
 		return 1;
 	}
 
@@ -871,7 +871,7 @@ void CCodeGenerator::GenerateCodeCMD( int id )
 		break;
 	}
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 	if ( ( opt & 0x10000 ) != 0 ) {
 		CheckInternalListenerCMD( opt );
@@ -906,12 +906,12 @@ void CCodeGenerator::GenerateCodeLET( int id, bool first )
 	}
 
 	//
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-	if ( ( token->ttype == TK_NONE ) && ( token->val == 0x65 ) ) { // ->が続いているか?
-		writer->PutCS( TYPE_PROGCMD, 0x1a, EXFLG_1 );			   // 'mcall'コマンドに置き換える
-		writer->PutCS( t, symtab->lb->GetOpt( id ), 0 );		   // 変数パラメーター
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( ( token.ttype == TK_NONE ) && ( token.val == 0x65 ) ) { // ->が続いているか?
+		writer->PutCS( TYPE_PROGCMD, 0x1a, EXFLG_1 );			 // 'mcall'コマンドに置き換える
+		writer->PutCS( t, symtab->lb->GetOpt( id ), 0 );		 // 変数パラメーター
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		GenerateCodeMethod(); // パラメーター展開
 		return;
 	}
@@ -919,11 +919,11 @@ void CCodeGenerator::GenerateCodeLET( int id, bool first )
 	writer->PutCS( t, symtab->lb->GetOpt( id ), EXFLG_1 ); // 通常の変数代入
 	GenerateCodePRMF4( t );								   // 構造体/配列のチェック
 
-	if ( token->ttype != TK_NONE ) {
+	if ( token.ttype != TK_NONE ) {
 		throw CGERROR_SYNTAX;
 	}
 
-	op = token->val;
+	op = token.val;
 	// PutCS( TK_NONE, op, 0 );
 	texflag = 0;
 	CalcCG_regmark( op );
@@ -931,18 +931,18 @@ void CCodeGenerator::GenerateCodeLET( int id, bool first )
 	cg_lastcmd = CG_LASTCMD_LET;
 	cg_lastval = op;
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 	switch ( op ) {
 	case '+': // '++'
 	case '-': // '--'
-		if ( token->ttype >= TK_SEPARATE ) {
+		if ( token.ttype >= TK_SEPARATE ) {
 			return;
 		}
-		if ( token->ttype == TK_NONE ) {
-			if ( token->val == op ) {
-				lexer.GetTokenCG( GETTOKEN_DEFAULT );
-				if ( token->ttype >= TK_SEPARATE ) {
+		if ( token.ttype == TK_NONE ) {
+			if ( token.val == op ) {
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+				if ( token.ttype >= TK_SEPARATE ) {
 					return;
 				}
 				throw CGERROR_SYNTAX;
@@ -956,8 +956,8 @@ void CCodeGenerator::GenerateCodeLET( int id, bool first )
 		break;
 	}
 
-	if ( ( token->ttype == TK_NONE ) && ( token->val == '=' ) ) {
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( ( token.ttype == TK_NONE ) && ( token.val == '=' ) ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 	}
 	GenerateCodePRM();
 }
@@ -972,33 +972,33 @@ void CCodeGenerator::GenerateCodePP_regcmd()
 	cg_pptype = cg_typecnt;
 	cmd[0] = 0;
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	switch ( token->ttype ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	switch ( token.ttype ) {
 	case TK_STRING:
-		strcpy( cmd, token->cg_str.c_str() );
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype != TK_NONE ) {
+		strcpy( cmd, token.cg_str.c_str() );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype != TK_NONE ) {
 			throw CGERROR_PP_NO_REGCMD;
 		}
-		if ( token->val != ',' ) {
+		if ( token.val != ',' ) {
 			throw CGERROR_PP_NO_REGCMD;
 		}
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype != TK_STRING ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype != TK_STRING ) {
 			throw CGERROR_PP_NO_REGCMD;
 		}
-		strcpy( cmd2, token->cg_str.c_str() );
+		strcpy( cmd2, token.cg_str.c_str() );
 
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype == TK_NONE ) {
-			if ( token->val != ',' ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype == TK_NONE ) {
+			if ( token.val != ',' ) {
 				throw CGERROR_PP_NO_REGCMD;
 			}
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
-			if ( token->ttype != TK_NUM ) {
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			if ( token.ttype != TK_NUM ) {
 				throw CGERROR_PP_NO_REGCMD;
 			}
-			cg_varhpi += token->val;
+			cg_varhpi += token.val;
 		}
 
 		writer->PutHPI( HPIDAT_FLAG_TYPEFUNC, 0, cmd2, cmd );
@@ -1006,10 +1006,10 @@ void CCodeGenerator::GenerateCodePP_regcmd()
 		break;
 	case TK_NUM:
 		writer->PutHPI( HPIDAT_FLAG_SELFFUNC, 0, "", "" );
-		cg_pptype = token->val;
+		cg_pptype = token.val;
 		break;
 	case TK_NONE:
-		if ( token->val == '*' ) {
+		if ( token.val == '*' ) {
 			cg_typecnt++;
 		}
 		break;
@@ -1029,21 +1029,21 @@ void CCodeGenerator::GenerateCodePP_cmd()
 	if ( cg_pptype < 0 ) {
 		throw CGERROR_PP_NO_REGCMD;
 	}
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_OBJ ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_OBJ ) {
 		throw CGERROR_PP_NO_REGCMD;
 	}
-	strcpy( cmd, token->cg_str.c_str() );
+	strcpy( cmd, token.cg_str.c_str() );
 
 	// if ( ttype != TK_NONE ) throw CGERROR_PP_NO_REGCMD;
 	// if ( val != ',' ) throw CGERROR_PP_NO_REGCMD;
-	// lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	// token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_NUM ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_NUM ) {
 		throw CGERROR_PP_NO_REGCMD;
 	}
-	id = token->val;
+	id = token.val;
 
 	id = symtab->lb->Regist( cmd, cg_pptype, id, lexer.cg_orgfilefull, lexer.cg_orgline );
 	GenerateLabelListAndTag( id, LABBUF_FLAG_EXCMD );
@@ -1055,11 +1055,11 @@ void CCodeGenerator::GenerateCodePP_uselib()
 {
 	//		HSP3Codeを展開する(uselib)
 	//
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 	cg_libname[0] = 0;
-	if ( token->ttype == TK_STRING ) {
-		strncpy( cg_libname, token->cg_str.c_str(), 1023 );
-	} else if ( token->ttype < TK_VOID ) {
+	if ( token.ttype == TK_STRING ) {
+		strncpy( cg_libname, token.cg_str.c_str(), 1023 );
+	} else if ( token.ttype < TK_VOID ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
 	cg_libmode = CG_LIBMODE_DLLNEW;
@@ -1076,11 +1076,11 @@ void CCodeGenerator::GenerateCodePP_usecom()
 	char clsname[128];
 	char iidname[128];
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_OBJ ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_OBJ ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
-	strncpy( libname, token->cg_str.c_str(), 1023 );
+	strncpy( libname, token.cg_str.c_str(), 1023 );
 
 	i = symtab->lb->Search( libname );
 	if ( i >= 0 ) {
@@ -1088,19 +1088,19 @@ void CCodeGenerator::GenerateCodePP_usecom()
 		throw CGERROR_PP_ALREADY_USE_PARAM;
 	}
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_STRING ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_STRING ) {
 		throw CGERROR_PP_BAD_IMPORT_IID;
 	}
-	strncpy( iidname, token->cg_str.c_str(), 127 );
+	strncpy( iidname, token.cg_str.c_str(), 127 );
 
 	*clsname = 0;
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype < TK_EOL ) {
-		if ( token->ttype != TK_STRING ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype < TK_EOL ) {
+		if ( token.ttype != TK_STRING ) {
 			throw CGERROR_PP_BAD_IMPORT_IID;
 		}
-		strncpy( clsname, token->cg_str.c_str(), 127 );
+		strncpy( clsname, token.cg_str.c_str(), 127 );
 	}
 
 	cg_libindex = writer->PutLIB( LIBDAT_FLAG_COMOBJ, iidname );
@@ -1134,11 +1134,11 @@ void CCodeGenerator::GenerateCodePP_func( int deftype )
 	char fbase[1024];
 	char fname[1024];
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_OBJ ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_OBJ ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
-	strncpy( fbase, token->cg_str.c_str(), 1023 );
+	strncpy( fbase, token.cg_str.c_str(), 1023 );
 
 	ref = -1;
 	if ( ( ( compopt->hed_cmpmode & CMPMODE_OPTCODE ) != 0 ) &&
@@ -1152,12 +1152,12 @@ void CCodeGenerator::GenerateCodePP_func( int deftype )
 
 	warn = 0;
 	otflag = deftype;
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-	if ( token->ttype == TK_OBJ ) {
-		if ( token->cg_str == "onexit" ) {
+	if ( token.ttype == TK_OBJ ) {
+		if ( token.cg_str == "onexit" ) {
 			otflag |= STRUCTDAT_OT_CLEANUP;
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		}
 	}
 
@@ -1181,26 +1181,26 @@ void CCodeGenerator::GenerateCodePP_func( int deftype )
 		throw CGERROR_PP_NO_USELIB;
 	}
 
-	switch ( token->ttype ) {
+	switch ( token.ttype ) {
 	case TK_OBJ:
-		sprintf( fname, "_%s@16", token->cg_str.c_str() );
+		sprintf( fname, "_%s@16", token.cg_str.c_str() );
 		warn = 1;
 		break;
 	case TK_STRING:
-		strncpy( fname, token->cg_str.c_str(), 1023 );
+		strncpy( fname, token.cg_str.c_str(), 1023 );
 		break;
 	case TK_NONE:
-		if ( token->val == '*' ) {
+		if ( token.val == '*' ) {
 			break;
 		}
 		throw CGERROR_PP_BAD_IMPORT_NAME;
 	default:
 		throw CGERROR_PP_BAD_IMPORT_NAME;
 	}
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 	writer->PutStructStart();
-	if ( token->ttype == TK_NUM ) {
+	if ( token.ttype == TK_NUM ) {
 		int p1;
 		int p2;
 		int p3;
@@ -1208,7 +1208,7 @@ void CCodeGenerator::GenerateCodePP_func( int deftype )
 		int c1;
 		warn = 1;
 		p1 = p2 = p3 = p4 = MPTYPE_INUM;
-		c1 = token->val & 3;
+		c1 = token.val & 3;
 		if ( c1 == 1 ) {
 			p1 = MPTYPE_PVARPTR;
 		}
@@ -1216,34 +1216,34 @@ void CCodeGenerator::GenerateCodePP_func( int deftype )
 			p1 = MPTYPE_PBMSCR;
 		}
 		if ( c1 == 3 ) {
-			if ( ( token->val & 0x80 ) == 0 ) {
+			if ( ( token.val & 0x80 ) == 0 ) {
 				throw CGERROR_PP_INCOMPATIBLE_IMPORT;
 			}
 			p1 = MPTYPE_PPVAL;
 		}
-		if ( ( token->val & 4 ) != 0 ) {
+		if ( ( token.val & 4 ) != 0 ) {
 			p2 = MPTYPE_LOCALSTRING;
 		}
-		if ( ( token->val & 0x10 ) != 0 ) {
+		if ( ( token.val & 0x10 ) != 0 ) {
 			p4 = MPTYPE_PTR_REFSTR;
 		}
-		if ( ( token->val & 0x20 ) != 0 ) {
+		if ( ( token.val & 0x20 ) != 0 ) {
 			p4 = MPTYPE_PTR_DPMINFO;
 		}
-		if ( ( token->val & 0x100 ) != 0 ) {
+		if ( ( token.val & 0x100 ) != 0 ) {
 			otflag |= STRUCTDAT_OT_CLEANUP;
 		}
-		if ( ( token->val & 0x200 ) != 0 ) {
-			if ( ( token->val & 3 ) != 2 ) {
+		if ( ( token.val & 0x200 ) != 0 ) {
+			if ( ( token.val & 3 ) != 2 ) {
 				throw CGERROR_PP_INCOMPATIBLE_IMPORT;
 			}
 			p1 = MPTYPE_PTR_EXINFO;
 			p2 = p3 = MPTYPE_NULLPTR;
-			if ( ( token->val & 0x30 ) == 0 ) {
+			if ( ( token.val & 0x30 ) == 0 ) {
 				p4 = MPTYPE_NULLPTR;
 			}
 		}
-		//		if ( token->val & 0x220 ) throw CGERROR_PP_INCOMPATIBLE_IMPORT;
+		//		if ( token.val & 0x220 ) throw CGERROR_PP_INCOMPATIBLE_IMPORT;
 
 		//		logger->Mesf("#oldfunc %d,%d,%d,%d",p1,p2,p3,p4);
 
@@ -1254,29 +1254,29 @@ void CCodeGenerator::GenerateCodePP_func( int deftype )
 
 	} else {
 		while ( true ) {
-			if ( token->ttype >= TK_EOL ) {
+			if ( token.ttype >= TK_EOL ) {
 				break;
 			}
-			if ( token->ttype != TK_OBJ ) {
+			if ( token.ttype != TK_OBJ ) {
 				throw CGERROR_PP_WRONG_PARAM_NAME;
 			}
-			t = lexer.GetParameterFuncTypeCG( token->cg_str );
+			t = lexer.GetParameterFuncTypeCG( token.cg_str );
 			if ( t == MPTYPE_NONE ) {
 				throw CGERROR_PP_WRONG_PARAM_NAME;
 			}
 			writer->PutStructParam( t, STRUCTPRM_SUBID_STID );
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-			if ( token->ttype >= TK_EOL ) {
+			if ( token.ttype >= TK_EOL ) {
 				break;
 			}
-			if ( token->ttype != TK_NONE ) {
+			if ( token.ttype != TK_NONE ) {
 				throw CGERROR_PP_WRONG_PARAM_NAME;
 			}
-			if ( token->val != ',' ) {
+			if ( token.val != ',' ) {
 				throw CGERROR_PP_WRONG_PARAM_NAME;
 			}
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		}
 	}
 
@@ -1311,48 +1311,48 @@ void CCodeGenerator::GenerateCodePP_comfunc()
 		throw CGERROR_PP_NO_USECOM;
 	}
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_OBJ ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_OBJ ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
-	strncpy( fbase, token->cg_str.c_str(), 1023 );
+	strncpy( fbase, token.cg_str.c_str(), 1023 );
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-	if ( token->ttype != TK_NUM ) {
+	if ( token.ttype != TK_NUM ) {
 		throw CGERROR_PP_BAD_IMPORT_INDEX;
 	}
-	imp_index = token->val;
+	imp_index = token.val;
 
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 	writer->PutStructStart();
 	writer->PutStructParam( MPTYPE_IOBJECTVAR, STRUCTPRM_SUBID_STID );
 
 	while ( true ) {
-		if ( token->ttype >= TK_EOL ) {
+		if ( token.ttype >= TK_EOL ) {
 			break;
 		}
-		if ( token->ttype != TK_OBJ ) {
+		if ( token.ttype != TK_OBJ ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
-		t = lexer.GetParameterFuncTypeCG( token->cg_str );
+		t = lexer.GetParameterFuncTypeCG( token.cg_str );
 		if ( t == MPTYPE_NONE ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 		writer->PutStructParam( t, STRUCTPRM_SUBID_STID );
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-		if ( token->ttype >= TK_EOL ) {
+		if ( token.ttype >= TK_EOL ) {
 			break;
 		}
-		if ( token->ttype != TK_NONE ) {
+		if ( token.ttype != TK_NONE ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
-		if ( token->val != ',' ) {
+		if ( token.val != ',' ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 	}
 
 	i = symtab->lb->Search( fbase );
@@ -1391,20 +1391,20 @@ void CCodeGenerator::GenerateCodePP_deffunc0( int is_command )
 	HED_STRUCTDAT *st;
 
 	prep = 0;
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_OBJ ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_OBJ ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
 
-	if ( ( is_command != 0 ) && ( token->cg_str == "prep" ) ) { // プロトタイプ宣言
+	if ( ( is_command != 0 ) && ( token.cg_str == "prep" ) ) { // プロトタイプ宣言
 		prep = 1;
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype != TK_OBJ ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype != TK_OBJ ) {
 			throw CGERROR_PP_NAMEREQUIRED;
 		}
 	}
 
-	strncpy( funcname, token->cg_str.c_str(), 1023 );
+	strncpy( funcname, token.cg_str.c_str(), 1023 );
 
 	for ( i = 0; i < cg_localcur; i++ ) {
 		symtab->lb->SetFlag( cg_localstruct[i], -1 ); // 以前に指定されたパラメーター名を削除する
@@ -1429,30 +1429,30 @@ void CCodeGenerator::GenerateCodePP_deffunc0( int is_command )
 
 	writer->PutStructStart();
 	while ( true ) {
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype >= TK_EOL ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype >= TK_EOL ) {
 			break;
 		}
-		if ( token->ttype != TK_OBJ ) {
+		if ( token.ttype != TK_OBJ ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 
-		if ( ( is_command != 0 ) && ( token->cg_str == "onexit" ) ) {
+		if ( ( is_command != 0 ) && ( token.cg_str == "onexit" ) ) {
 			funcflag |= STRUCTDAT_FUNCFLAG_CLEANUP;
 			break;
 		}
 
-		t = lexer.GetParameterTypeCG( token->cg_str );
+		t = lexer.GetParameterTypeCG( token.cg_str );
 		if ( t == MPTYPE_NONE ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 		if ( ( t == MPTYPE_MODULEVAR ) || ( t == MPTYPE_IMODULEVAR ) || ( t == MPTYPE_TMODULEVAR ) ) {
 			//	モジュール名指定
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
-			if ( token->ttype != TK_OBJ ) {
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			if ( token.ttype != TK_OBJ ) {
 				throw CGERROR_PP_WRONG_PARAM_NAME;
 			}
-			i = symtab->lb->Search( token->cg_str );
+			i = symtab->lb->Search( token.cg_str );
 			if ( i < 0 ) {
 				throw CGERROR_PP_BAD_STRUCT;
 			}
@@ -1461,7 +1461,7 @@ void CCodeGenerator::GenerateCodePP_deffunc0( int is_command )
 			}
 			prm = (STRUCTPRM *)writer->mi_buf->GetBuffer();
 			subid = prm[symtab->lb->GetOpt( i )].subid;
-			// logger->Mesf( "%s:struct%d", token->cg_str,subid );
+			// logger->Mesf( "%s:struct%d", token.cg_str,subid );
 			if ( t == MPTYPE_IMODULEVAR ) {
 				if ( prm[symtab->lb->GetOpt( i )].offset != -1 ) {
 					throw CGERROR_PP_MODINIT_USED;
@@ -1478,33 +1478,33 @@ void CCodeGenerator::GenerateCodePP_deffunc0( int is_command )
 				regflag = 0;
 			}
 			prmid = writer->PutStructParam( t, subid );
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 		} else {
 			prmid = writer->PutStructParam( t, STRUCTPRM_SUBID_STACK );
 			// logger->Mesf( "%d:type%d",prmid,t );
 
-			lexer.GetTokenCG( GETTOKEN_DEFAULT );
-			if ( token->ttype == TK_OBJ ) {
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			if ( token.ttype == TK_OBJ ) {
 				//	引数のエイリアス
-				i = symtab->lb->Search( token->cg_str );
+				i = symtab->lb->Search( token.cg_str );
 				if ( i >= 0 ) {
 					CG_MesLabelDefinition( i );
 					throw CGERROR_PP_ALREADY_USE_PARAM;
 				}
-				i = symtab->lb->Regist( token->cg_str, TYPE_STRUCT, prmid, lexer.cg_orgfilefull, lexer.cg_orgline );
+				i = symtab->lb->Regist( token.cg_str, TYPE_STRUCT, prmid, lexer.cg_orgfilefull, lexer.cg_orgline );
 				cg_localstruct[cg_localcur++] = i;
-				lexer.GetTokenCG( GETTOKEN_DEFAULT );
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 			}
 		}
 
-		if ( token->ttype >= TK_EOL ) {
+		if ( token.ttype >= TK_EOL ) {
 			break;
 		}
-		if ( token->ttype != TK_NONE ) {
+		if ( token.ttype != TK_NONE ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
-		if ( token->val != ',' ) {
+		if ( token.val != ',' ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 	}
@@ -1543,11 +1543,11 @@ void CCodeGenerator::GenerateCodePP_module()
 	//
 	int i;
 	int ref;
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_OBJ ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_OBJ ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
-	auto &modname = token->cg_str;
+	auto &modname = token.cg_str;
 
 	if ( ( ( compopt->hed_cmpmode & CMPMODE_OPTCODE ) != 0 ) &&
 		 ( symtab->tmp_lb != nullptr ) ) { // プリプロセス情報から最適化を行なう
@@ -1578,11 +1578,11 @@ void CCodeGenerator::GenerateCodePP_struct()
 	int t;
 	int prmid;
 	char funcname[1024];
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( token->ttype != TK_OBJ ) {
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_OBJ ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
-	strncpy( funcname, token->cg_str.c_str(), 1023 );
+	strncpy( funcname, token.cg_str.c_str(), 1023 );
 	i = symtab->lb->Search( funcname );
 	if ( i >= 0 ) {
 		CG_MesLabelDefinition( i );
@@ -1595,40 +1595,40 @@ void CCodeGenerator::GenerateCodePP_struct()
 	// logger->Mesf( "%d:%s",prmid, funcname );
 
 	while ( true ) {
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype >= TK_EOL ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype >= TK_EOL ) {
 			break;
 		}
-		if ( token->ttype != TK_OBJ ) {
+		if ( token.ttype != TK_OBJ ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
-		t = lexer.GetParameterStructTypeCG( token->cg_str );
+		t = lexer.GetParameterStructTypeCG( token.cg_str );
 		if ( t == MPTYPE_NONE ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 		prmid = writer->PutStructParam( t, STRUCTPRM_SUBID_STID );
 		// logger->Mesf( "%d:type%d",prmid,t );
 
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype != TK_OBJ ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype != TK_OBJ ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 
-		i = symtab->lb->Search( token->cg_str );
+		i = symtab->lb->Search( token.cg_str );
 		if ( i >= 0 ) {
 			CG_MesLabelDefinition( i );
 			throw CGERROR_PP_ALREADY_USE_PARAM;
 		}
-		symtab->lb->Regist( token->cg_str, TYPE_STRUCT, prmid, lexer.cg_orgfilefull, lexer.cg_orgline );
+		symtab->lb->Regist( token.cg_str, TYPE_STRUCT, prmid, lexer.cg_orgfilefull, lexer.cg_orgline );
 
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype >= TK_EOL ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype >= TK_EOL ) {
 			break;
 		}
-		if ( token->ttype != TK_NONE ) {
+		if ( token.ttype != TK_NONE ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
-		if ( token->val != ',' ) {
+		if ( token.val != ',' ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 	}
@@ -1644,35 +1644,35 @@ void CCodeGenerator::GenerateCodePP_defvars( int fixedvalue )
 	int prms;
 	prms = 0;
 	while ( true ) {
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype >= TK_EOL ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype >= TK_EOL ) {
 			break;
 		}
-		if ( token->ttype != TK_OBJ ) {
+		if ( token.ttype != TK_OBJ ) {
 			throw CGERROR_WRONG_VARIABLE;
 		}
 
-		id = symtab->lb->Search( token->cg_str );
+		id = symtab->lb->Search( token.cg_str );
 		if ( id >= 0 ) {
 			throw CGERROR_ALREADY_DEFINED_VARS;
 		}
-		id = SetVarsFixed( token->cg_str, fixedvalue );
+		id = SetVarsFixed( token.cg_str, fixedvalue );
 		if ( symtab->lb->GetType( id ) != TYPE_VAR ) {
 			throw CGERROR_WRONG_VARIABLE;
 		}
 		symtab->lb->SetInitFlag( id, LAB_INIT_DONE );
 		GenerateLabelListAndTag( id, LABBUF_FLAG_VAR );
 		prms++;
-		// logger->Mesf( "name:%s(%d) fixed:%d", token->cg_str, id, fixedvalue );
+		// logger->Mesf( "name:%s(%d) fixed:%d", token.cg_str, id, fixedvalue );
 
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype >= TK_EOL ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype >= TK_EOL ) {
 			break;
 		}
-		if ( token->ttype != TK_NONE ) {
+		if ( token.ttype != TK_NONE ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
-		if ( token->val != ',' ) {
+		if ( token.val != ',' ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 	}
@@ -1708,30 +1708,30 @@ void CCodeGenerator::GenerateCodePP( char *buf )
 	//		HSP3Codeを展開する(プリプロセスコマンド)
 	//
 	int i;
-	lexer.GetTokenCG( GETTOKEN_DEFAULT ); // 最初の'#'を読み飛ばし
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT ); // 最初の'#'を読み飛ばし
 	if ( *lexer.cg_ptr != lexer.PickNextCodeCG() ) {
 		// preprocesser command "#"
 		throw CGERROR_UNKNOWN;
 	}
-	lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-	if ( token->ttype == TK_NONE ) { // プリプロセッサから渡される行情報
-		if ( token->val != '#' ) {
+	if ( token.ttype == TK_NONE ) { // プリプロセッサから渡される行情報
+		if ( token.val != '#' ) {
 			throw CGERROR_UNKNOWN;
 		}
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype != TK_NUM ) {
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype != TK_NUM ) {
 			throw CGERROR_UNKNOWN;
 		}
-		lexer.cg_orgline = token->val;
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token->ttype == TK_STRING ) {
-			lexer.cg_orgfilefull = token->cg_str;
+		lexer.cg_orgline = token.val;
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype == TK_STRING ) {
+			lexer.cg_orgfilefull = token.cg_str;
 			char temp_orgfile[HSP_MAX_PATH];
 			getpath( lexer.cg_orgfilefull.data(), temp_orgfile, 8 );
 			lexer.cg_orgfile = temp_orgfile;
 			if ( compopt->cg_debug() ) {
-				i = writer->PutDSBuf( token->cg_str.c_str() );
+				i = writer->PutDSBuf( token.cg_str.c_str() );
 				writer->PutDI( 254, i, lexer.cg_orgline ); // ファイル名をデバッグ情報として登録
 			}
 		} else {
@@ -1739,15 +1739,15 @@ void CCodeGenerator::GenerateCodePP( char *buf )
 				writer->PutDI( 254, 0, lexer.cg_orgline ); // ラインだけをデバッグ情報として登録
 			}
 		}
-		// logger->Mesf( "#%d [%s]",lexer.cg_orgline, token->cg_str );
+		// logger->Mesf( "#%d [%s]",lexer.cg_orgline, token.cg_str );
 		return;
 	}
 
-	if ( token->ttype != TK_OBJ ) { // その他はエラー
+	if ( token.ttype != TK_OBJ ) { // その他はエラー
 		throw CGERROR_PP_SYNTAX;
 	}
 
-	if ( token->cg_str == "global" ) {
+	if ( token.cg_str == "global" ) {
 		cg_flag = CG_FLAG_ENABLE;
 		return;
 	}
@@ -1756,71 +1756,71 @@ void CCodeGenerator::GenerateCodePP( char *buf )
 		return;
 	}
 
-	if ( token->cg_str == "regcmd" ) {
+	if ( token.cg_str == "regcmd" ) {
 		GenerateCodePP_regcmd();
 		return;
 	}
-	if ( token->cg_str == "cmd" ) {
+	if ( token.cg_str == "cmd" ) {
 		GenerateCodePP_cmd();
 		return;
 	}
-	if ( token->cg_str == "uselib" ) {
+	if ( token.cg_str == "uselib" ) {
 		GenerateCodePP_uselib();
 		return;
 	}
-	if ( token->cg_str == "func" ) {
+	if ( token.cg_str == "func" ) {
 		GenerateCodePP_func( STRUCTDAT_OT_STATEMENT | STRUCTDAT_OT_FUNCTION );
 		return;
 	}
-	if ( token->cg_str == "cfunc" ) {
+	if ( token.cg_str == "cfunc" ) {
 		GenerateCodePP_func( STRUCTDAT_OT_FUNCTION );
 		return;
 	}
-	if ( token->cg_str == "deffunc" ) {
+	if ( token.cg_str == "deffunc" ) {
 		GenerateCodePP_deffunc();
 		return;
 	}
-	if ( token->cg_str == "defcfunc" ) {
+	if ( token.cg_str == "defcfunc" ) {
 		GenerateCodePP_defcfunc();
 		return;
 	}
-	if ( token->cg_str == "module" ) {
+	if ( token.cg_str == "module" ) {
 		GenerateCodePP_module();
 		return;
 	}
-	if ( token->cg_str == "struct" ) {
+	if ( token.cg_str == "struct" ) {
 		GenerateCodePP_struct();
 		return;
 	}
-	if ( token->cg_str == "usecom" ) {
+	if ( token.cg_str == "usecom" ) {
 		GenerateCodePP_usecom();
 		return;
 	}
-	if ( token->cg_str == "comfunc" ) {
+	if ( token.cg_str == "comfunc" ) {
 		GenerateCodePP_comfunc();
 		return;
 	}
-	if ( token->cg_str == "var" ) {
+	if ( token.cg_str == "var" ) {
 		GenerateCodePP_defvars( LAB_TYPEFIX_NONE );
 		return;
 	}
-	if ( token->cg_str == "varint" ) {
+	if ( token.cg_str == "varint" ) {
 		GenerateCodePP_defvars( LAB_TYPEFIX_INT );
 		return;
 	}
-	if ( token->cg_str == "varlabel" ) {
+	if ( token.cg_str == "varlabel" ) {
 		GenerateCodePP_defvars( LAB_TYPEFIX_LABEL );
 		return;
 	}
-	if ( token->cg_str == "varstr" ) {
+	if ( token.cg_str == "varstr" ) {
 		GenerateCodePP_defvars( LAB_TYPEFIX_STR );
 		return;
 	}
-	if ( token->cg_str == "vardouble" ) {
+	if ( token.cg_str == "vardouble" ) {
 		GenerateCodePP_defvars( LAB_TYPEFIX_DOUBLE );
 		return;
 	}
-	if ( token->cg_str == "varmod" ) {
+	if ( token.cg_str == "varmod" ) {
 		GenerateCodePP_defvars( LAB_TYPEFIX_STRUCT );
 		return;
 	}
@@ -1848,18 +1848,18 @@ int CCodeGenerator::GenerateCodeSub()
 		return TK_EOL; // 最適化による出力抑制
 	}
 
-	lexer.GetTokenCG( GETTOKEN_LABEL );
-	if ( token->ttype >= TK_SEPARATE ) {
-		return token->ttype;
+	token = lexer.GetTokenCG( GETTOKEN_LABEL );
+	if ( token.ttype >= TK_SEPARATE ) {
+		return token.ttype;
 	}
 
-	switch ( token->ttype ) {
+	switch ( token.ttype ) {
 	case TK_OBJ: {
 		cg_lastcmd = CG_LASTCMD_LET;
-		int i = symtab->lb->Search( token->cg_str );
+		int i = symtab->lb->Search( token.cg_str );
 		if ( i < 0 ) {
-			// logger->Mesf( "[%s][%d]", token->cg_str, cg_valcnt );
-			i = SetVarsFixed( token->cg_str, cg_defvarfix );
+			// logger->Mesf( "[%s][%d]", token.cg_str, cg_valcnt );
+			i = SetVarsFixed( token.cg_str, cg_defvarfix );
 			symtab->lb->SetInitFlag( i, LAB_INIT_DONE ); //	変数の初期化フラグをセットする
 			GenerateCodeLET( i, true );
 		} else {
@@ -1878,18 +1878,18 @@ int CCodeGenerator::GenerateCodeSub()
 				break;
 			}
 		}
-		//			sprintf( tmp,"#obj:%s (%d)", token->cg_str,i );
+		//			sprintf( tmp,"#obj:%s (%d)", token.cg_str,i );
 		//			logger->Mes( tmp );
 		break;
 	}
 	case TK_LABEL: {
-		// logger->Mesf( "#lab:%s", token->cg_str );
-		if ( token->cg_str[0] == '@' ) {
-			token->cg_str = "@l" + std::to_string( cg_locallabel ); // local label
+		// logger->Mesf( "#lab:%s", token.cg_str );
+		if ( token.cg_str[0] == '@' ) {
+			token.cg_str = "@l" + std::to_string( cg_locallabel ); // local label
 			cg_locallabel++;
 		}
 
-		int i = symtab->lb->Search( token->cg_str );
+		int i = symtab->lb->Search( token.cg_str );
 		if ( i >= 0 ) {
 			LABOBJ *lab;
 			lab = symtab->lb->GetLabel( i );
@@ -1901,12 +1901,12 @@ int CCodeGenerator::GenerateCodeSub()
 			writer->SetOT( symtab->lb->GetOpt( i ), writer->GetCS() );
 			lab->type = TYPE_LABEL;
 		} else {
-			i = symtab->lb->Regist( token->cg_str, TYPE_LABEL, writer->ot_buf->GetSize() / sizeof( int ),
+			i = symtab->lb->Regist( token.cg_str, TYPE_LABEL, writer->ot_buf->GetSize() / sizeof( int ),
 									lexer.cg_orgfilefull, lexer.cg_orgline );
 			GenerateLabelListAndTag( i, LABBUF_FLAG_LABEL );
 			writer->PutOT( writer->GetCS() );
 		}
-		lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		break;
 	}
 	default:
@@ -1914,10 +1914,10 @@ int CCodeGenerator::GenerateCodeSub()
 	}
 	//	}
 
-	if ( token->ttype < TK_SEPARATE ) {
+	if ( token.ttype < TK_SEPARATE ) {
 		throw CGERROR_SYNTAX;
 	}
-	return token->ttype;
+	return token.ttype;
 }
 
 
@@ -1947,7 +1947,7 @@ int CCodeGenerator::GenerateCodeBlock()
 		}
 	}
 	if ( res == TK_SEPARATE ) {
-		a1 = token->cg_str[0];
+		a1 = token.cg_str[0];
 		if ( a1 == '{' ) { // when '{'
 			if ( iflev == 0 ) {
 				throw CGERROR_BLOCKEXP;
@@ -1965,13 +1965,15 @@ int CCodeGenerator::GenerateCodeBlock()
 			}
 
 			ff = 0;
-			p = lexer.GetTokenCG( lexer.cg_ptr, GETTOKEN_DEFAULT );
+			auto np = lexer.GetTokenCG( lexer.cg_ptr, GETTOKEN_DEFAULT );
+			p = np.first;
+			token = np.second;
 
-			if ( token->ttype == TK_EOL ) { // 次行のコマンドがelseかどうか調べる
+			if ( token.ttype == TK_EOL ) { // 次行のコマンドがelseかどうか調べる
 				if ( lexer.cg_wp != nullptr ) {
-					p = lexer.GetSymbolCG( (char *)lexer.cg_wp );
-					if ( p != nullptr ) {
-						id = symtab->lb->Search( p );
+					auto sym = lexer.GetSymbolCG( (char *)lexer.cg_wp );
+					if ( !sym.empty() ) {
+						id = symtab->lb->Search( sym );
 						if ( id >= 0 ) {
 							if ( ( symtab->lb->GetType( id ) == TYPE_CMPCMD ) && ( symtab->lb->GetOpt( id ) == 1 ) ) {
 								ff = 1;
@@ -1979,8 +1981,8 @@ int CCodeGenerator::GenerateCodeBlock()
 						}
 					}
 				}
-			} else if ( token->ttype == TK_OBJ ) { // 次のコマンドがelseかどうか調べる
-				id = symtab->lb->Search( token->cg_str );
+			} else if ( token.ttype == TK_OBJ ) { // 次のコマンドがelseかどうか調べる
+				id = symtab->lb->Search( token.cg_str );
 				if ( id >= 0 ) {
 					if ( ( symtab->lb->GetType( id ) == TYPE_CMPCMD ) && ( symtab->lb->GetOpt( id ) == 1 ) ) {
 						// ifscope[iflev-1] = CG_IFCHECK_LINE;					// line scope on
@@ -2371,7 +2373,7 @@ void CCodeGenerator::SetLabelListBuffer( CMemBuf *buf, int mode, char *match, in
 //-------------------------------------------------------------
 
 CCodeGenerator::CCodeGenerator( std::shared_ptr<CompileOptions> compopt, std::shared_ptr<CLogger> log )
-	: CCompilerUtil( compopt ), logger( log ), lexer( compopt, log ), token( &lexer.token )
+	: CCompilerUtil( compopt ), logger( log ), lexer( compopt, log )
 {
 	symtab = std::make_shared<CSymbolTable>();
 	ResetCompiler();

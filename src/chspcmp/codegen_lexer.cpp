@@ -190,11 +190,12 @@ char *CCgLexer::PickStringCG2( char *str, char **strsrc )
 }
 
 
-char *CCgLexer::GetTokenCG( int option )
+CCgToken CCgLexer::GetTokenCG( int option )
 {
 	cg_ptr_bak = cg_ptr;
-	cg_ptr = GetTokenCG( cg_ptr, option );
-	return cg_ptr;
+	auto [ptr, token] = GetTokenCG( cg_ptr, option );
+	cg_ptr = ptr; // cg_ptr を更新
+	return token;
 }
 
 int CCgLexer::PickNextCodeCG()
@@ -218,12 +219,15 @@ int CCgLexer::PickNextCodeCG()
 	return (int)a1;
 }
 
-char *CCgLexer::GetTokenCG( const char *str, int option )
+std::pair<char *, CCgToken> CCgLexer::GetTokenCG( const char *str, int option )
 {
 	//		stringデータのタイプと内容を返す
 	//		(次のptrを返す)
 	//		(ttypeにタイプを、val,val_d,cg_strに内容を書き込みます)
 	//
+	CCgToken token; // ローカルのCCgTokenインスタンス
+	unsigned char s2[4096];
+
 	const unsigned char *vs;
 	unsigned char a1;
 	unsigned char a2;
@@ -234,10 +238,15 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 	int skip;
 	int i;
 
+	token.line = line;
+	token.val = 0;
+	token.ttype = TK_NONE;
+	token.cg_str.clear();
+
 	vs = (const unsigned char *)str;
 	if ( vs == nullptr ) {
 		token.ttype = TK_EOF;
-		return nullptr; // already end
+		return std::make_pair( nullptr, token ); // already end
 	}
 
 	while ( true ) {
@@ -250,7 +259,7 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 
 	if ( a1 == 0 ) { // end
 		token.ttype = TK_EOL;
-		return (char *)vs;
+		return std::make_pair( (char *)vs, token );
 	}
 
 	if ( a1 < 0x20 ) { // 無効なコード
@@ -263,7 +272,7 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 		token.ttype = TK_STRING;
 		char *p = PickStringCG( (char *)vs, 0x22 );
 		token.cg_str = (char *)vs;
-		return p;
+		return std::make_pair( p, token );
 	}
 
 	if ( a1 == '{' ) { // {"～"}
@@ -272,13 +281,13 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 			if ( *vs == 0 ) {
 				vs = (unsigned char *)NextLine();
 				if ( vs == nullptr ) {
-					return nullptr;
+					return std::make_pair( nullptr, token );
 				}
 			}
 			token.ttype = TK_STRING;
 			char *p = PickLongStringCG( (char *)vs );
 			token.cg_str = (char *)vs;
-			return p;
+			return std::make_pair( p, token );
 		}
 	}
 
@@ -289,13 +298,13 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 		token.cg_str = (char *)vs;
 		token.ttype = TK_NUM;
 		token.val = (unsigned char)( token.cg_str[0] );
-		return p;
+		return std::make_pair( p, token );
 	}
 
 	if ( ( a1 == ':' ) || ( a1 == '{' ) || ( a1 == '}' ) ) { // multi statement
 		token.ttype = TK_SEPARATE;
 		token.cg_str = a1;
-		return (char *)vs + 1;
+		return std::make_pair( (char *)vs + 1, token );
 	}
 
 	if ( a1 == '0' ) {
@@ -341,7 +350,7 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 		s2[a] = 0;
 		token.cg_str = (char *)s2;
 		token.ttype = TK_NUM;
-		return (char *)vs;
+		return std::make_pair( (char *)vs, token );
 	}
 
 	if ( a1 == '%' ) { // when bin code (%)
@@ -372,7 +381,7 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 		s2[a] = 0;
 		token.cg_str = (char *)s2;
 		token.ttype = TK_NUM;
-		return (char *)vs;
+		return std::make_pair( (char *)vs, token );
 	}
 
 	chk = 0;
@@ -438,7 +447,6 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 					if ( chk > 1 ) {
 						token.ttype = TK_ERROR;
 						throw CGERROR_FLOATEXP;
-						return (char *)vs;
 					}
 				} else {
 					if ( ( a1 < 0x30 ) || ( a1 > 0x39 ) ) {
@@ -490,7 +498,7 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 			token.ttype = TK_NUM;
 			break;
 		}
-		return (char *)vs;
+		return std::make_pair( (char *)vs, token );
 	}
 
 	if ( chk != 0 ) { // 記号
@@ -546,7 +554,7 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 		}
 		token.ttype = TK_NONE;
 		token.val = (int)a1;
-		return (char *)vs;
+		return std::make_pair( (char *)vs, token );
 	}
 
 	a = 0;
@@ -598,11 +606,11 @@ char *CCgLexer::GetTokenCG( const char *str, int option )
 		token.ttype = TK_OBJ;
 	}
 	token.cg_str = (char *)s2;
-	return (char *)vs;
+	return std::make_pair( (char *)vs, token );
 }
 
 
-char *CCgLexer::GetSymbolCG( char *str )
+std::string CCgLexer::GetSymbolCG( char *str )
 {
 	//		stringデータのシンボル内容を返す
 	//
@@ -612,10 +620,11 @@ char *CCgLexer::GetSymbolCG( char *str )
 	int chk;
 	int skip;
 	int i;
+	std::string s2_local;
 
 	vs = (unsigned char *)str;
 	if ( vs == nullptr ) {
-		return nullptr; // already end
+		return ""; // already end
 	}
 
 	while ( true ) {
@@ -627,7 +636,7 @@ char *CCgLexer::GetSymbolCG( char *str )
 	}
 
 	if ( a1 < 0x20 ) { // 無効なコード
-		return nullptr;
+		return "";
 	}
 
 	chk = 0;
@@ -645,7 +654,7 @@ char *CCgLexer::GetSymbolCG( char *str )
 	}
 
 	if ( chk != 0 ) { // 記号
-		return nullptr;
+		return "";
 	}
 
 	a = 0;
@@ -656,7 +665,7 @@ char *CCgLexer::GetSymbolCG( char *str )
 		if ( skip != 0 ) {
 			for ( i = 0; i < ( skip + 1 ); i++ ) {
 				if ( a < OBJNAME_MAX ) {
-					s2[a++] = a1;
+					s2_local += a1;
 					vs++;
 					a1 = *vs;
 				} else {
@@ -684,11 +693,10 @@ char *CCgLexer::GetSymbolCG( char *str )
 		}
 		vs++;
 		if ( a < OBJNAME_MAX ) {
-			s2[a++] = a1;
+			s2_local += a1;
 		}
 	}
-	s2[a] = 0;
-	return (char *)s2;
+	return s2_local;
 }
 
 
@@ -698,13 +706,13 @@ int CCgLexer::GetParameterTypeCG( const std::string &name ) const
 {
 	//		パラメーター名を認識する(deffunc)
 	//
-	if ( token.cg_str == "int" ) {
+	if ( name == "int" ) {
 		return MPTYPE_INUM;
 	}
-	if ( token.cg_str == "var" ) {
+	if ( name == "var" ) {
 		return MPTYPE_SINGLEVAR;
 	}
-	if ( token.cg_str == "val" ) {
+	if ( name == "val" ) {
 #ifdef JPNMSG
 		logger->Mesf( "警告:古いdeffunc表記があります 行%d.[%s]", cg_orgline, name.c_str() );
 #else
@@ -712,28 +720,28 @@ int CCgLexer::GetParameterTypeCG( const std::string &name ) const
 #endif
 		return MPTYPE_SINGLEVAR;
 	}
-	if ( token.cg_str == "str" ) {
+	if ( name == "str" ) {
 		return MPTYPE_LOCALSTRING;
 	}
-	if ( token.cg_str == "double" ) {
+	if ( name == "double" ) {
 		return MPTYPE_DNUM;
 	}
-	if ( token.cg_str == "label" ) {
+	if ( name == "label" ) {
 		return MPTYPE_LABEL;
 	}
-	if ( token.cg_str == "local" ) {
+	if ( name == "local" ) {
 		return MPTYPE_LOCALVAR;
 	}
-	if ( token.cg_str == "array" ) {
+	if ( name == "array" ) {
 		return MPTYPE_ARRAYVAR;
 	}
-	if ( token.cg_str == "modvar" ) {
+	if ( name == "modvar" ) {
 		return MPTYPE_MODULEVAR;
 	}
-	if ( token.cg_str == "modinit" ) {
+	if ( name == "modinit" ) {
 		return MPTYPE_IMODULEVAR;
 	}
-	if ( token.cg_str == "modterm" ) {
+	if ( name == "modterm" ) {
 		return MPTYPE_TMODULEVAR;
 	}
 
@@ -745,22 +753,22 @@ int CCgLexer::GetParameterStructTypeCG( const std::string &name ) const
 {
 	//		パラメーター名を認識する(struct)
 	//
-	if ( token.cg_str == "int" ) {
+	if ( name == "int" ) {
 		return MPTYPE_INUM;
 	}
-	if ( token.cg_str == "var" ) {
+	if ( name == "var" ) {
 		return MPTYPE_LOCALVAR;
 	}
-	if ( token.cg_str == "str" ) {
+	if ( name == "str" ) {
 		return MPTYPE_LOCALSTRING;
 	}
-	if ( token.cg_str == "double" ) {
+	if ( name == "double" ) {
 		return MPTYPE_DNUM;
 	}
-	if ( token.cg_str == "label" ) {
+	if ( name == "label" ) {
 		return MPTYPE_LABEL;
 	}
-	if ( token.cg_str == "float" ) {
+	if ( name == "float" ) {
 		return MPTYPE_FLOAT;
 	}
 	return MPTYPE_NONE;
@@ -771,56 +779,56 @@ int CCgLexer::GetParameterFuncTypeCG( const std::string &name ) const
 {
 	//		パラメーター名を認識する(func)
 	//
-	if ( token.cg_str == "int" ) {
+	if ( name == "int" ) {
 		return MPTYPE_INUM;
 	}
-	if ( token.cg_str == "var" ) {
+	if ( name == "var" ) {
 		return MPTYPE_PVARPTR;
 	}
-	if ( token.cg_str == "str" ) {
+	if ( name == "str" ) {
 		return MPTYPE_LOCALSTRING;
 	}
-	if ( token.cg_str == "double" ) {
+	if ( name == "double" ) {
 		return MPTYPE_DNUM;
 	}
-	//	if ( !strcmp( token.cg_str,"label" ) ) return MPTYPE_LABEL;
-	if ( token.cg_str == "float" ) {
+	//	if ( !strcmp( name,"label" ) ) return MPTYPE_LABEL;
+	if ( name == "float" ) {
 		return MPTYPE_FLOAT;
 	}
-	if ( token.cg_str == "pval" ) {
+	if ( name == "pval" ) {
 		return MPTYPE_PPVAL;
 	}
-	if ( token.cg_str == "bmscr" ) {
+	if ( name == "bmscr" ) {
 		return MPTYPE_PBMSCR;
 	}
 
-	if ( token.cg_str == "comobj" ) {
+	if ( name == "comobj" ) {
 		return MPTYPE_IOBJECTVAR;
 	}
-	if ( token.cg_str == "wstr" ) {
+	if ( name == "wstr" ) {
 		return MPTYPE_LOCALWSTR;
 	}
 
-	if ( token.cg_str == "sptr" ) {
+	if ( name == "sptr" ) {
 		return MPTYPE_FLEXSPTR;
 	}
-	if ( token.cg_str == "wptr" ) {
+	if ( name == "wptr" ) {
 		return MPTYPE_FLEXWPTR;
 	}
 
-	if ( token.cg_str == "prefstr" ) {
+	if ( name == "prefstr" ) {
 		return MPTYPE_PTR_REFSTR;
 	}
-	if ( token.cg_str == "pexinfo" ) {
+	if ( name == "pexinfo" ) {
 		return MPTYPE_PTR_EXINFO;
 	}
-	if ( token.cg_str == "nullptr" ) {
+	if ( name == "nullptr" ) {
 		return MPTYPE_NULLPTR;
 	}
 
-	//	if ( !strcmp( token.cg_str,"hwnd" ) ) return MPTYPE_PTR_HWND;
-	//	if ( !strcmp( token.cg_str,"hdc" ) ) return MPTYPE_PTR_HDC;
-	//	if ( !strcmp( token.cg_str,"hinst" ) ) return MPTYPE_PTR_HINST;
+	//	if ( !strcmp( name,"hwnd" ) ) return MPTYPE_PTR_HWND;
+	//	if ( !strcmp( name,"hdc" ) ) return MPTYPE_PTR_HDC;
+	//	if ( !strcmp( name,"hinst" ) ) return MPTYPE_PTR_HINST;
 
 	return MPTYPE_NONE;
 }
@@ -830,19 +838,19 @@ int CCgLexer::GetParameterResTypeCG( const std::string &name ) const
 {
 	//		戻り値のパラメーター名を認識する(defcfunc)
 	//
-	if ( token.cg_str == "int" ) {
+	if ( name == "int" ) {
 		return MPTYPE_INUM;
 	}
-	if ( token.cg_str == "str" ) {
+	if ( name == "str" ) {
 		return MPTYPE_STRING;
 	}
-	if ( token.cg_str == "double" ) {
+	if ( name == "double" ) {
 		return MPTYPE_DNUM;
 	}
-	if ( token.cg_str == "label" ) {
+	if ( name == "label" ) {
 		return MPTYPE_LABEL;
 	}
-	if ( token.cg_str == "float" ) {
+	if ( name == "float" ) {
 		return MPTYPE_FLOAT;
 	}
 	return MPTYPE_NONE;
@@ -892,7 +900,7 @@ char *CCgLexer::GetLineCG()
 		if ( a1 == 13 ) {
 			*p = 0;
 			p++;
-			token.line = line++;
+			line++;
 			if ( *p == 10 ) {
 				*p = 0;
 				p++;
@@ -902,7 +910,7 @@ char *CCgLexer::GetLineCG()
 		if ( a1 == 10 ) {
 			*p = 0;
 			p++;
-			token.line = line++;
+			line++;
 			break;
 		}
 		p++;
@@ -917,9 +925,8 @@ char *CCgLexer::GetLineCG()
 //-------------------------------------------------------------
 
 CCgLexer::CCgLexer( const std::shared_ptr<CompileOptions> &compopt, std::shared_ptr<CLogger> log )
-	: CCompilerUtil( compopt ), token(), logger( std::move( log ) ), cg_orgline( 0 )
+	: CCompilerUtil( compopt ), logger( std::move( log ) ), cg_orgline( 0 )
 {
-
 	cg_orgfile.clear();
 	cg_orgfilefull.clear();
 }

@@ -39,7 +39,7 @@ private:
 
 	std::shared_ptr<CLogger> logger;
 	CCgLexer lexer;
-	CCgToken *token;
+	CCgToken token;
 	std::unique_ptr<CCodeWriter> writer;
 
 public:

@@ -64,16 +64,14 @@ public:
 	explicit CCgLexer( const std::shared_ptr<CompileOptions> &compopt, std::shared_ptr<CLogger> log );
 	~CCgLexer() override;
 
-	CCgToken token;
-
 	int GetParameterTypeCG( const std::string &name ) const;
 	int GetParameterStructTypeCG( const std::string &name ) const;
 	int GetParameterFuncTypeCG( const std::string &name ) const;
 	int GetParameterResTypeCG( const std::string &name ) const;
 
-	char *GetTokenCG( const char *str, int option );
-	char *GetTokenCG( int option );
-	char *GetSymbolCG( char *str );
+	std::pair<char *, CCgToken> GetTokenCG( const char *str, int option );
+	CCgToken GetTokenCG( int option );
+	std::string GetSymbolCG( char *str );
 	int PickNextCodeCG( void );
 
 	char *NextLine();
@@ -87,7 +85,6 @@ private:
 	//		Data
 	//
 	std::shared_ptr<CLogger> logger;
-	unsigned char s2[4096];
 
 public:
 	int line;
