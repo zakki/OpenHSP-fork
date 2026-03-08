@@ -3,11 +3,6 @@
 //
 #pragma once
 
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
 // token type
 #define TK_NONE 0
 #define TK_OBJ 1
@@ -45,11 +40,10 @@
 #define LMODE_OFF 3
 
 // macro default data storage
-using MACDEF = struct MACDEF
-{
-	int index[32]; // offset to data
-	char data[1];
-};
+typedef struct MACDEF {
+	int		index[32];				// offset to data
+	char	data[1];
+} MACDEF;
 
 // module related define
 #define OBJNAME_MAX 60
@@ -64,24 +58,23 @@ using MACDEF = struct MACDEF
 
 #define SWSTACK_MAX 32
 
-#define HEDINFO_RUNTIME 0x1000	   // 動的ランタイムを有効にする
-#define HEDINFO_NOMMTIMER 0x2000   // マルチメディアタイマーを無効にする
-#define HEDINFO_NOGDIP 0x4000	   // GDI+による描画を無効にする
-#define HEDINFO_FLOAT32 0x8000	   // 実数を32bit floatとして処理する
-#define HEDINFO_ORGRND 0x10000	   // 標準の乱数発生を使用する
-#define HEDINFO_UTF8 0x20000	   // UTF8ランタイムを使用する(コード識別用)
-#define HEDINFO_HSP64 0x40000	   // 64bitランタイムを使用する(コード識別用)
-#define HEDINFO_IORESUME 0x80000   // ファイルI/Oエラーを無視して処理を続行する
-#define HEDINFO_AUTOTIMER 0x100000 // マルチメディアタイマーを強制的に設定にする
+#define HEDINFO_RUNTIME 0x1000		// 動的ランタイムを有効にする
+#define HEDINFO_NOMMTIMER 0x2000	// マルチメディアタイマーを無効にする
+#define HEDINFO_NOGDIP 0x4000		// GDI+による描画を無効にする
+#define HEDINFO_FLOAT32 0x8000		// 実数を32bit floatとして処理する
+#define HEDINFO_ORGRND 0x10000		// 標準の乱数発生を使用する
+#define HEDINFO_UTF8 0x20000		// UTF8ランタイムを使用する(コード識別用)
+#define HEDINFO_HSP64 0x40000		// 64bitランタイムを使用する(コード識別用)
+#define HEDINFO_IORESUME 0x80000	// ファイルI/Oエラーを無視して処理を続行する
+#define HEDINFO_AUTOTIMER 0x100000	// マルチメディアタイマーを強制的に設定にする
 
-enum ppresult_t
-{
-	PPRESULT_SUCCESS,			// 成功
-	PPRESULT_ERROR,				// エラー
-	PPRESULT_UNKNOWN_DIRECTIVE, // 不明なプリプロセッサ命令（PreprocessNM）
-	PPRESULT_INCLUDED,			// #include された
-	PPRESULT_WROTE_LINE,		// 1行書き込まれた
-	PPRESULT_WROTE_LINES,		// 2行以上書き込まれた
+enum ppresult_t {
+	PPRESULT_SUCCESS,				// 成功
+	PPRESULT_ERROR,					// エラー
+	PPRESULT_UNKNOWN_DIRECTIVE,		// 不明なプリプロセッサ命令（PreprocessNM）
+	PPRESULT_INCLUDED,				// #include された
+	PPRESULT_WROTE_LINE,			// 1行書き込まれた
+	PPRESULT_WROTE_LINES,			// 2行以上書き込まれた
 };
 
 #define LABBUF_FLAG_NONE ( 0 )

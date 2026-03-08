@@ -142,22 +142,3 @@ void strcase2( const char *str, char *str2 );
 void strcpy2( char *dest, const char *src, size_t size );
 void addext( char *st, const char *exstr );
 void cutext( char *st );
-
-class CLabel;
-
-class CSymbolTable
-{
-public:
-	CSymbolTable();
-	~CSymbolTable();
-
-	std::unique_ptr<CLabel> GetLabelInfo( void );
-	void SetLabelInfo( std::unique_ptr<CLabel> lbinfo );
-
-	int LabelRegist( char **list, int mode );
-	int LabelRegist2( char **list );
-	int LabelRegist3( char **list );
-
-	std::unique_ptr<CLabel> lb;		// label object
-	std::unique_ptr<CLabel> tmp_lb; // label object (preprocessor reference)
-};
