@@ -1,0 +1,301 @@
+# cHSP: HSPスクリプト高速化のための拡張
+
+## 概要
+
+cHSPは、HSPスクリプトの一部をC++コードに変換し、コンパイルすることで、実行速度を向上させるための仕組みです。
+
+## 仕様
+
+### cHSPファイル (`.chsp`)
+
+- HSPスクリプトの文法を基本とします。
+- 高速化したい関数を含むモジュールを `#chsp_module` と `#chsp_module_end` で囲みます。
+- 高速化したい関数は`#chsp_defcfunc`や`#chsp_deffunc`として定義します。
+  - この関数は `#chsp_end` で終了します。
+- cHSP 関数の引数やローカル変数には型指定が必須です。
+- MVP では、cHSP ブロック内のローカル変数・ローカル配列は `local[...]` で宣言します。
+
+### MVP で対応する型と文法
+
+- 型
+  - `int`
+  - `double`
+  - `array[int]`
+  - `array[double]`
+  - `local[int]`
+  - `local[double]`
+  - `local[int[n]]`
+  - `local[double[n]]`
+- 関数
+  - `#chsp_deffunc`
+  - `#chsp_defcfunc`
+- 文
+  - 代入
+  - 複合代入
+  - `if` / `else if` / `else`
+  - `if 条件 : 文` の1行形式
+  - `repeat` / `loop`
+  - `return`
+- 式
+  - 算術演算
+  - 比較演算
+  - ビット演算
+  - シフト演算
+  - 組み込み関数呼び出し
+  - 1次元数値配列アクセス
+
+### MVP では対象外
+
+- `str` / `array[str]`
+- cHSP ブロック内の `ddim` / `sdim`
+- cHSP ブロックから通常の HSP 関数を呼ぶこと
+- cHSP ブロック内部での HSP プリプロセッサのマクロ展開
+- `gettime` の cHSP ブロック内利用
+- HSP の一般的な「任意位置の引数省略」
+
+### 生成されるファイル
+
+- **最適化AXスクリプト (`.ax`)**:
+  - `#chsp_*`ブロックが、C++で実装された機能を呼び出すHSPコードに置き換えられます。
+  - C++側で処理される変数の受け渡し処理などが自動的に挿入されます。
+- **C++ソースコード (`.cpp`)**:
+  - `#chsp_*`ブロック内のコードが、C++の関数として実装されます。
+
+### 変数共有
+
+- MVP では引数として HSP の数値と数値配列を C++ 側に渡します。
+- HSP側のグローバル変数はC++側では利用できません。
+- cHSP ブロックから通常の HSP 関数は呼べません。
+
+## 設計
+
+### コンパイラ (hspcmp)
+
+`hspcmp`は、`.chsp`ファイルを解釈し、`.ax`と`.cpp`を生成します。
+既存文法だけの`.hsp`ファイルを受け取った場合は、既存のhspcmpと同様の処理を行います。
+
+#### 処理フロー
+
+1. **`.chsp`ファイルのパース**:
+   - `#chsp_*`ブロックとそれ以外のHSPコードを分離します。
+   - MVP ではこの段階を既存 HSP プリプロセッサより前に実行します。
+2. **C++コード生成**:
+   - `#chsp_*`ブロック内のコードをC++の関数に変換します。
+   - 組み込み関数は `common/chsp/chsp_runtime.hpp` の薄いラッパー呼び出しに変換します。
+3. **HSPコード生成**:
+   - `#chsp_*`ブロックを、生成したC++関数を呼び出す`#uselib`、`#func`、`#cfunc`命令に置き換えます。
+4. **ファイル出力**:
+   - `.ax`と`.cpp`を出力します。
+5. **C++コードのコンパイル**:
+   - 生成された`.cpp`を、DLLや共有ライブラリにコンパイルします。
+   - コンパイルされたライブラリは、生成された`.hsp` / `.ax`から呼び出されます。
+
+### 生成された `.cpp` のビルド方法
+
+生成された `.cpp` は `common/chsp/chsp_runtime.hpp` を `#include` するため、ビルド時には OpenHSP リポジトリのルートを include path に含めます。
+Windows 向けの生成コードは `CHSP_EXPORT` マクロで `__declspec(dllexport)` が付くため、追加の `.def` は不要です。
+
+以下では、リポジトリのルートで `sample/chsp/ao_opt.chsp` から `sample/chsp/ao_opt.cpp` を生成済みとします。
+
+#### Linux
+
+`.so` を生成します。
+
+```sh
+g++ -std=c++17 -O2 -shared -fPIC -I. -o sample/chsp/ao_opt.so sample/chsp/ao_opt.cpp
+```
+
+HSP 側の `#uselib` は Linux では `.so` を参照します。
+
+```hsp
+#uselib "ao_opt.so"
+```
+
+#### Win32
+
+Visual Studio の `x86 Native Tools Command Prompt for VS` など、32bit 向けの MSVC 環境を開いてから `cl` を実行します。
+
+```bat
+cl /std:c++17 /O2 /EHsc /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.cpp
+```
+
+HSP 側の `#uselib` は `.dll` を参照します。
+
+```hsp
+#uselib "ao_opt.dll"
+```
+
+#### Win64
+
+Visual Studio の `x64 Native Tools Command Prompt for VS` など、64bit 向けの MSVC 環境を開いてから `cl` を実行します。
+
+```bat
+cl /std:c++17 /O2 /EHsc /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.cpp
+```
+
+出力ファイル名は Win32 と同じ `.dll` で問題ありません。32bit 用 HSP からは Win32 版 DLL、64bit 用 HSP からは Win64 版 DLL を読み込ませます。
+
+#### 追加メモ
+
+- `rnd` / `randomize` の挙動を HSP ランタイムと合わせたい場合は、必要に応じて `HSPRANDMT` を定義してビルドします。
+- デバッグビルドにしたい場合は、Linux では `-g`、MSVC では `/Zi` を追加します。
+- 生成された `.hsp` / `.ax` の `#uselib` に書かれたファイル名と、実際に生成した共有ライブラリのファイル名を一致させてください。
+
+### HSPランタイムAPI
+
+MVP では HSP SDK 連携は行わず、純粋な C ABI で受け渡し可能な型だけを対象にします。
+将来的に HSP ランタイム連携を導入する場合は、`ddim` / `sdim`、文字列、HSP 関数呼び出しなどをこの層で扱います。
+
+### 組み込み関数
+
+MVP では、組み込み関数名は HSP 名をそのまま受け付け、C++ 側では `common/chsp/chsp_runtime.hpp` のラッパーまたは `std::` 系数学関数へ変換します。
+
+対応済みの主な関数:
+
+- `int`
+- `double`
+- `abs`
+- `absf`
+- `sin`
+- `cos`
+- `tan`
+- `atan`
+- `sqrt`
+- `expf`
+- `logf`
+- `powf`
+- `limit`
+- `limitf`
+- `rnd`
+- `randomize`
+
+`rnd` / `randomize` は cHSP 側の独立実装です。乱数状態は HSP ランタイムと共有しません。
+ただし、`HSPRANDMT` を定義してビルドした場合は Mersenne Twister 分岐、未定義の場合は `rand()` 分岐になり、`src/hsp3/hsp3int.cpp` の条件分岐に合わせられます。
+
+## aobenchの例
+
+`aobench`は、アンビエントオクルージョンという3DCGのレンダリング手法のベンチマークプログラムです。
+このサンプルでは、`ao_original.hsp`（オリジナルのHSPスクリプト）の処理のうち、特に計算負荷の高いレイトレーシングの部分を`#chsp`ブロックに記述し、C++コードに置き換えることで高速化を図っています (`ao_opt.chsp`)。
+
+このように、cHSPは計算量の多い処理をC++にオフロードすることで、HSPスクリプトの実行速度を6倍程度に向上させることができる例を示しています。
+
+### `ao_original.hsp` と `ao_opt.chsp` の主な変更点
+
+`ao_opt.chsp`では、パフォーマンス向上のため、以下の関数が`#chsp`ブロックで囲われ、C++コードとしてコンパイルされるように変更されています。
+
+- ベクトル計算: `vdot`, `vcross`, `vnormalize` などのベクトル演算関数。
+- レイとオブジェクトの交差判定: `ray_sphere_intersect`, `ray_plane_intersect` といった、レイトレーシングの中核となる関数。
+
+これらの関数は、ピクセルごとに何度も呼び出されるため、C++化による高速化の効果が特に大きくなります。
+
+DLLに分離したC++関数として実装するため変更が必要です。
+
+- 多次元配列を1次元配列に書き換える
+- グローバル変数参照を関数の引数に書き換える
+
+ソースコード:  `ao_opt.chsp`
+
+```hsp
+#chsp_deffunc vcross array[double] c, array[double] v0, array[double] v1
+    c(0) = v0(1) * v1(2) - v0(2) * v1(1)
+    c(1) = v0(2) * v1(0) - v0(0) * v1(2)
+    c(2) = v0(0) * v1(1) - v0(1) * v1(0)
+    return
+#chsp_end
+```
+
+生成されるC++コード: `ao_opt.cpp`
+
+```c++
+extern "C" CHSP_EXPORT void vcross(double *c, double *v0, double *v1) {
+    c[0] = v0[1] * v1[2] - v0[2] * v1[1];
+    c[1] = v0[2] * v1[0] - v0[0] * v1[2];
+    c[2] = v0[0] * v1[1] - v0[1] * v1[0];
+    return;
+}
+```
+
+生成されるAXコードと等価なHSPコード: `ao_opt.hsp`
+
+```hsp
+#uselib "ao_opt.so"
+// もしくは #uselib "ao_opt.dll"
+#func global vcross "vcross" var, var, var
+```
+
+## 限界と課題
+
+- **対応文法の選択**:
+  - hsp側とc++側双方にラッパー処理を生成すれば制限を緩和できるか？
+  - doubleやstrも返せるように出来るか検討
+  - グローバル変数の参照を検出して自動で引数に変換する
+    - 変数の型が分からない
+  - インラインにC++を書ける文法も欲しい
+- **実装上の課題**:
+  - 専用コマンドとして実装するか、hspcmpのラッパーや拡張として実装するか
+  - C++のコンパイルをどのように行うか
+    - CMakeやMakefileを生成する
+    - 直接C++コンパイラを呼び出す
+- **生成C++のランタイムを決める**:
+  - ライブラリ無しのC/C++製DLL生成:
+    - `int` や `double` や `char` もしくはそのポインタをを受け取って、`int` または `void` を返す関数のみを対象にする。
+    - HSP側の変数にはアクセスできない
+    - C++からHSP側の関数は呼び出せない
+    - オーバーヘッドがない
+    - DLLは通常のC++プログラムからも利用可能
+  - HSP SDKを使った拡張プラグインDLL生成:
+    - 任意のパラメーターを受け取って任意の返り値を返せる
+    - HSP側のユーザー定義関数の呼び出し可能(要調査)
+    - HSP側の変数にアクセス可能(要調査)
+
+現時点の実装は前者の「純粋な C ABI の DLL / 共有ライブラリ生成」です。
+
+## 他の手法との比較
+
+### hsp3cnv
+
+- 特徴
+  - AndroidやiOSターゲットのhsp3dish開発で使われるHSPからC++へのコンバーター
+  - HSPと同様に型は緩い
+  - HSPの文法をほぼそのまま使える
+
+- 利点
+  - HSPの文法をそのまま使える
+  - 既に動作するものがある
+
+- 欠点
+  - 速度上のメリットはほぼない
+
+### hsp3ll
+
+- 特徴
+  - HSPの文法をそのまま使えるLLVMベースのJITコンパイラ
+  - LLVM IRに変換して実行する
+  - 実行時の型情報を利用して型を推論し最適化する
+
+- 利点
+  - HSPの文法をそのまま使える
+  - 実行時の型情報を利用した最適化で高速化可能
+
+- 欠点
+  - JITの実装コストが高い
+  - 未完成
+  - 最適化のためには各種hsp命令を型ごとに特殊化したLLVM IRライブラリが必要
+
+### chsp
+
+- 特徴
+  - HSPの文法を拡張してC++コードに変換する
+  - C++のコンパイラを使ってコンパイルする
+  - 変数の型を明示的に指定する必要がある
+
+- 利点
+  - HSPの文法を拡張することで、C++コードに変換しやすい構文を提供
+  - C++の型システムを利用して、パフォーマンスを向上させる
+  - 既存のHSPスクリプトを部分的に高速化できる
+
+- 欠点
+  - HSPの文法を拡張するため、書き換えが必要
+  - C++と同等の速度を得るためには、サンプルでの`fabs`や`sqrt`のようにHSPの命令とは別にC++で実装かマッピングが必要
+  - コンパイルエラーや実行時エラーのデバッグにはC++の知識が必要
+  - コンパイルにC++のコンパイラが必要
