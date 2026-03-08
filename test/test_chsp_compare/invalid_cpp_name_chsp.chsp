@@ -1,0 +1,9 @@
+#include "hsp3cl.as"
+
+#chsp_module "invalid_cpp_name_chsp"
+
+#chsp_defcfunc int class int value
+	return value
+#chsp_end
+
+#chsp_module_end

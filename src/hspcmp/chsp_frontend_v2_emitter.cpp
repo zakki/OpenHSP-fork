@@ -1,8 +1,10 @@
 #include "chsp_frontend_v2_internal.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -17,10 +19,69 @@ namespace
 struct TranslateContext
 {
 	std::unordered_set<std::string> array_names;
-	std::unordered_set<std::string> function_names;
+	std::unordered_map<std::string, std::string> identifier_cpp_names;
+	std::unordered_map<std::string, std::string> function_cpp_names;
 	std::map<std::string, int> array_strides;
 	std::vector<std::string> loop_stack;
 };
+
+std::string SanitizeForCppIdentifier( const std::string &name )
+{
+	std::string out;
+	for ( unsigned char ch : name ) {
+		if ( ch >= 'a' && ch <= 'z' ) {
+			out.push_back( static_cast<char>( ch ) );
+		} else if ( ch >= '0' && ch <= '9' ) {
+			out.push_back( static_cast<char>( ch ) );
+		} else if ( ch == '_' ) {
+			out += "__";
+		} else {
+			char buf[4];
+			std::snprintf( buf, sizeof( buf ), "_%02x", static_cast<unsigned int>( ch ) );
+			out += buf;
+		}
+	}
+	if ( out.empty() ) {
+		out = "id";
+	}
+	return out;
+}
+
+std::string MakeFunctionCppName( const ChspFunction &func )
+{
+	return "chsp_func_" + SanitizeForCppIdentifier( func.name );
+}
+
+std::unordered_map<std::string, std::string> BuildFunctionCppNames( const ChspProgram &program )
+{
+	std::unordered_map<std::string, std::string> names;
+	for ( const auto &module : program.modules ) {
+		for ( const auto &function : module.functions ) {
+			names[function.name] = MakeFunctionCppName( function );
+		}
+	}
+	return names;
+}
+
+std::unordered_map<std::string, std::string> BuildIdentifierCppNames( const ChspFunction &func )
+{
+	std::unordered_map<std::string, std::string> names;
+	const std::string func_key = SanitizeForCppIdentifier( func.name );
+	for ( size_t i = 0; i < func.params.size(); ++i ) {
+		const auto &param = func.params[i];
+		names[param.name] = "chsp_var_" + func_key + "_" + std::to_string( i ) + "_" + SanitizeForCppIdentifier( param.name );
+	}
+	return names;
+}
+
+std::string LookupCppIdentifier( const TranslateContext &ctx, const std::string &name )
+{
+	const auto it = ctx.identifier_cpp_names.find( name );
+	if ( it != ctx.identifier_cpp_names.end() ) {
+		return it->second;
+	}
+	return name;
+}
 
 std::string ToHspParamType( const ChspParam &param )
 {
@@ -179,11 +240,11 @@ void CollectArrayStrideFromStmt( const ChspStmt &stmt, const std::unordered_set<
 	}
 }
 
-TranslateContext BuildTranslateContext( const ChspFunction &func, const std::unordered_set<std::string> &function_names )
+TranslateContext BuildTranslateContext( const ChspFunction &func, const std::unordered_map<std::string, std::string> &function_cpp_names )
 {
 	TranslateContext ctx;
-	ctx.function_names = function_names;
-	ctx.function_names.insert( func.name );
+	ctx.function_cpp_names = function_cpp_names;
+	ctx.identifier_cpp_names = BuildIdentifierCppNames( func );
 	for ( const auto &param : func.params ) {
 		if ( param.is_array ) {
 			ctx.array_names.insert( param.name );
@@ -223,7 +284,7 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 		if ( expr.text == "cnt" && !ctx.loop_stack.empty() ) {
 			return ctx.loop_stack.back();
 		}
-		return expr.text;
+		return LookupCppIdentifier( ctx, expr.text );
 	case ChspExprKind::Unary:
 		if ( expr.children.size() != 1 || expr.children[0] == nullptr ) {
 			ok = false;
@@ -257,8 +318,9 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 
 	const std::string name = expr.children[0]->text;
 	if ( ctx.array_names.find( name ) != ctx.array_names.end() ) {
+		const std::string cpp_name = LookupCppIdentifier( ctx, name );
 		if ( expr.children.size() == 2 ) {
-			return name + "[" + TranslateExpr( *expr.children[1], ctx, ok, 0, false ) + "]";
+			return cpp_name + "[" + TranslateExpr( *expr.children[1], ctx, ok, 0, false ) + "]";
 		}
 		if ( expr.children.size() == 3 ) {
 			int stride = 0;
@@ -272,7 +334,7 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 				ok = false;
 				return "";
 			}
-			return name + "[(" + TranslateExpr( *expr.children[1], ctx, ok, 0, false ) + ") * " + std::to_string( stride ) + " + (" +
+			return cpp_name + "[(" + TranslateExpr( *expr.children[1], ctx, ok, 0, false ) + ") * " + std::to_string( stride ) + " + (" +
 				   TranslateExpr( *expr.children[2], ctx, ok, 0, false ) + ")]";
 		}
 		ok = false;
@@ -281,7 +343,12 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 
 	std::string target = BuiltinTarget( name );
 	if ( target.empty() ) {
-		target = name;
+		const auto function_it = ctx.function_cpp_names.find( name );
+		if ( function_it != ctx.function_cpp_names.end() ) {
+			target = function_it->second;
+		} else {
+			target = LookupCppIdentifier( ctx, name );
+		}
 	}
 	std::string out = target + "(";
 	for ( size_t i = 1; i < expr.children.size(); ++i ) {
@@ -331,7 +398,12 @@ std::string RenderCommandCall( const ChspStmt &stmt, TranslateContext &ctx, bool
 {
 	std::string target = BuiltinTarget( stmt.text );
 	if ( target.empty() ) {
-		target = stmt.text;
+		const auto function_it = ctx.function_cpp_names.find( stmt.text );
+		if ( function_it != ctx.function_cpp_names.end() ) {
+			target = function_it->second;
+		} else {
+			target = LookupCppIdentifier( ctx, stmt.text );
+		}
 	}
 	std::string out = target + "(";
 	for ( size_t i = 0; i < stmt.exprs.size(); ++i ) {
@@ -687,12 +759,12 @@ bool WriteInlineIfWithTrailingBlockElse( CMemBuf &buf, const ChspStmt &stmt, con
 	return true;
 }
 
-void WriteFunctionDeclToHsp( CMemBuf &buf, const ChspFunction &func )
+void WriteFunctionDeclToHsp( CMemBuf &buf, const ChspFunction &func, const std::string &cpp_name )
 {
 	buf.PutStr( func.kind == ChspFuncKind::DefCFunc ? "#cfunc " : "#func " );
 	buf.PutStr( func.name.c_str() );
 	buf.PutStr( " \"" );
-	buf.PutStr( func.name.c_str() );
+	buf.PutStr( cpp_name.c_str() );
 	buf.PutStr( "\"" );
 	bool first = true;
 	for ( const auto &param : func.params ) {
@@ -706,7 +778,7 @@ void WriteFunctionDeclToHsp( CMemBuf &buf, const ChspFunction &func )
 	buf.PutCR();
 }
 
-void WriteLocalDeclsToCpp( CMemBuf &buf, const ChspFunction &func )
+void WriteLocalDeclsToCpp( CMemBuf &buf, const ChspFunction &func, const TranslateContext &ctx )
 {
 	for ( const auto &param : func.params ) {
 		if ( !param.is_local ) {
@@ -715,7 +787,7 @@ void WriteLocalDeclsToCpp( CMemBuf &buf, const ChspFunction &func )
 		buf.PutStr( "    " );
 		buf.PutStr( param.base_type.c_str() );
 		buf.PutStr( " " );
-		buf.PutStr( param.name.c_str() );
+		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
 		if ( param.is_array ) {
 			buf.PutStrf( "[%d]", param.array_length );
 		}
@@ -724,12 +796,15 @@ void WriteLocalDeclsToCpp( CMemBuf &buf, const ChspFunction &func )
 	}
 }
 
-void WriteFunctionToCpp( CMemBuf &buf, const ChspFunction &func, const std::unordered_set<std::string> &function_names )
+void WriteFunctionToCpp( CMemBuf &buf, const ChspFunction &func, const std::unordered_map<std::string, std::string> &function_cpp_names )
 {
+	const auto cpp_name_it = function_cpp_names.find( func.name );
+	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
+	auto ctx = BuildTranslateContext( func, function_cpp_names );
 	buf.PutStr( "extern \"C\" CHSP_EXPORT " );
 	buf.PutStr( func.return_type.c_str() );
 	buf.PutStr( " " );
-	buf.PutStr( func.name.c_str() );
+	buf.PutStr( cpp_name.c_str() );
 	buf.PutStr( "(" );
 	bool first = true;
 	for ( const auto &param : func.params ) {
@@ -742,13 +817,12 @@ void WriteFunctionToCpp( CMemBuf &buf, const ChspFunction &func, const std::unor
 		first = false;
 		buf.PutStr( ToCppType( param ).c_str() );
 		buf.PutStr( " " );
-		buf.PutStr( param.name.c_str() );
+		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
 	}
 	buf.PutStr( ")" );
 	buf.PutCR();
 	buf.PutStr( "{\n" );
-	WriteLocalDeclsToCpp( buf, func );
-	auto ctx = BuildTranslateContext( func, function_names );
+	WriteLocalDeclsToCpp( buf, func, ctx );
 	int indent_level = 1;
 	bool emitted_explicit_return = false;
 	for ( size_t i = 0; i < func.body_stmts.size(); ++i ) {
@@ -854,12 +928,7 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 {
 	WriteCppPreamble( cpp_out );
 
-	std::unordered_set<std::string> function_names;
-	for ( const auto &module : program.modules ) {
-		for ( const auto &function : module.functions ) {
-			function_names.insert( function.name );
-		}
-	}
+	const auto function_cpp_names = BuildFunctionCppNames( program );
 
 	size_t module_index = 0;
 	size_t function_index = 0;
@@ -917,8 +986,11 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 					logger.Mesf( "#Error:Internal cHSP function index mismatch [%s]", source_name != nullptr ? source_name : "<buffer>" );
 					return -1;
 				}
-				WriteFunctionDeclToHsp( hsp_out, module.functions[function_index] );
-				WriteFunctionToCpp( cpp_out, module.functions[function_index], function_names );
+				const auto &function = module.functions[function_index];
+				const auto cpp_name_it = function_cpp_names.find( function.name );
+				const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : function.name;
+				WriteFunctionDeclToHsp( hsp_out, function, cpp_name );
+				WriteFunctionToCpp( cpp_out, function, function_cpp_names );
 			}
 			++function_index;
 			in_function = false;
