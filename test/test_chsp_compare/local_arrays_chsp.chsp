@@ -1,0 +1,57 @@
+#include "hsp3cl.as"
+
+#chsp_module "local_arrays_chsp"
+
+#chsp_deffunc fill_local_arrays array[int] ints, array[double] reals, local[int[4]] tmp, local[double[3]] work, local[int] i
+	tmp(0) = 10
+	i = 1
+	tmp.i = 20
+	tmp(i + 1) = tmp(0) + tmp.i
+	tmp.(i + 2) = tmp(i + 1) - 5
+
+	ints(0) = tmp(0)
+	ints(1) = tmp.1
+	ints(2) = tmp(2)
+	ints(3) = tmp.(i + 2)
+
+	work(0) = 1.5
+	work.1 = 2.25
+	work.1+
+	work.1-
+	work.1++
+	work.1--
+	work.1 += 1.25
+	work.1 -= 1.25
+	work.(i + 1) = work(0) + work.1
+	work.(i + 1)+
+	work.(i + 1)-
+	work.(i + 1)++
+	work.(i + 1)--
+	work.(i + 1) += 0.5
+	work.(i + 1) -= 0.5
+
+	reals(0) = work.0 + work(1)
+	reals(1) = work(2)
+	reals(2) = work.(i + 1) + 0.75
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+dim ints, 4
+ddim reals, 3
+fill_local_arrays ints, reals
+dummy_00
+
+mes "LOCAL"
+repeat 4
+	mes "" + ints(cnt)
+loop
+repeat 3
+	mes strf("%.3f", reals(cnt))
+loop
+
+end

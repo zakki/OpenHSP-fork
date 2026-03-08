@@ -1,0 +1,27 @@
+#include "hsp3cl.as"
+
+#module
+
+#deffunc fill_grid array grid, local i, local j
+	repeat 2
+		i = cnt
+		repeat 3
+			j = cnt
+			grid(i * 3 + j) = i * 10 + j + 1
+		loop
+	loop
+	return
+#global
+
+	dim grid, 6
+	fill_grid grid
+
+	mes "NESTED"
+	repeat 2
+		i = cnt
+		repeat 3
+			j = cnt
+			mes "" + grid(i * 3 + j)
+		loop
+	loop
+	end

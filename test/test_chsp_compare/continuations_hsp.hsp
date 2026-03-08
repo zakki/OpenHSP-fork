@@ -1,0 +1,35 @@
+#include "hsp3cl.as"
+
+#module
+
+#defcfunc calc_series int seed,\
+	int mul,\
+	local acc,\
+	local i
+	acc = 0
+	repeat 3
+		i = cnt
+		acc += (seed + i) * mul
+	loop
+	return acc
+
+#deffunc fill_vals array dst,\
+	int seed,\
+	int mul,\
+	local i
+	repeat 3
+		i = cnt
+		dst(i) = calc_series(seed + i, mul) + i
+	loop
+	return
+
+#global
+
+dim vals, 3
+fill_vals vals, 2, 3
+
+repeat 3
+	mes "" + vals(cnt)
+loop
+
+end

@@ -1,0 +1,26 @@
+#include "hsp3cl.as"
+
+#module
+
+#deffunc fill_one array vals, int idx, int threshold
+vals(idx) = 999
+repeat 6
+	if cnt > threshold {
+		vals(idx) = cnt * 10 + 1
+		return
+	}
+loop
+return
+#global
+
+dim vals, 4
+fill_one vals, 0, 0
+fill_one vals, 1, 5
+fill_one vals, 2, 1
+fill_one vals, 3, 10
+
+repeat 4
+	mes "" + vals(cnt)
+loop
+
+end

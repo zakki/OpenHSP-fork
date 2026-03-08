@@ -1,0 +1,23 @@
+#include "hsp3cl.as"
+
+#module
+
+#defcfunc inline_if_values local v0, local v1, local v2
+	v0 = 0
+	v1 = 0
+	v2 = 0
+	if 1 : v0 = 10
+	if 0 : v0 = 20
+	if 3 > 1 : v1 = 30
+	if 1 = 2 : v1 = 40
+	if (v0 = 10) & (v1 = 30) : v2 = 50
+	return v0 * 10000 + v1 * 100 + v2
+#global
+
+	packed = inline_if_values()
+
+	mes "INLINE_IF"
+	mes "" + int(packed / 10000)
+	mes "" + (int(packed / 100) \ 100)
+	mes "" + (packed \ 100)
+	end

@@ -1,0 +1,39 @@
+#include "hsp3cl.as"
+
+#chsp_module "continuations_chsp"
+
+#chsp_defcfunc int calc_series \
+	int seed,\
+	int mul,\
+	local[int] acc,\
+	local[int] i
+	acc = 0
+	repeat 3
+		i = cnt
+		acc += (seed + i) * mul
+	loop
+	return acc
+#chsp_end
+
+#chsp_deffunc fill_vals \
+	array[int] dst,\
+	int seed,\
+	int mul,\
+	local[int] i
+	repeat 3
+		i = cnt
+		dst(i) = calc_series(seed + i, mul) + i
+	loop
+	return
+#chsp_end
+
+#chsp_module_end
+
+dim vals, 3
+fill_vals vals, 2, 3
+
+repeat 3
+	mes "" + vals(cnt)
+loop
+
+end

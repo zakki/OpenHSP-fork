@@ -64,7 +64,6 @@ void ray_sphere_intersect(double* spheres_center, double* spheres_radius, double
     double c;
     double d;
     double t;
-    // ddim rs, 3
     rs[0] = ray_org[0] - spheres_center[no*3+0];
     rs[1] = ray_org[1] - spheres_center[no*3+1];
     rs[2] = ray_org[2] - spheres_center[no*3+2];
@@ -171,14 +170,6 @@ void ambient_occlusion(
     double p[3]; double basis[9]; double occlusion; double theta; double phi;
     double x; double y; double z; double rx; double ry; double rz;
     double oray_org[3]; double oray_dir[3]; double occIsect[5]; double occIsect_p[3]; double occIsect_n[3];
-
-    //ddim oray_org, 3
-    //ddim oray_dir, 3
-    //ddim occIsect, 5
-    //ddim occIsect_p, 3
-    //ddim occIsect_n, 3
-    //ddim p, 3
-    //ddim basis, 3*3
 
     p[0] = isect_p[0] + eps * isect_n[0];
     p[1] = isect_p[1] + eps * isect_n[1];
