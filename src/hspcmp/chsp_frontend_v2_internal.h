@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <cctype>
 #include <string>
 #include <vector>
 
@@ -142,6 +143,15 @@ inline std::string Trim( const std::string &src )
 inline bool StartsWith( const std::string &src, const char *prefix )
 {
 	return src.rfind( prefix, 0 ) == 0;
+}
+
+inline std::string AsciiLower( const std::string &src )
+{
+	std::string out = src;
+	for ( char &ch : out ) {
+		ch = static_cast<char>( std::tolower( static_cast<unsigned char>( ch ) ) );
+	}
+	return out;
 }
 
 std::vector<ChspSourceLine> BuildSourceIndex( const char *input_text, const std::shared_ptr<CLogger> &logger );

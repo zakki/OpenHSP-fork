@@ -1,0 +1,30 @@
+#include "hsp3cl.as"
+
+#chsp_module "case_fold_chsp"
+
+#chsp_defcfunc int helper int value
+	return value * 2
+#chsp_end
+
+#chsp_defcfunc int mixvalue int Foo
+	return ABS(-foo) + HELPER(foo)
+#chsp_end
+
+#chsp_deffunc fillcase array[int] Dst, local[int] I
+	repeat 3
+		i = CNT
+		DST(I) = MIXVALUE(i + 1)
+	loop
+	return
+#chsp_end
+
+#chsp_module_end
+
+	dim result, 3
+	FillCase RESULT
+
+	mes "CASE_FOLD"
+	mes "" + result(0)
+	mes "" + result(1)
+	mes "" + result(2)
+	end
