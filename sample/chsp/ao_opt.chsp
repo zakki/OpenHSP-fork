@@ -17,7 +17,7 @@ goto *MAIN
 	return
 #chsp_end
 
-##chsp_deffunc vnormalize array[double] c, local[double] len
+#chsp_deffunc vnormalize array[double] c, local[double] len
 	len = chsp_sqrt(vdot(c, c))
 	c(0) /= len
 	c(1) /= len
@@ -53,7 +53,6 @@ goto *MAIN
 	return
 
 #chsp_deffunc ray_sphere_intersect array[double] spheres_center, array[double] spheres_radius, array[double] spheres_col, array[double] isect, array[double] isect_p, array[double] isect_n, array[double] ray_org, array[double] ray_dir, int no, local[double[3]] rs, local[double] b, local[double] c, local[double] d, local[double] t
-	ddim rs, 3
 	rs(0) = ray_org(0) - spheres_center(no, 0)
 	rs(1) = ray_org(1) - spheres_center(no, 1)
 	rs(2) = ray_org(2) - spheres_center(no, 2)
@@ -79,7 +78,7 @@ goto *MAIN
 			isect_n(1) = isect_p(1) - spheres_center(no, 1)
 			isect_n(2) = isect_p(2) - spheres_center(no, 2)
 
-			vnormalize(isect_n)
+			vnormalize isect_n
 		}
 	}
 	return
@@ -153,14 +152,6 @@ goto *MAIN
 				local[double] x, local[double] y, local[double] z, local[double] rx, local[double] ry, local[double] rz,\
 				local[double[3]] oray_org, local[double[3]] oray_dir, local[double[5]] occIsect, local[double[3]] occIsect_p, local[double[3]] occIsect_n
 
-	ddim oray_org, 3
-	ddim oray_dir, 3
-	ddim occIsect, 5
-	ddim occIsect_p, 3
-	ddim occIsect_n, 3
-	ddim p, 3
-	ddim basis, 3*3
-
 	p(0) = isect_p(0) + eps * isect_n(0)
 	p(1) = isect_p(1) + eps * isect_n(1)
 	p(2) = isect_p(2) + eps * isect_n(2)
@@ -213,6 +204,7 @@ goto *MAIN
 	col(1) = occlusion
 	col(2) = occlusion
 	return
+#chsp_end
 
 #chsp_module_end
 
@@ -355,3 +347,6 @@ goto *MAIN
 	endtime = (gettime(5) * 60 + gettime(6)) * 1000 + gettime(7)
 	prev = "" + double(endtime - starttime) / 1000 + "sec"
 	goto *MAIN
+
+stop
+dummy

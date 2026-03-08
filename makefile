@@ -15,8 +15,8 @@ endif
 CFLAGS_ENV =  $(DEBUG_CFLAGS) -DHSP64 # 64bit
 CFLAGS_DISH = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
 CFLAGS_GP = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11 $(CFLAGS_ENV)
-CFLAGS_CL = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
-CFLAGS_CMP = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
+CFLAGS_CL = -Wno-write-strings -std=c++17 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
+CFLAGS_CMP = -Wno-write-strings -std=c++17 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
 PKG_CONFIG = pkg-config
 
 OBJS = \
@@ -69,12 +69,18 @@ OBJS_CMP = \
 	src/hspcmp/ahtmodel.o \
 	src/hspcmp/ahtobj.o \
 	src/hspcmp/codegen.o \
+	src/hspcmp/codegen_lexer.o \
+	src/hspcmp/chsp_frontend_v2.o \
+	src/hspcmp/chsp_frontend_v2_parser.o \
+	src/hspcmp/chsp_frontend_v2_emitter.o \
 	src/hspcmp/comutil.o \
 	src/hspcmp/errormsg.o \
 	src/hspcmp/hsc3.o \
 	src/hspcmp/hspcmd.o \
 	src/hspcmp/label.o \
+	src/hspcmp/lexer_util.o \
 	src/hspcmp/localinfo.o \
+	src/hspcmp/logger.o \
 	src/hspcmp/main.o \
 	src/hspcmp/membuf.o \
 	src/hsp3/strnote.o \
@@ -451,7 +457,7 @@ OBJS_LINEAR_MATH = \
 	src/hsp3dish/extlib/src/LinearMath/btThreads.gpo \
 	src/hsp3dish/extlib/src/LinearMath/btVector3.gpo
 
-TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed
+TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed chspcmp
 LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
 LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
 LIBS_GP = \
@@ -511,5 +517,4 @@ libLinearMath.a: $(OBJS_LINEAR_MATH)
 	$(AR) rcs $@ $(OBJS_LINEAR_MATH)
 
 clean:
-	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
-
+	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP) $(OBJS_CCMP)

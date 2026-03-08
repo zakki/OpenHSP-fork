@@ -40,8 +40,11 @@ public:
 	void Put( float data );
 	void Put( double data );
 	void PutStr( char *data );
+	void PutStr( const char *data ) { PutStr( (char *)data ); }
 	void PutStrDQ( char *data );
+	void PutStrDQ( const char *data ) { PutStrDQ( (char *)data ); }
 	void PutStrBlock( char *data );
+	void PutStrBlock( const char *data ) { PutStrBlock( (char *)data ); }
 	void PutCR( void );
 	void PutData( void *data, int sz );
 	void PutStrf( char *format, ... );

@@ -1,0 +1,8 @@
+*_chsp.hsp
+*_chsp.cpp
+*.chi
+*.transform-ok
+*.transform.cpp
+*.out
+*.dll
+*.so

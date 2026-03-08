@@ -1,0 +1,48 @@
+#include "hsp3cl.as"
+
+#chsp_module "vectors_chsp"
+
+#chsp_defcfunc double vec_energy array[double] v, local[double] dot
+	dot = v(0) * v(0) + v(1) * v(1) + v(2) * v(2)
+	return sqrt(dot)
+#chsp_end
+
+#chsp_deffunc vec_mix array[double] dst, array[double] a, array[double] b, local[double[3]] tmp, local[double] clamped
+	tmp(0) = a(0) + b(0) * 0.5
+	tmp(1) = a(1) + b(1) * 0.5
+	tmp(2) = a(2) + b(2) * 0.5
+	dst(0) = tmp(0)
+	dst(1) = tmp(1)
+	dst(2) = tmp(2)
+	dst(3) = vec_energy(tmp)
+	clamped = limitf(absf(tmp(1)), 0.0, 10.0)
+	dst(4) = clamped
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+	ddim a, 3
+	ddim b, 3
+	ddim out, 5
+
+	a(0) = 1.5
+	a(1) = -2.0
+	a(2) = 0.5
+	b(0) = 2.0
+	b(1) = 4.0
+	b(2) = -1.0
+
+	vec_mix out, a, b
+	dummy_00
+
+	mes "VECTORS"
+	mes strf("%.3f", out(0))
+	mes strf("%.3f", out(1))
+	mes strf("%.3f", out(2))
+	mes strf("%.3f", out(3))
+	mes strf("%.3f", out(4))
+	end

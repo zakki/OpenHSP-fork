@@ -1,0 +1,17 @@
+#include "hsp3cl.as"
+
+#module
+
+#deffunc fill_vals array vals, int a, int b
+	if a = 10 : vals(0) = 1 : else : vals(0) = 2
+	if a = 10 : vals(1) = 3 : else : vals(1) = 4 : vals(1) += 5
+	if b = 0 : vals(2) = 10 : else : vals(2) = 20 : vals(2) += 3
+	return
+#global
+
+	dim vals, 3
+	fill_vals vals, 10, 1
+	repeat 3
+		mes "" + vals(cnt)
+	loop
+	end

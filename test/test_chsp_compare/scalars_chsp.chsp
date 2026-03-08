@@ -1,0 +1,30 @@
+#include "hsp3cl.as"
+
+#chsp_module "scalars_chsp"
+
+#chsp_defcfunc int build_scalar int x, int y
+	return limit(abs(x) + y, 0, 20)
+#chsp_end
+
+#chsp_deffunc fill_scalars array[int] vals
+	vals(0) = build_scalar(-12, 5)
+	vals(1) = int(7.9) + abs(-3)
+	vals(2) = limit((vals(0) + vals(1)) / 2, 0, 99)
+	vals(3) = vals(2) - limit(abs(-40), 0, 10)
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+	dim vals, 4
+	fill_scalars vals
+	dummy_00
+
+	mes "SCALARS"
+	repeat 4
+		mes "" + vals(cnt)
+	loop
+	end

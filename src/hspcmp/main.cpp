@@ -1,4 +1,3 @@
-
 //
 //	HSPCC : HSP Code Compiler Manager
 //				onion software 2002/12
@@ -9,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory>
 
 #ifdef HSPLINUX
 #include <unistd.h>
@@ -23,6 +23,8 @@
 #include "../hsp3/hsp3config.h"
 #include "supio.h"
 
+#include "membuf.h"
+#include "chsp_frontend_v2.h"
 #include "hsc3.h"
 #include "token.h"
 #include "hsmanager.h"
@@ -36,6 +38,7 @@ static 	char *p[] = {
 	"       -o??? set output file to ???",
 	"       -d    add debug information",
 	"       -p    preprocessor only",
+	"       -t    preprocessor and chsp transform only",
 	"       -c    HSP2.55 compatible mode",
 	"       -i    input UTF-8 source code",
 	"       -u    output UTF-8 strings",
@@ -61,18 +64,35 @@ static 	char *p[] = {
 		printf( "%s\n", p[i]);
 }
 
+static int has_extension( char *path, const char *ext )
+{
+	char *dot = strrchr( path, '.' );
+	if ( dot == NULL ) return 0;
+	if ( strcmp( dot, ext ) == 0 ) return 1;
+	return 0;
+}
+
+static int contains_chsp_directive( char *text )
+{
+	if ( text == NULL ) return 0;
+	if ( strstr( text, "#chsp_" ) != NULL ) return 1;
+	return 0;
+}
+
 /*----------------------------------------------------------*/
 
 int main( int argc, char *argv[] )
 {
 	char a1,a2,a3;
 	int b,st;
-	int cmpopt,ppopt,utfopt,pponly,execobj,strmap,hsphelp;
+	int cmpopt,ppopt,utfopt,pponly,chsp_transform_only,execobj,strmap,hsphelp;
 	char *opt_lk = NULL;
 	char *opt_ls = NULL;
 	int opt_lsref, opt_lsmode;
 	char fname[HSP_MAX_PATH];
 	char fname2[HSP_MAX_PATH];
+	char fname_chi[HSP_MAX_PATH];
+	char fname_cpp[HSP_MAX_PATH];
 	char oname[HSP_MAX_PATH];
 	char compath[HSP_MAX_PATH];
 	char syspath[HSP_MAX_PATH];
@@ -83,10 +103,12 @@ int main( int argc, char *argv[] )
 
 	if (argc<2) { usage1();return -1; }
 
-	st = 0; ppopt = 0; cmpopt = 0; utfopt = 0; pponly = 0; strmap = 0; hsphelp = 0; opt_lsref = 0; opt_lsmode = 0;
+	st = 0; ppopt = 0; cmpopt = 0; utfopt = 0; pponly = 0; chsp_transform_only = 0; strmap = 0; hsphelp = 0; opt_lsref = 0; opt_lsmode = 0;
 	execobj = 0;
 	fname[0]=0;
 	fname2[0]=0;
+	fname_chi[0]=0;
+	fname_cpp[0]=0;
 	oname[0]=0;
 	syspath[0]=0;
 	helpkey[0] = 0;
@@ -120,6 +142,8 @@ int main( int argc, char *argv[] )
 				ppopt |= HSC3_OPT_NOHSPDEF; break;
 			case 'p':
 				pponly=1; break;
+			case 't':
+				chsp_transform_only=1; break;
 			case 'd':
 				ppopt |= HSC3_OPT_DEBUGMODE; cmpopt|=HSC3_MODE_DEBUG; break;
 			case 'i':
@@ -207,6 +231,11 @@ int main( int argc, char *argv[] )
 	}
 
 	if (fname[0]==0) { printf("No file name selected.\n");return 1; }
+	if ((pponly != 0) && (chsp_transform_only != 0)) {
+		printf("Options -p and -t cannot be used together.\n");
+		delete hsc3;
+		return 1;
+	}
 
 	if (oname[0]==0) {
 		strcpy( oname,fname ); cutext( oname );
@@ -218,7 +247,11 @@ int main( int argc, char *argv[] )
 		}
 	}
 	strcpy( fname2, fname ); cutext( fname2 ); addext( fname2,"i" );
-	addext( fname,"hsp" );			// 拡張子がなければ追加する
+	strcpy( fname_chi, fname ); cutext( fname_chi ); addext( fname_chi,"chi" );
+	strcpy( fname_cpp, fname ); cutext( fname_cpp ); addext( fname_cpp,"cpp" );
+	if (( has_extension( fname, ".chsp" ) == 0 )&&( has_extension( fname, ".hsp" ) == 0 )) {
+		addext( fname,"hsp" );			// 拡張子がなければ追加する
+	}
 
 	//		label pick
 	if (opt_ls) {
@@ -294,6 +327,35 @@ int main( int argc, char *argv[] )
 		//		通常のコンパイル
 		st = hsc3->PreProcess( fname, fname2, ppopt, fname );
 		if (( pponly == 0 )&&( st == 0 )) {
+			std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
+			CChspFrontendV2 frontend( frontend_errbuf );
+			CMemBuf transformed_out;
+			CMemBuf cpp_out;
+			char *preprocessed = hsc3->outbuf != NULL ? hsc3->outbuf->GetBuffer() : NULL;
+			int has_chsp = contains_chsp_directive( preprocessed );
+			st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out );
+			if (( st == 0 )&&( has_chsp || ( chsp_transform_only != 0 ) )) {
+				if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
+					hsc3->Print( (char *)"#Can't write generated cHSP C++ file." );
+					st = -1;
+				}
+			}
+			if (( st == 0 )&&( chsp_transform_only != 0 )) {
+				if ( transformed_out.SaveFile( fname_chi ) < 0 ) {
+					hsc3->Print( (char *)"#Can't write generated cHSP transform file." );
+					st = -1;
+				}
+			} else if ( st == 0 ) {
+				CMemBuf *next_outbuf = new CMemBuf( transformed_out.GetSize() + 1 );
+				if ( transformed_out.GetSize() > 0 ) {
+					next_outbuf->PutData( transformed_out.GetBuffer(), transformed_out.GetSize() );
+				}
+				next_outbuf->Put( (char)0 );
+				delete hsc3->outbuf;
+				hsc3->outbuf = next_outbuf;
+			}
+		}
+		if (( pponly == 0 )&&( chsp_transform_only == 0 )&&( st == 0 )) {
 			st = hsc3->Compile( fname2, oname, cmpopt );
 		}
 		puts( hsc3->GetError() );
@@ -303,4 +365,3 @@ int main( int argc, char *argv[] )
 	if ( hsc3 != NULL ) { delete hsc3; hsc3=NULL; }
 	return st;
 }
-

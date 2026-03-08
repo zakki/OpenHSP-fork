@@ -1,0 +1,19 @@
+#include "hsp3cl.as"
+
+#module
+
+#defcfunc first_over int threshold
+repeat 6
+	if cnt > threshold {
+		return cnt * 10 + 1
+	}
+loop
+return 999
+#global
+
+mes "" + first_over(0)
+mes "" + first_over(5)
+mes "" + first_over(1)
+mes "" + first_over(10)
+
+end

@@ -1,0 +1,42 @@
+#include "hsp3cl.as"
+
+#chsp_module "random_chsp"
+
+#chsp_defcfunc int sample_random int seed, local[int] a, local[int] b, local[int] c, local[int] ok
+	randomize(seed)
+	a = rnd(100)
+	b = rnd(100)
+	c = rnd(100)
+	if (a >= 0) & (a < 100) {
+		ok += 1
+	}
+	if (b >= 0) & (b < 100) {
+		ok += 1
+	}
+	if (c >= 0) & (c < 100) {
+		ok += 1
+	}
+	return a * 1000000 + b * 1000 + c + ok * 100000000
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+	randomize 12345
+	a = rnd(100)
+	b = rnd(100)
+	c = rnd(100)
+	if (a >= 0) & (a < 100) : ok += 1
+	if (b >= 0) & (b < 100) : ok += 1
+	if (c >= 0) & (c < 100) : ok += 1
+	packed = sample_random(12345)
+	dummy_00
+
+	mes "RANDOM"
+	mes "" + int(packed / 1000000) \ 100
+	mes "" + int(packed / 1000) \ 1000
+	mes "" + packed \ 1000
+	mes "" + int(packed / 100000000)
+	end

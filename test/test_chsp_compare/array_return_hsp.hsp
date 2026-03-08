@@ -1,0 +1,49 @@
+#include "hsp3cl.as"
+
+#module
+
+#defcfunc pick_int array vals, int i
+	return vals.i + vals.(i + 1)
+
+#defcfunc pick_double array vals, int i
+	return vals.i + vals(i + 1)
+
+#deffunc fill_returns array ints, array reals, local i, local got
+	dim src, 4
+	ddim ds, 4
+
+	src(0) = 5
+	src.1 = 7
+	src(2) = 11
+	src.3 = 13
+
+	ds(0) = 1.25
+	ds.1 = 2.5
+	ds(2) = 4.0
+	ds.3 = 8.5
+
+	i = 1
+	ints(0) = pick_int(src, 0)
+	ints(1) = pick_int(src, i)
+	got = pick_int(src, 2)
+	ints(2) = got
+
+	reals(0) = pick_double(ds, 0)
+	reals(1) = pick_double(ds, i)
+	reals(2) = pick_double(ds, 2)
+	return
+#global
+
+dim ints, 3
+ddim reals, 3
+fill_returns ints, reals
+
+mes "RETURN"
+repeat 3
+	mes "" + ints(cnt)
+loop
+repeat 3
+	mes strf("%.3f", reals(cnt))
+loop
+
+end
