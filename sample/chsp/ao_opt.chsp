@@ -150,7 +150,7 @@ goto *MAIN
 				local[int] i, local[int] j,\
 				local[double[3]] p, local[double[9]] basis, local[double] occlusion, local[double] theta, local[double] phi,\
 				local[double] x, local[double] y, local[double] z, local[double] rx, local[double] ry, local[double] rz,\
-				local[double[3]] oray_org, local[double[3]] oray_dir, local[double[5]] occIsect, local[double[3]] occIsect_p, local[double[3]] occIsect_n
+				local[double[3]] oray_org, local[double[3]] oray_dir, local[double[5]] occisect, local[double[3]] occisect_p, local[double[3]] occisect_n
 
 	p(0) = isect_p(0) + eps * isect_n(0)
 	p(1) = isect_p(1) + eps * isect_n(1)
@@ -183,17 +183,17 @@ goto *MAIN
 			oray_dir(1) = ry
 			oray_dir(2) = rz
 
-			occIsect(0) = 1.0e+17
-			occIsect(1) = 0.0
-			occIsect(2) = 0.0
-			occIsect(3) = 0.0
-			occIsect(4) = 0.0
+			occisect(0) = 1.0e+17
+			occisect(1) = 0.0
+			occisect(2) = 0.0
+			occisect(3) = 0.0
+			occisect(4) = 0.0
 
-			ray_sphere_intersect spheres_center, spheres_radius, spheres_col, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir, 0
-			ray_sphere_intersect spheres_center, spheres_radius, spheres_col, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir, 1
-			ray_sphere_intersect spheres_center, spheres_radius, spheres_col, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir, 2
-			ray_plane_intersect plane_p, plane_n, plane_col, occIsect, occIsect_p, occIsect_n, oray_org, oray_dir
-			if (occIsect(1) > 0) {
+			ray_sphere_intersect spheres_center, spheres_radius, spheres_col, occisect, occisect_p, occisect_n, oray_org, oray_dir, 0
+			ray_sphere_intersect spheres_center, spheres_radius, spheres_col, occisect, occisect_p, occisect_n, oray_org, oray_dir, 1
+			ray_sphere_intersect spheres_center, spheres_radius, spheres_col, occisect, occisect_p, occisect_n, oray_org, oray_dir, 2
+			ray_plane_intersect plane_p, plane_n, plane_col, occIsect, occisect_p, occisect_n, oray_org, oray_dir
+			if (occisect(1) > 0) {
 				occlusion += 1.0
 			}
 		loop
