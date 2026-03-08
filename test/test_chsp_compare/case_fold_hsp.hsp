@@ -1,0 +1,26 @@
+#include "hsp3cl.as"
+
+#module
+
+#defcfunc helper int value
+	return value * 2
+
+#defcfunc mixvalue int Foo
+	return abs(-foo) + HELPER(foo)
+
+#deffunc fillcase array Dst, local I
+	repeat 3
+		i = CNT
+		DST(I) = MIXVALUE(i + 1)
+	loop
+	return
+#global
+
+	dim result, 3
+	FillCase RESULT
+
+	mes "CASE_FOLD"
+	mes "" + result(0)
+	mes "" + result(1)
+	mes "" + result(2)
+	end

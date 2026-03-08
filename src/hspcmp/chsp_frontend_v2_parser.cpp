@@ -77,7 +77,7 @@ std::vector<ChspInputLine> CollapseContinuationLines( const std::vector<std::str
 
 ChspDirectiveKind DetectDirective( const std::string &line )
 {
-	const auto trimmed = Trim( line );
+	const auto trimmed = AsciiLower( Trim( line ) );
 	if ( StartsWith( trimmed, "#chsp_module_end" ) ) {
 		return ChspDirectiveKind::ModuleEnd;
 	}
@@ -194,9 +194,9 @@ std::string BaseScopedName( const std::string &name )
 {
 	const auto at = name.find( '@' );
 	if ( at == std::string::npos ) {
-		return name;
+		return AsciiLower( name );
 	}
-	return name.substr( 0, at );
+	return AsciiLower( name.substr( 0, at ) );
 }
 
 bool ConsumeChar( ChspTokenCursor &cursor, int ch )
@@ -228,7 +228,7 @@ bool ConsumeObject( ChspTokenCursor &cursor, std::string &out )
 	if ( token == nullptr || token->kind != TK_OBJ ) {
 		return false;
 	}
-	out = token->text;
+	out = AsciiLower( token->text );
 	cursor.Consume();
 	return true;
 }
