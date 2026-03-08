@@ -160,6 +160,10 @@ transform-cli-check: $(HSPCMP)
 	test ! -e operators_hsp.ax
 	grep -q 'mes@hsp "OPS"' operators_hsp.chi
 	! $(HSPCMP) -p -t --compath=$(COMPATH) operators_chsp.chsp >/dev/null 2>&1
+	rm -f invalid_cpp_name_chsp.ax invalid_cpp_name_chsp.hsp invalid_cpp_name_chsp.cpp invalid_cpp_name_chsp.i invalid_cpp_name_chsp.chi
+	$(HSPCMP) -d -i -u --compath=$(COMPATH) invalid_cpp_name_chsp.chsp
+	test -s invalid_cpp_name_chsp.cpp
+	grep -q 'chsp_func_class' invalid_cpp_name_chsp.cpp
 
 clean:
 	rm -f operators_hsp.ax operators_hsp.i operators_hsp.chi operators_hsp.cpp features_hsp.ax features_hsp.i commands_hsp.ax commands_hsp.i branches_hsp.ax branches_hsp.i nested_hsp.ax nested_hsp.i vectors_hsp.ax vectors_hsp.i scalars_hsp.ax scalars_hsp.i trig_hsp.ax trig_hsp.i random_hsp.ax random_hsp.i inline_if_hsp.ax inline_if_hsp.i precedence_hsp.ax precedence_hsp.i
@@ -204,6 +208,7 @@ clean:
 	rm -f array_control_chsp.ax array_control_chsp.hsp array_control_chsp.cpp array_control_chsp.i array_control_chsp.so
 	rm -f case_fold_hsp.ax case_fold_hsp.i
 	rm -f case_fold_chsp.ax case_fold_chsp.hsp case_fold_chsp.cpp case_fold_chsp.i case_fold_chsp.so
+	rm -f invalid_cpp_name_chsp.ax invalid_cpp_name_chsp.hsp invalid_cpp_name_chsp.cpp invalid_cpp_name_chsp.i invalid_cpp_name_chsp.chi invalid_cpp_name_chsp.so
 	rm -f $(CHSP_CASES:%=%.chi) $(CHSP_CASES:%=%.transform.cpp) $(TRANSFORM_STAMPS)
 	rm -f operators_hsp.out operators_chsp.out features_hsp.out features_chsp.out commands_hsp.out commands_chsp.out branches_hsp.out branches_chsp.out nested_hsp.out nested_chsp.out vectors_hsp.out vectors_chsp.out scalars_hsp.out scalars_chsp.out trig_hsp.out trig_chsp.out random_hsp.out random_chsp.out inline_if_hsp.out inline_if_chsp.out inline_else_hsp.out inline_else_chsp.out inline_else_if_hsp.out inline_else_if_chsp.out inline_else_block_hsp.out inline_else_block_chsp.out mixed_if_hsp.out mixed_if_chsp.out loop_return_hsp.out loop_return_chsp.out loop_return_value_hsp.out loop_return_value_chsp.out precedence_hsp.out precedence_chsp.out separators_hsp.out separators_chsp.out continuations_hsp.out continuations_chsp.out int_literals_hsp.out int_literals_chsp.out array_access_hsp.out array_access_chsp.out local_arrays_hsp.out local_arrays_chsp.out array_return_hsp.out array_return_chsp.out array_builtin_args_hsp.out array_builtin_args_chsp.out array_control_hsp.out array_control_chsp.out case_fold_hsp.out case_fold_chsp.out
 	rm -f operators_chsp_native features_chsp_native
