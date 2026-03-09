@@ -60,18 +60,19 @@ OBJS_CMP = \
 	src/hspcmp/ahtmodel.o \
 	src/hspcmp/ahtobj.o \
 	src/hspcmp/codegen.o \
-	src/hspcmp/codegen_lexer.o \
-	src/hspcmp/chsp_frontend_v2.o \
-	src/hspcmp/chsp_frontend_v2_parser.o \
-	src/hspcmp/chsp_frontend_v2_emitter.o \
+	src/hspcmp/chsp/codegen_lexer.o \
+	src/hspcmp/chsp/chsp_libtcc_shared.o \
+	src/hspcmp/chsp/chsp_frontend_v2.o \
+	src/hspcmp/chsp/chsp_frontend_v2_parser.o \
+	src/hspcmp/chsp/chsp_frontend_v2_emitter.o \
 	src/hspcmp/comutil.o \
 	src/hspcmp/errormsg.o \
 	src/hspcmp/hsc3.o \
 	src/hspcmp/hspcmd.o \
 	src/hspcmp/label.o \
-	src/hspcmp/lexer_util.o \
+	src/hspcmp/chsp/lexer_util.o \
 	src/hspcmp/localinfo.o \
-	src/hspcmp/logger.o \
+	src/hspcmp/chsp/logger.o \
 	src/hspcmp/main.o \
 	src/hspcmp/membuf.o \
 	src/hsp3/strnote.o \
@@ -475,7 +476,7 @@ hsp3gp: $(OBJS_GP) $(LIBS_GP)
 	$(CXX) $(CFLAGS_GP) -c $< -o $*.gpo
 
 hspcmp: $(OBJS_CMP)
-	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -s -o $@
+	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -s -ltcc -o $@
 %.o: %.c
 	$(CC) $(CFLAGS_CMP) -c $< -o $*.o
 %.o: %.cpp

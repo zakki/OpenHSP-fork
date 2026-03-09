@@ -13,13 +13,13 @@
 
 #include <utility>
 
-#include "../hsp3/hsp3config.h"
-#include "ahtobj.h"
-#include "label.h"
+#include "../../hsp3/hsp3config.h"
+#include "../ahtobj.h"
+#include "../label.h"
+#include "../membuf.h"
+#include "../supio.h"
+#include "../tagstack.h"
 #include "lexer_util.h"
-#include "membuf.h"
-#include "supio.h"
-#include "tagstack.h"
 
 enum
 {
@@ -84,12 +84,12 @@ void strcase2( const char *str, char *str2 )
 //-------------------------------------------------------------
 
 
-CCompilerUtil::CCompilerUtil( std::shared_ptr<CompileOptions> opt ) : compopt( std::move( opt ) )
+CSourceTextUtil::CSourceTextUtil( std::shared_ptr<CompileOptions> opt ) : compopt( std::move( opt ) )
 {
 	InitSCNV( SCNVBUF_DEFAULTSIZE );
 }
 
-void CCompilerUtil::InitSCNV( size_t size )
+void CSourceTextUtil::InitSCNV( size_t size )
 {
 	//		文字コード変換の初期化
 	//
@@ -99,7 +99,7 @@ void CCompilerUtil::InitSCNV( size_t size )
 }
 
 
-char *CCompilerUtil::ExecSCNV( const char *srcbuf, int opt )
+char *CSourceTextUtil::ExecSCNV( const char *srcbuf, int opt )
 {
 	//		文字コード変換
 	//
@@ -120,7 +120,7 @@ char *CCompilerUtil::ExecSCNV( const char *srcbuf, int opt )
 		break;
 	case SCNV_OPT_UTF8SJIS:
 #ifdef HSPWIN
-		ConvUtf82SJis( srcbuf, buf, scnvbuf.size());
+		ConvUtf82SJis( srcbuf, buf, scnvbuf.size() );
 #else
 		strcpy( buf, srcbuf );
 #endif
@@ -134,7 +134,7 @@ char *CCompilerUtil::ExecSCNV( const char *srcbuf, int opt )
 }
 
 
-int CCompilerUtil::CheckByteSJIS( unsigned char c )
+int CSourceTextUtil::CheckByteSJIS( unsigned char c )
 {
 	//	SJISの全角1バイト目を判定する
 	//  (戻り値は以降に続くbyte数)
@@ -145,7 +145,7 @@ int CCompilerUtil::CheckByteSJIS( unsigned char c )
 }
 
 
-int CCompilerUtil::CheckByteUTF8( unsigned char c )
+int CSourceTextUtil::CheckByteUTF8( unsigned char c )
 {
 	//	UTF8の全角1バイト目を判定する
 	//  (戻り値は以降に続くbyte数)
@@ -173,7 +173,7 @@ int CCompilerUtil::CheckByteUTF8( unsigned char c )
 }
 
 
-int CCompilerUtil::SkipMultiByte( unsigned char byte )
+int CSourceTextUtil::SkipMultiByte( unsigned char byte )
 {
 	//	マルチバイトコードの2byte目以降をスキップする
 	//  ( 1バイト目のcharを渡すと、2byte目以降スキップするbyte数を返す )
@@ -186,7 +186,7 @@ int CCompilerUtil::SkipMultiByte( unsigned char byte )
 }
 
 
-int CCompilerUtil::ConvSJis2Utf8( const char *pSource, char *pDist, int buffersize )
+int CSourceTextUtil::ConvSJis2Utf8( const char *pSource, char *pDist, int buffersize )
 {
 	int size = 0;
 	if ( pDist == nullptr ) {
@@ -216,7 +216,7 @@ int CCompilerUtil::ConvSJis2Utf8( const char *pSource, char *pDist, int buffersi
 }
 
 
-int CCompilerUtil::ConvUtf82SJis( const char *pSource, char *pDist, int buffersize )
+int CSourceTextUtil::ConvUtf82SJis( const char *pSource, char *pDist, int buffersize )
 {
 	int size = 0;
 
@@ -240,7 +240,7 @@ int CCompilerUtil::ConvUtf82SJis( const char *pSource, char *pDist, int buffersi
 }
 
 
-char *CCompilerUtil::to_hsp_string_literal( const char *src, bool filename )
+char *CSourceTextUtil::to_hsp_string_literal( const char *src, bool filename )
 {
 	//		文字列をHSPの文字列リテラル形式に
 	//		戻り値のメモリは呼び出し側がfreeする必要がある。
@@ -346,7 +346,7 @@ char *CCompilerUtil::to_hsp_string_literal( const char *src, bool filename )
 	return dest;
 }
 
-int CCompilerUtil::atoi_allow_overflow( const char *s )
+int CSourceTextUtil::atoi_allow_overflow( const char *s )
 {
 	//		オーバーフローチェックをしないatoi
 	//

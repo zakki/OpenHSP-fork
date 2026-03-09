@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "token_def.h"
+#include "../token_def.h"
 
 #define SCNVBUF_DEFAULTSIZE 0x8000
 #define SCNV_OPT_NONE 0
@@ -105,11 +105,11 @@ struct CompileOptions
 };
 
 //  util class
-class CCompilerUtil
+class CSourceTextUtil
 {
 public:
-	explicit CCompilerUtil( std::shared_ptr<CompileOptions> opt );
-	virtual ~CCompilerUtil()
+	explicit CSourceTextUtil( std::shared_ptr<CompileOptions> opt );
+	virtual ~CSourceTextUtil()
 	{
 	}
 

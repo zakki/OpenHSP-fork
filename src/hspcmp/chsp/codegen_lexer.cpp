@@ -12,17 +12,17 @@
 
 #include <utility>
 
-#include "../hsp3/hsp3config.h"
-#include "../hsp3/hsp3debug.h"
-#include "../hsp3/hsp3struct.h"
+#include "../../hsp3/hsp3config.h"
+#include "../../hsp3/hsp3debug.h"
+#include "../../hsp3/hsp3struct.h"
 
+#include "../label.h"
+#include "../membuf.h"
+#include "../supio.h"
+#include "../tagstack.h"
 #include "codegen_lexer.h"
-#include "label.h"
-#include "membuf.h"
-#include "supio.h"
-#include "tagstack.h"
 
-#include "errormsg.h"
+#include "../errormsg.h"
 
 //-------------------------------------------------------------
 //		Routines
@@ -193,7 +193,7 @@ char *CCgLexer::PickStringCG2( char *str, char **strsrc )
 CCgToken CCgLexer::GetTokenCG( int option )
 {
 	cg_ptr_bak = cg_ptr;
-	auto result = GetTokenCG(cg_ptr, option);
+	auto result = GetTokenCG( cg_ptr, option );
 	cg_ptr = result.first; // cg_ptr を更新
 	return result.second;
 }
@@ -925,7 +925,7 @@ char *CCgLexer::GetLineCG()
 //-------------------------------------------------------------
 
 CCgLexer::CCgLexer( const std::shared_ptr<CompileOptions> &compopt, std::shared_ptr<CLogger> log )
-	: CCompilerUtil( compopt ), logger( std::move( log ) ), cg_orgline( 0 )
+	: CSourceTextUtil( compopt ), logger( std::move( log ) ), cg_orgline( 0 )
 {
 	cg_orgfile.clear();
 	cg_orgfilefull.clear();
