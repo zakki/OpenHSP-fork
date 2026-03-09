@@ -360,10 +360,11 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 		CMemBuf cpp_out;
 		char *preprocessed = hsc3->outbuf != NULL ? hsc3->outbuf->GetBuffer() : NULL;
 		int has_chsp = contains_chsp_directive( preprocessed );
-		st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out );
+		st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out,
+										  ChspNativeTarget::Cpp );
 		if (( st == 0 )&&( has_chsp )) {
 			if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
-				hsc3->Print( (char *)"#Can't write generated cHSP C++ file." );
+				hsc3->Print( (char *)"#Can't write generated cHSP native file." );
 				st = -1;
 			}
 		}

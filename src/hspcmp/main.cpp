@@ -58,6 +58,7 @@ static 	char *p[] = {
 	"       ---------------------------------",
 	"       --syspath=??? set system folder for execute",
 	"       --compath=??? set common path to ???",
+	"       --chsp-target=c|cpp set cHSP native output target",
 	NULL };
 	int i;
 	for(i=0; p[i]; i++)
@@ -97,6 +98,7 @@ int main( int argc, char *argv[] )
 	char compath[HSP_MAX_PATH];
 	char syspath[HSP_MAX_PATH];
 	char helpkey[256];
+	ChspNativeTarget chsp_target;
 	CHsc3 *hsc3=NULL;
 
 	//	check switch and prm
@@ -112,6 +114,7 @@ int main( int argc, char *argv[] )
 	oname[0]=0;
 	syspath[0]=0;
 	helpkey[0] = 0;
+	chsp_target = ChspNativeTarget::Cpp;
 
 #ifdef HSPLINUX
 	strcpy( compath,"common/" );
@@ -136,6 +139,19 @@ int main( int argc, char *argv[] )
 			if (strncmp(argv[b], "--syspath=", 10) == 0) {
 				strcpy( syspath, argv[b] + 10 );
 				continue;
+			}
+			if (strncmp(argv[b], "--chsp-target=", 14) == 0) {
+				const char *value = argv[b] + 14;
+				if ( strcmp( value, "c" ) == 0 ) {
+					chsp_target = ChspNativeTarget::C;
+					continue;
+				}
+				if ( strcmp( value, "cpp" ) == 0 ) {
+					chsp_target = ChspNativeTarget::Cpp;
+					continue;
+				}
+				printf( "Invalid cHSP target selected.\n" );
+				return 1;
 			}
 			switch (a2) {
 			case 'c':
@@ -248,7 +264,7 @@ int main( int argc, char *argv[] )
 	}
 	strcpy( fname2, fname ); cutext( fname2 ); addext( fname2,"i" );
 	strcpy( fname_chi, fname ); cutext( fname_chi ); addext( fname_chi,"chi" );
-	strcpy( fname_cpp, fname ); cutext( fname_cpp ); addext( fname_cpp,"cpp" );
+	strcpy( fname_cpp, fname ); cutext( fname_cpp ); addext( fname_cpp, chsp_target == ChspNativeTarget::C ? "c" : "cpp" );
 	if (( has_extension( fname, ".chsp" ) == 0 )&&( has_extension( fname, ".hsp" ) == 0 )) {
 		addext( fname,"hsp" );			// 拡張子がなければ追加する
 	}
@@ -332,14 +348,14 @@ int main( int argc, char *argv[] )
 			CMemBuf transformed_out;
 			CMemBuf cpp_out;
 			char *preprocessed = hsc3->outbuf != NULL ? hsc3->outbuf->GetBuffer() : NULL;
-			int has_chsp = contains_chsp_directive( preprocessed );
-			st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out );
-			if (( st == 0 )&&( has_chsp || ( chsp_transform_only != 0 ) )) {
-				if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
-					hsc3->Print( (char *)"#Can't write generated cHSP C++ file." );
-					st = -1;
+				int has_chsp = contains_chsp_directive( preprocessed );
+				st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out, chsp_target );
+				if (( st == 0 )&&( has_chsp || ( chsp_transform_only != 0 ) )) {
+					if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
+						hsc3->Print( (char *)"#Can't write generated cHSP native file." );
+						st = -1;
+					}
 				}
-			}
 			if (( st == 0 )&&( chsp_transform_only != 0 )) {
 				if ( transformed_out.SaveFile( fname_chi ) < 0 ) {
 					hsc3->Print( (char *)"#Can't write generated cHSP transform file." );

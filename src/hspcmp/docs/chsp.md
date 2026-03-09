@@ -60,6 +60,8 @@ cHSPは、HSPスクリプトの一部をC++コードに変換し、コンパイ�
   - C++側で処理される変数の受け渡し処理などが自動的に挿入されます。
 - **C++ソースコード (`.cpp`)**:
   - `#chsp_*`ブロック内のコードが、C++の関数として実装されます。
+- **Cソースコード (`.c`)**:
+  - `--chsp-target=c` を指定した場合は、C互換ランタイムを呼ぶ C ソースを生成します。
 
 ### 変数共有
 
@@ -71,7 +73,7 @@ cHSPは、HSPスクリプトの一部をC++コードに変換し、コンパイ�
 
 ### コンパイラ (hspcmp)
 
-`hspcmp`は、`.chsp`ファイルを解釈し、`.ax`と`.cpp`を生成します。
+`hspcmp`は、`.chsp`ファイルを解釈し、`.ax`とネイティブソース (`.cpp` または `.c`) を生成します。
 既存文法だけの`.hsp`ファイルを受け取った場合は、既存のhspcmpと同様の処理を行います。
 
 #### 処理フロー
@@ -79,16 +81,38 @@ cHSPは、HSPスクリプトの一部をC++コードに変換し、コンパイ�
 1. **`.chsp`ファイルのパース**:
    - `#chsp_*`ブロックとそれ以外のHSPコードを分離します。
    - MVP ではこの段階を既存 HSP プリプロセッサより前に実行します。
-2. **C++コード生成**:
-   - `#chsp_*`ブロック内のコードをC++の関数に変換します。
-   - 組み込み関数は `common/chsp/chsp_runtime.hpp` の薄いラッパー呼び出しに変換します。
+2. **ネイティブコード生成**:
+   - `#chsp_*`ブロック内のコードを C++ または C の関数に変換します。
+   - C++ target は `common/chsp/chsp_runtime.hpp`、C target は `common/chsp/chsp_runtime.h` の薄いラッパー呼び出しに変換します。
 3. **HSPコード生成**:
-   - `#chsp_*`ブロックを、生成したC++関数を呼び出す`#uselib`、`#func`、`#cfunc`命令に置き換えます。
+   - `#chsp_*`ブロックを、生成したネイティブ関数を呼び出す`#uselib`、`#func`、`#cfunc`命令に置き換えます。
 4. **ファイル出力**:
-   - `.ax`と`.cpp`を出力します。
-5. **C++コードのコンパイル**:
-   - 生成された`.cpp`を、DLLや共有ライブラリにコンパイルします。
+   - `.ax`とネイティブソース (`.cpp` または `.c`) を出力します。
+5. **ネイティブコードのコンパイル**:
+   - 生成された`.cpp`または`.c`を、DLLや共有ライブラリにコンパイルします。
    - コンパイルされたライブラリは、生成された`.hsp` / `.ax`から呼び出されます。
+
+#### cHSP native target の切り替え
+
+- 既定値は `cpp`
+- `--chsp-target=cpp`
+- `--chsp-target=c`
+
+`--chsp-target=c` は C backend の試作で、`rnd` / `randomize` は `rand` / `srand` ベースです。`mt19937` (`HSPRANDMT`) には対応しません。
+
+#### C backend の回帰テスト
+
+`test/test_chsp_compare/Makefile` には C backend 用ターゲットがあります。
+
+```sh
+make -C test/test_chsp_compare check-c
+make -C test/test_chsp_compare check-c-tcc
+```
+
+- `check-c`
+  - C backend を `cc` で共有ライブラリ化して、比較テストと transform テストを通します。
+- `check-c-tcc`
+  - C backend を `tcc` で共有ライブラリ化して、同じ比較テストと transform テストを通します。
 
 ### 生成された `.cpp` のビルド方法
 

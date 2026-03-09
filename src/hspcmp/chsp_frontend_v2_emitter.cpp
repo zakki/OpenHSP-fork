@@ -18,6 +18,7 @@ namespace
 
 struct TranslateContext
 {
+	ChspNativeTarget target = ChspNativeTarget::Cpp;
 	std::unordered_set<std::string> array_names;
 	std::unordered_map<std::string, std::string> identifier_cpp_names;
 	std::unordered_map<std::string, std::string> function_cpp_names;
@@ -105,6 +106,11 @@ std::string ToCppType( const ChspParam &param )
 	return param.base_type;
 }
 
+std::string ToNativeType( const ChspParam &param, ChspNativeTarget )
+{
+	return ToCppType( param );
+}
+
 std::string DefaultReturnExpr( const std::string &type )
 {
 	if ( type == "double" ) {
@@ -116,8 +122,27 @@ std::string DefaultReturnExpr( const std::string &type )
 	return "";
 }
 
-std::string BuiltinTarget( const std::string &name )
+std::string BuiltinTarget( const std::string &name, size_t arg_count, ChspNativeTarget target )
 {
+	if ( target == ChspNativeTarget::C ) {
+		if ( name == "abs" ) return "chsp_hsp_abs";
+		if ( name == "absf" || name == "chsp_fabs" ) return "chsp_hsp_absf";
+		if ( name == "atan" ) return "chsp_hsp_atan";
+		if ( name == "cos" ) return "chsp_hsp_cos";
+		if ( name == "double" ) return "chsp_hsp_double";
+		if ( name == "expf" ) return "chsp_hsp_expf";
+		if ( name == "int" ) return "chsp_hsp_int";
+		if ( name == "limit" ) return "chsp_hsp_limit";
+		if ( name == "limitf" ) return "chsp_hsp_limitf";
+		if ( name == "logf" ) return "chsp_hsp_logf";
+		if ( name == "powf" ) return "chsp_hsp_powf";
+		if ( name == "randomize" ) return arg_count == 0 ? "chsp_randomize" : "chsp_randomize_seed";
+		if ( name == "rnd" ) return "chsp_rnd";
+		if ( name == "sin" ) return "chsp_hsp_sin";
+		if ( name == "sqrt" || name == "chsp_sqrt" ) return "chsp_hsp_sqrt";
+		if ( name == "tan" ) return "chsp_hsp_tan";
+		return "";
+	}
 	static const std::map<std::string, std::string> builtins = {
 		{ "abs", "chsp::hsp_abs" },       { "absf", "chsp::hsp_absf" },     { "atan", "chsp::hsp_atan" },
 		{ "chsp_fabs", "chsp::hsp_absf" }, { "chsp_sqrt", "chsp::hsp_sqrt" }, { "cos", "chsp::hsp_cos" },
@@ -240,9 +265,11 @@ void CollectArrayStrideFromStmt( const ChspStmt &stmt, const std::unordered_set<
 	}
 }
 
-TranslateContext BuildTranslateContext( const ChspFunction &func, const std::unordered_map<std::string, std::string> &function_cpp_names )
+TranslateContext BuildTranslateContext( const ChspFunction &func, const std::unordered_map<std::string, std::string> &function_cpp_names,
+										ChspNativeTarget target )
 {
 	TranslateContext ctx;
+	ctx.target = target;
 	ctx.function_cpp_names = function_cpp_names;
 	ctx.identifier_cpp_names = BuildIdentifierCppNames( func );
 	for ( const auto &param : func.params ) {
@@ -341,7 +368,7 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 		return "";
 	}
 
-	std::string target = BuiltinTarget( name );
+	std::string target = BuiltinTarget( name, expr.children.size() - 1, ctx.target );
 	if ( target.empty() ) {
 		const auto function_it = ctx.function_cpp_names.find( name );
 		if ( function_it != ctx.function_cpp_names.end() ) {
@@ -396,7 +423,7 @@ std::string RenderStatementInline( const ChspStmt &stmt, TranslateContext &ctx, 
 
 std::string RenderCommandCall( const ChspStmt &stmt, TranslateContext &ctx, bool &ok )
 {
-	std::string target = BuiltinTarget( stmt.text );
+	std::string target = BuiltinTarget( stmt.text, stmt.exprs.size(), ctx.target );
 	if ( target.empty() ) {
 		const auto function_it = ctx.function_cpp_names.find( stmt.text );
 		if ( function_it != ctx.function_cpp_names.end() ) {
@@ -778,7 +805,7 @@ void WriteFunctionDeclToHsp( CMemBuf &buf, const ChspFunction &func, const std::
 	buf.PutCR();
 }
 
-void WriteLocalDeclsToCpp( CMemBuf &buf, const ChspFunction &func, const TranslateContext &ctx )
+void WriteLocalDeclsToNative( CMemBuf &buf, const ChspFunction &func, const TranslateContext &ctx )
 {
 	for ( const auto &param : func.params ) {
 		if ( !param.is_local ) {
@@ -789,19 +816,29 @@ void WriteLocalDeclsToCpp( CMemBuf &buf, const ChspFunction &func, const Transla
 		buf.PutStr( " " );
 		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
 		if ( param.is_array ) {
-			buf.PutStrf( "[%d]", param.array_length );
+			buf.PutStr( "[" );
+			buf.PutStr( std::to_string( param.array_length ).c_str() );
+			buf.PutStr( "] = {0};" );
+		} else if ( ctx.target == ChspNativeTarget::C ) {
+			buf.PutStr( " = 0;" );
+		} else {
+			buf.PutStr( " {};" );
 		}
-		buf.PutStr( " {};" );
 		buf.PutCR();
 	}
 }
 
-void WriteFunctionToCpp( CMemBuf &buf, const ChspFunction &func, const std::unordered_map<std::string, std::string> &function_cpp_names )
+void WriteFunctionToNative( CMemBuf &buf, const ChspFunction &func, const std::unordered_map<std::string, std::string> &function_cpp_names,
+						   ChspNativeTarget target )
 {
 	const auto cpp_name_it = function_cpp_names.find( func.name );
 	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
-	auto ctx = BuildTranslateContext( func, function_cpp_names );
-	buf.PutStr( "extern \"C\" CHSP_EXPORT " );
+	auto ctx = BuildTranslateContext( func, function_cpp_names, target );
+	if ( target == ChspNativeTarget::C ) {
+		buf.PutStr( "CHSP_EXPORT " );
+	} else {
+		buf.PutStr( "extern \"C\" CHSP_EXPORT " );
+	}
 	buf.PutStr( func.return_type.c_str() );
 	buf.PutStr( " " );
 	buf.PutStr( cpp_name.c_str() );
@@ -815,14 +852,14 @@ void WriteFunctionToCpp( CMemBuf &buf, const ChspFunction &func, const std::unor
 			buf.PutStr( ", " );
 		}
 		first = false;
-		buf.PutStr( ToCppType( param ).c_str() );
+		buf.PutStr( ToNativeType( param, target ).c_str() );
 		buf.PutStr( " " );
 		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
 	}
 	buf.PutStr( ")" );
 	buf.PutCR();
 	buf.PutStr( "{\n" );
-	WriteLocalDeclsToCpp( buf, func, ctx );
+	WriteLocalDeclsToNative( buf, func, ctx );
 	int indent_level = 1;
 	bool emitted_explicit_return = false;
 	for ( size_t i = 0; i < func.body_stmts.size(); ++i ) {
@@ -910,23 +947,27 @@ void WriteModuleFooterToHsp( CMemBuf &buf, const std::string &module_tag )
 	buf.PutCR();
 }
 
-void WriteCppPreamble( CMemBuf &cpp_out )
+void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 {
-	cpp_out.PutStr( "// Generated by OpenHSP cHSP frontend. Do not edit this file directly.\n" );
-	cpp_out.PutStr( "#include \"common/chsp/chsp_runtime.hpp\"\n\n" );
-	cpp_out.PutStr( "#if defined(_WIN32)\n" );
-	cpp_out.PutStr( "#define CHSP_EXPORT __declspec(dllexport)\n" );
-	cpp_out.PutStr( "#else\n" );
-	cpp_out.PutStr( "#define CHSP_EXPORT\n" );
-	cpp_out.PutStr( "#endif\n\n" );
+	native_out.PutStr( "// Generated by OpenHSP cHSP frontend. Do not edit this file directly.\n" );
+	if ( target == ChspNativeTarget::C ) {
+		native_out.PutStr( "#include \"common/chsp/chsp_runtime.h\"\n\n" );
+	} else {
+		native_out.PutStr( "#include \"common/chsp/chsp_runtime.hpp\"\n\n" );
+	}
+	native_out.PutStr( "#if defined(_WIN32)\n" );
+	native_out.PutStr( "#define CHSP_EXPORT __declspec(dllexport)\n" );
+	native_out.PutStr( "#else\n" );
+	native_out.PutStr( "#define CHSP_EXPORT\n" );
+	native_out.PutStr( "#endif\n\n" );
 }
 
 } // namespace
 
 int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspProgram &program, CLogger &logger, CMemBuf &hsp_out,
-						   CMemBuf &cpp_out, const char *source_name )
+						   CMemBuf &native_out, const char *source_name, ChspNativeTarget target )
 {
-	WriteCppPreamble( cpp_out );
+	WriteNativePreamble( native_out, target );
 
 	const auto function_cpp_names = BuildFunctionCppNames( program );
 
@@ -946,8 +987,8 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 				continue;
 			}
 			if ( StartsWith( trimmed, "#define " ) ) {
-				cpp_out.PutStr( line.text.c_str() );
-				cpp_out.PutCR();
+				native_out.PutStr( line.text.c_str() );
+				native_out.PutCR();
 			}
 			hsp_out.PutStr( line.text.c_str() );
 			hsp_out.PutCR();
@@ -990,7 +1031,7 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 				const auto cpp_name_it = function_cpp_names.find( function.name );
 				const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : function.name;
 				WriteFunctionDeclToHsp( hsp_out, function, cpp_name );
-				WriteFunctionToCpp( cpp_out, function, function_cpp_names );
+				WriteFunctionToNative( native_out, function, function_cpp_names, target );
 			}
 			++function_index;
 			in_function = false;
