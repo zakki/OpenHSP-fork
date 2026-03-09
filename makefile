@@ -61,6 +61,7 @@ OBJS_CMP = \
 	src/hspcmp/ahtobj.o \
 	src/hspcmp/codegen.o \
 	src/hspcmp/codegen_lexer.o \
+	src/hspcmp/chsp_libtcc_shared.o \
 	src/hspcmp/chsp_frontend_v2.o \
 	src/hspcmp/chsp_frontend_v2_parser.o \
 	src/hspcmp/chsp_frontend_v2_emitter.o \
@@ -475,7 +476,7 @@ hsp3gp: $(OBJS_GP) $(LIBS_GP)
 	$(CXX) $(CFLAGS_GP) -c $< -o $*.gpo
 
 hspcmp: $(OBJS_CMP)
-	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -s -o $@
+	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -s -ltcc -o $@
 %.o: %.c
 	$(CC) $(CFLAGS_CMP) -c $< -o $*.o
 %.o: %.cpp

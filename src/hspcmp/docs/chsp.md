@@ -94,11 +94,35 @@ cHSPは、HSPスクリプトの一部をC++コードに変換し、コンパイ�
 
 #### cHSP native target の切り替え
 
-- 既定値は `cpp`
+- 既定値は `c`
+- 既定の native compile mode は `libtcc`
 - `--chsp-target=cpp`
 - `--chsp-target=c`
+- `--chsp-compile=libtcc`
+- `--chsp-compile=none`
 
 `--chsp-target=c` は C backend の試作で、`rnd` / `randomize` は `rand` / `srand` ベースです。`mt19937` (`HSPRANDMT`) には対応しません。
+
+現在の既定動作は `--chsp-target=c --chsp-compile=libtcc` 相当です。つまり `.chsp` を処理すると、C ソースを生成した上で、その場で共有ライブラリまで出力します。C++ ソースを出したい場合は `--chsp-target=cpp` を指定します。
+
+`--chsp-compile=libtcc` は Linux と Win32 で使えます。`--chsp-target=c` と組み合わせると、`hspcmp` が生成した `.c` をその場で `libtcc` に渡して共有ライブラリまで出力します。
+
+```sh
+./hspcmp -d -i -u --compath=common/ sample/chsp/ao_opt.chsp
+```
+
+Linux では `sample/chsp/ao_opt.c` と `sample/chsp/ao_opt.so`、Win32 では `sample\chsp\ao_opt.c` と `sample\chsp\ao_opt.dll` がまとめて生成されます。
+
+```sh
+./hspcmp -d -i -u --chsp-target=cpp --compath=common/ sample/chsp/ao_opt.chsp
+```
+
+この場合は従来通り `sample/chsp/ao_opt.cpp` を生成し、`libtcc` による直接コンパイルは行いません。
+
+Win32 では `libtcc` のヘッダと import library を参照できるように、`src/hspcmp/win32/hspcmp.vcxproj` が `$(LIBTCC_DIR)\include` と `$(LIBTCC_DIR)\lib` を見に行きます。実行時の `libtcc` ランタイム探索は以下の順です。
+
+- `LIBTCC_DIR`
+- `hspcmp.exe` と同じディレクトリの `tcc\`
 
 #### C backend の回帰テスト
 
@@ -107,12 +131,15 @@ cHSPは、HSPスクリプトの一部をC++コードに変換し、コンパイ�
 ```sh
 make -C test/test_chsp_compare check-c
 make -C test/test_chsp_compare check-c-tcc
+make -C test/test_chsp_compare check-c-libtcc
 ```
 
 - `check-c`
   - C backend を `cc` で共有ライブラリ化して、比較テストと transform テストを通します。
 - `check-c-tcc`
   - C backend を `tcc` で共有ライブラリ化して、同じ比較テストと transform テストを通します。
+- `check-c-libtcc`
+  - `hspcmp --chsp-compile=libtcc` で直接共有ライブラリを出力し、比較テストを通します。
 
 ### 生成された `.cpp` のビルド方法
 

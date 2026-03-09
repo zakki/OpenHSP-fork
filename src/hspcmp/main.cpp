@@ -10,8 +10,12 @@
 #include <stdlib.h>
 #include <memory>
 
-#ifdef HSPLINUX
+#if defined(HSPLINUX)
 #include <unistd.h>
+#endif
+
+#ifdef HSPLINUX
+#include <sys/stat.h>
 #endif
 
 #ifdef HSPWIN
@@ -24,12 +28,19 @@
 #include "supio.h"
 
 #include "membuf.h"
+#include "chsp_libtcc_shared.h"
 #include "chsp_frontend_v2.h"
 #include "hsc3.h"
 #include "token.h"
 #include "hsmanager.h"
 
 /*----------------------------------------------------------*/
+
+enum class ChspNativeCompileMode
+{
+	None,
+	Libtcc,
+};
 
 static void usage1( void )
 {
@@ -58,7 +69,8 @@ static 	char *p[] = {
 	"       ---------------------------------",
 	"       --syspath=??? set system folder for execute",
 	"       --compath=??? set common path to ???",
-	"       --chsp-target=c|cpp set cHSP native output target",
+	"       --chsp-target=c|cpp set cHSP native output target (default: c)",
+	"       --chsp-compile=libtcc|none set cHSP native compile mode (default: libtcc)",
 	NULL };
 	int i;
 	for(i=0; p[i]; i++)
@@ -99,6 +111,7 @@ int main( int argc, char *argv[] )
 	char syspath[HSP_MAX_PATH];
 	char helpkey[256];
 	ChspNativeTarget chsp_target;
+	ChspNativeCompileMode chsp_compile_mode;
 	CHsc3 *hsc3=NULL;
 
 	//	check switch and prm
@@ -114,7 +127,8 @@ int main( int argc, char *argv[] )
 	oname[0]=0;
 	syspath[0]=0;
 	helpkey[0] = 0;
-	chsp_target = ChspNativeTarget::Cpp;
+	chsp_target = ChspNativeTarget::C;
+	chsp_compile_mode = ChspNativeCompileMode::Libtcc;
 
 #ifdef HSPLINUX
 	strcpy( compath,"common/" );
@@ -148,9 +162,23 @@ int main( int argc, char *argv[] )
 				}
 				if ( strcmp( value, "cpp" ) == 0 ) {
 					chsp_target = ChspNativeTarget::Cpp;
+					chsp_compile_mode = ChspNativeCompileMode::None;
 					continue;
 				}
 				printf( "Invalid cHSP target selected.\n" );
+				return 1;
+			}
+			if (strncmp(argv[b], "--chsp-compile=", 15) == 0) {
+				const char *value = argv[b] + 15;
+				if ( strcmp( value, "libtcc" ) == 0 ) {
+					chsp_compile_mode = ChspNativeCompileMode::Libtcc;
+					continue;
+				}
+				if ( strcmp( value, "none" ) == 0 ) {
+					chsp_compile_mode = ChspNativeCompileMode::None;
+					continue;
+				}
+				printf( "Invalid cHSP compile mode selected.\n" );
 				return 1;
 			}
 			switch (a2) {
@@ -252,6 +280,18 @@ int main( int argc, char *argv[] )
 		delete hsc3;
 		return 1;
 	}
+	if ( chsp_compile_mode != ChspNativeCompileMode::None && chsp_target != ChspNativeTarget::C ) {
+		printf("cHSP native compilation currently requires --chsp-target=c.\n");
+		delete hsc3;
+		return 1;
+	}
+#if !defined(HSPLINUX) && !defined(HSPWIN)
+	if ( chsp_compile_mode == ChspNativeCompileMode::Libtcc ) {
+		printf("libtcc native compilation is currently supported only on Linux and Win32.\n");
+		delete hsc3;
+		return 1;
+	}
+#endif
 
 	if (oname[0]==0) {
 		strcpy( oname,fname ); cutext( oname );
@@ -355,6 +395,11 @@ int main( int argc, char *argv[] )
 						hsc3->Print( (char *)"#Can't write generated cHSP native file." );
 						st = -1;
 					}
+				}
+				if (( st == 0 )&&( has_chsp )&&( chsp_transform_only == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
+#ifdef CHSP_HAS_LIBTCC
+					st = chsp_compile_library_with_libtcc( hsc3, fname_cpp, compath, transformed_out );
+#endif
 				}
 			if (( st == 0 )&&( chsp_transform_only != 0 )) {
 				if ( transformed_out.SaveFile( fname_chi ) < 0 ) {
