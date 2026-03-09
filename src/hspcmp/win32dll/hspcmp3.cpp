@@ -5,6 +5,7 @@
 //
 
 #include <stdio.h>
+#include <memory>
 #include <windows.h>
 #include <direct.h>
 
@@ -14,6 +15,8 @@
 #include "../../hsp3/hsp3struct.h"			// hsp3 core define
 #include "../../hsp3/hspwnd.h"				// hsp3 windows define
 
+#include "../chsp_frontend_v2.h"
+#include "../membuf.h"
 #include "../supio.h"
 #include "../hsc3.h"
 #include "../token.h"
@@ -100,6 +103,13 @@ static int GetFilePath( char *bname )
 	}
 	if (b<0) return 1;
 	bname[b+1]=0;
+	return 0;
+}
+
+static int contains_chsp_directive( char *text )
+{
+	if ( text == NULL ) return 0;
+	if ( strstr( text, "#chsp_" ) != NULL ) return 1;
 	return 0;
 }
 
@@ -308,6 +318,7 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	int ppopt;
 	int cmpmode;
 	char fname2[_MAX_PATH];
+	char fname_cpp[_MAX_PATH];
 
 	hsc3->ResetError();
 
@@ -318,6 +329,8 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	}
 	strcpy( fname2, fname );
 	strcat( fname2, ".i" );
+	strcpy( fname_cpp, fname );
+	strcat( fname_cpp, ".cpp" );
 	hsc3->SetCommonPath( compath );
 	ppopt = 0;
 	if (p1 & 1) ppopt |= HSC3_OPT_DEBUGMODE;
@@ -338,6 +351,33 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	if ( p1 & 2 ) {
 		hsc3->PreProcessEnd();
 		return 0;
+	}
+
+	{
+		std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
+		CChspFrontendV2 frontend( frontend_errbuf );
+		CMemBuf transformed_out;
+		CMemBuf cpp_out;
+		char *preprocessed = hsc3->outbuf != NULL ? hsc3->outbuf->GetBuffer() : NULL;
+		int has_chsp = contains_chsp_directive( preprocessed );
+		st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out );
+		if (( st == 0 )&&( has_chsp )) {
+			if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
+				hsc3->Print( (char *)"#Can't write generated cHSP C++ file." );
+				st = -1;
+			}
+		}
+		if ( st != 0 ) {
+			hsc3->PreProcessEnd();
+			return st;
+		}
+		CMemBuf *next_outbuf = new CMemBuf( transformed_out.GetSize() + 1 );
+		if ( transformed_out.GetSize() > 0 ) {
+			next_outbuf->PutData( transformed_out.GetBuffer(), transformed_out.GetSize() );
+		}
+		next_outbuf->Put( (char)0 );
+		delete hsc3->outbuf;
+		hsc3->outbuf = next_outbuf;
 	}
 
 	cmpmode = p1 & HSC3_MODE_DEBUG;
