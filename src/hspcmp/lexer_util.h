@@ -120,7 +120,7 @@ protected:
 	//	UTF-8 service
 	char *to_hsp_string_literal( const char *src, bool filename = false );
 	int atoi_allow_overflow( const char *s );
-	int ConvSJis2Utf8( const char *pSource, const char *pDist, int buffersize );
+	int ConvSJis2Utf8( const char *pSource, char *pDist, int buffersize );
 	int ConvUtf82SJis( const char *pSource, char *pDist, int buffersize );
 
 	//		Data
