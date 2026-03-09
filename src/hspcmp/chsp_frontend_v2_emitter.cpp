@@ -812,7 +812,13 @@ void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const 
 	buf.PutCR();
 	buf.PutStr( "#uselib \"" );
 	buf.PutStr( module_name.c_str() );
+#if defined(HSPWIN)
+	buf.PutStr( ".dll\"\n\n" );
+#elif defined (HSPMAC)
+	buf.PutStr( ".dylib\"\n\n" );
+#else
 	buf.PutStr( ".so\"\n\n" );
+#endif
 }
 
 void WriteModuleFooterToHsp( CMemBuf &buf, const std::string &module_tag )

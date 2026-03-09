@@ -111,7 +111,9 @@ public:
 		const char *cursor = scratch.c_str();
 		try {
 			while ( cursor != nullptr ) {
-				auto [next, token] = lexer.GetTokenCG( cursor, GETTOKEN_DEFAULT );
+				auto result = lexer.GetTokenCG( cursor, GETTOKEN_DEFAULT );
+				auto& next = result.first;
+				auto& token = result.second;
 				if ( token.ttype == TK_EOL || token.ttype == TK_EOF ) {
 					break;
 				}

@@ -113,14 +113,14 @@ char *CCompilerUtil::ExecSCNV( const char *srcbuf, int opt )
 		break;
 	case SCNV_OPT_SJISUTF8:
 #ifdef HSPWIN
-		ConvSJis2Utf8( srcbuf, buf, scnvsize );
+		ConvSJis2Utf8( srcbuf, buf, scnvbuf.size() );
 #else
 		strcpy( buf, srcbuf );
 #endif
 		break;
 	case SCNV_OPT_UTF8SJIS:
 #ifdef HSPWIN
-		ConvUtf82SJis( srcbuf, buf, scnvsize );
+		ConvUtf82SJis( srcbuf, buf, scnvbuf.size());
 #else
 		strcpy( buf, srcbuf );
 #endif
@@ -186,7 +186,7 @@ int CCompilerUtil::SkipMultiByte( unsigned char byte )
 }
 
 
-int CCompilerUtil::ConvSJis2Utf8( const char *pSource, const char *pDist, int buffersize )
+int CCompilerUtil::ConvSJis2Utf8( const char *pSource, char *pDist, int buffersize )
 {
 	int size = 0;
 	if ( pDist == nullptr ) {

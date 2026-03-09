@@ -193,9 +193,9 @@ char *CCgLexer::PickStringCG2( char *str, char **strsrc )
 CCgToken CCgLexer::GetTokenCG( int option )
 {
 	cg_ptr_bak = cg_ptr;
-	auto [ptr, token] = GetTokenCG( cg_ptr, option );
-	cg_ptr = ptr; // cg_ptr を更新
-	return token;
+	auto result = GetTokenCG(cg_ptr, option);
+	cg_ptr = result.first; // cg_ptr を更新
+	return result.second;
 }
 
 int CCgLexer::PickNextCodeCG()
