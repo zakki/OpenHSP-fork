@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "chsp_frontend_v2.h"
+
 class CLogger;
 class CMemBuf;
 void strcase2( const char *str, char *str2 );
@@ -155,6 +157,6 @@ inline std::string NormalizeIdentifier( const std::string &src )
 std::vector<ChspSourceLine> BuildSourceIndex( const char *input_text, const std::shared_ptr<CLogger> &logger );
 bool ParseProgram( const std::vector<ChspSourceLine> &lines, ChspProgram &program, CLogger &logger, const char *source_name );
 int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspProgram &program, CLogger &logger, CMemBuf &hsp_out,
-						   CMemBuf &cpp_out, const char *source_name );
+						   CMemBuf &native_out, const char *source_name, ChspNativeTarget target );
 
 } // namespace chspv2

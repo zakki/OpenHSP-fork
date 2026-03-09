@@ -5,14 +5,29 @@ COMPATH := $(ROOT)/common/
 CXX ?= g++
 CXXFLAGS ?= -std=c++17 -I$(ROOT)
 SOFLAGS ?= -shared -fPIC
+C_TARGET_DIR := c_target
+C_NATIVE_CC ?= cc
+C_NATIVE_CFLAGS ?= -std=c11 -I$(ROOT)
+C_NATIVE_SOFLAGS ?= -shared -fPIC
+C_NATIVE_LDLIBS ?= -lm
+C_TARGET_HSPCMP_FLAGS := -d -i -u --chsp-target=c --compath=$(COMPATH)
 
 HSP_CASES := operators_hsp features_hsp commands_hsp branches_hsp nested_hsp vectors_hsp scalars_hsp trig_hsp random_hsp inline_if_hsp inline_else_hsp inline_else_if_hsp inline_else_block_hsp mixed_if_hsp loop_return_hsp loop_return_value_hsp precedence_hsp separators_hsp continuations_hsp int_literals_hsp array_access_hsp local_arrays_hsp array_return_hsp array_builtin_args_hsp array_control_hsp case_fold_hsp
 CHSP_CASES := operators_chsp features_chsp commands_chsp branches_chsp nested_chsp vectors_chsp scalars_chsp trig_chsp random_chsp inline_if_chsp inline_else_chsp inline_else_if_chsp inline_else_block_chsp mixed_if_chsp loop_return_chsp loop_return_value_chsp precedence_chsp separators_chsp continuations_chsp int_literals_chsp array_access_chsp local_arrays_chsp array_return_chsp array_builtin_args_chsp array_control_chsp case_fold_chsp
 TRANSFORM_STAMPS := $(CHSP_CASES:%=%.transform-ok)
+C_COMPARE_OUTS := $(CHSP_CASES:%=$(C_TARGET_DIR)/%.out)
+C_TRANSFORM_STAMPS := $(CHSP_CASES:%=$(C_TARGET_DIR)/%.transform-ok)
 
-.PHONY: all clean compare transform transform-cli-check
+.PHONY: all clean compare compare-c transform transform-c transform-cli-check transform-c-cli-check check-c check-c-tcc
 
 all: compare
+
+check-c: compare-c transform-c
+
+check-c-tcc:
+	$(MAKE) clean
+	$(MAKE) compare-c C_NATIVE_CC=tcc
+	$(MAKE) transform-c C_NATIVE_CC=tcc
 
 %.ax: %.hsp
 	$(HSPCMP) -d -i -u --compath=$(COMPATH) $<
@@ -23,8 +38,26 @@ all: compare
 %_chsp.so: %_chsp.cpp
 	$(CXX) $(CXXFLAGS) $(SOFLAGS) $< -o $@
 
+$(C_TARGET_DIR):
+	mkdir -p $@
+
+$(C_TARGET_DIR)/%.chsp: %.chsp | $(C_TARGET_DIR)
+	cp $< $@
+
+$(C_TARGET_DIR)/%.hsp: %.hsp | $(C_TARGET_DIR)
+	cp $< $@
+
+$(C_TARGET_DIR)/%_chsp.ax $(C_TARGET_DIR)/%_chsp.hsp $(C_TARGET_DIR)/%_chsp.c: $(C_TARGET_DIR)/%_chsp.chsp
+	$(HSPCMP) $(C_TARGET_HSPCMP_FLAGS) $<
+
+$(C_TARGET_DIR)/%_chsp.so: $(C_TARGET_DIR)/%_chsp.c
+	$(C_NATIVE_CC) $(C_NATIVE_CFLAGS) $(C_NATIVE_SOFLAGS) $< -o $@ $(C_NATIVE_LDLIBS)
+
 %.out: %.ax
 	$(HSP3CL) $< | tr -d '\r' | grep -v '^gpiod initalize failed\.$$' > $@
+
+$(C_TARGET_DIR)/%_chsp.out: $(C_TARGET_DIR)/%_chsp.so $(C_TARGET_DIR)/%_chsp.ax
+	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(abspath $(C_TARGET_DIR))" $(HSP3CL) $(@:.out=.ax) | tr -d '\r' | grep -v '^gpiod initalize failed\.$$' > $@
 
 operators_chsp.out: operators_chsp.so operators_chsp.ax
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):." $(HSP3CL) operators_chsp.ax | tr -d '\r' | grep -v '^gpiod initalize failed\.$$' > $@
@@ -132,6 +165,34 @@ compare: operators_hsp.out operators_chsp.out features_hsp.out features_chsp.out
 	diff -u array_control_hsp.out array_control_chsp.out
 	diff -u case_fold_hsp.out case_fold_chsp.out
 
+compare-c: $(HSP_CASES:%=%.out) $(C_COMPARE_OUTS)
+	diff -u operators_hsp.out $(C_TARGET_DIR)/operators_chsp.out
+	diff -u features_hsp.out $(C_TARGET_DIR)/features_chsp.out
+	diff -u commands_hsp.out $(C_TARGET_DIR)/commands_chsp.out
+	diff -u branches_hsp.out $(C_TARGET_DIR)/branches_chsp.out
+	diff -u nested_hsp.out $(C_TARGET_DIR)/nested_chsp.out
+	diff -u vectors_hsp.out $(C_TARGET_DIR)/vectors_chsp.out
+	diff -u scalars_hsp.out $(C_TARGET_DIR)/scalars_chsp.out
+	diff -u trig_hsp.out $(C_TARGET_DIR)/trig_chsp.out
+	diff -u random_hsp.out $(C_TARGET_DIR)/random_chsp.out
+	diff -u inline_if_hsp.out $(C_TARGET_DIR)/inline_if_chsp.out
+	diff -u inline_else_hsp.out $(C_TARGET_DIR)/inline_else_chsp.out
+	diff -u inline_else_if_hsp.out $(C_TARGET_DIR)/inline_else_if_chsp.out
+	diff -u inline_else_block_hsp.out $(C_TARGET_DIR)/inline_else_block_chsp.out
+	diff -u mixed_if_hsp.out $(C_TARGET_DIR)/mixed_if_chsp.out
+	diff -u loop_return_hsp.out $(C_TARGET_DIR)/loop_return_chsp.out
+	diff -u loop_return_value_hsp.out $(C_TARGET_DIR)/loop_return_value_chsp.out
+	diff -u precedence_hsp.out $(C_TARGET_DIR)/precedence_chsp.out
+	diff -u separators_hsp.out $(C_TARGET_DIR)/separators_chsp.out
+	diff -u continuations_hsp.out $(C_TARGET_DIR)/continuations_chsp.out
+	diff -u int_literals_hsp.out $(C_TARGET_DIR)/int_literals_chsp.out
+	diff -u array_access_hsp.out $(C_TARGET_DIR)/array_access_chsp.out
+	diff -u local_arrays_hsp.out $(C_TARGET_DIR)/local_arrays_chsp.out
+	diff -u array_return_hsp.out $(C_TARGET_DIR)/array_return_chsp.out
+	diff -u array_builtin_args_hsp.out $(C_TARGET_DIR)/array_builtin_args_chsp.out
+	diff -u array_control_hsp.out $(C_TARGET_DIR)/array_control_chsp.out
+	diff -u case_fold_hsp.out $(C_TARGET_DIR)/case_fold_chsp.out
+
 transform: $(TRANSFORM_STAMPS) transform-cli-check
 
 %.transform-ok: %.chsp $(HSPCMP)
@@ -145,6 +206,21 @@ transform: $(TRANSFORM_STAMPS) transform-cli-check
 	cp $*.cpp $*.transform.cpp
 	$(HSPCMP) -d -i -u --compath=$(COMPATH) $<
 	cmp -s $*.cpp $*.transform.cpp
+	touch $@
+
+transform-c: $(C_TRANSFORM_STAMPS) transform-c-cli-check
+
+$(C_TARGET_DIR)/%.transform-ok: $(C_TARGET_DIR)/%.chsp $(HSPCMP)
+	rm -f $(C_TARGET_DIR)/$*.ax $(C_TARGET_DIR)/$*.chi $(C_TARGET_DIR)/$*.c $(C_TARGET_DIR)/$*.transform.c
+	$(HSPCMP) $(C_TARGET_HSPCMP_FLAGS) -t $<
+	test -s $(C_TARGET_DIR)/$*.chi
+	test -s $(C_TARGET_DIR)/$*.c
+	test ! -e $(C_TARGET_DIR)/$*.ax
+	grep -q '#module m0' $(C_TARGET_DIR)/$*.chi
+	grep -Eq '#(deffunc|defcfunc|cfunc) ' $(C_TARGET_DIR)/$*.chi
+	cp $(C_TARGET_DIR)/$*.c $(C_TARGET_DIR)/$*.transform.c
+	$(HSPCMP) $(C_TARGET_HSPCMP_FLAGS) $<
+	cmp -s $(C_TARGET_DIR)/$*.c $(C_TARGET_DIR)/$*.transform.c
 	touch $@
 
 transform-cli-check: $(HSPCMP)
@@ -164,6 +240,24 @@ transform-cli-check: $(HSPCMP)
 	$(HSPCMP) -d -i -u --compath=$(COMPATH) invalid_cpp_name_chsp.chsp
 	test -s invalid_cpp_name_chsp.cpp
 	grep -q 'chsp_func_class' invalid_cpp_name_chsp.cpp
+
+transform-c-cli-check: $(HSPCMP) $(C_TARGET_DIR)/operators_chsp.chsp $(C_TARGET_DIR)/operators_hsp.hsp $(C_TARGET_DIR)/invalid_cpp_name_chsp.chsp
+	rm -f $(C_TARGET_DIR)/operators_chsp.ax $(C_TARGET_DIR)/operators_chsp.chi $(C_TARGET_DIR)/operators_chsp.c
+	$(HSPCMP) $(C_TARGET_HSPCMP_FLAGS) -t $(C_TARGET_DIR)/operators_chsp.chsp
+	test -s $(C_TARGET_DIR)/operators_chsp.chi
+	test -s $(C_TARGET_DIR)/operators_chsp.c
+	test ! -e $(C_TARGET_DIR)/operators_chsp.ax
+	rm -f $(C_TARGET_DIR)/operators_hsp.ax $(C_TARGET_DIR)/operators_hsp.chi $(C_TARGET_DIR)/operators_hsp.c $(C_TARGET_DIR)/operators_hsp.i
+	$(HSPCMP) $(C_TARGET_HSPCMP_FLAGS) -t $(C_TARGET_DIR)/operators_hsp.hsp
+	test -s $(C_TARGET_DIR)/operators_hsp.chi
+	test -s $(C_TARGET_DIR)/operators_hsp.c
+	test ! -e $(C_TARGET_DIR)/operators_hsp.ax
+	grep -q 'mes@hsp "OPS"' $(C_TARGET_DIR)/operators_hsp.chi
+	! $(HSPCMP) -p -t --chsp-target=c --compath=$(COMPATH) $(C_TARGET_DIR)/operators_chsp.chsp >/dev/null 2>&1
+	rm -f $(C_TARGET_DIR)/invalid_cpp_name_chsp.ax $(C_TARGET_DIR)/invalid_cpp_name_chsp.hsp $(C_TARGET_DIR)/invalid_cpp_name_chsp.c $(C_TARGET_DIR)/invalid_cpp_name_chsp.i $(C_TARGET_DIR)/invalid_cpp_name_chsp.chi $(C_TARGET_DIR)/invalid_cpp_name_chsp.so
+	$(HSPCMP) $(C_TARGET_HSPCMP_FLAGS) $(C_TARGET_DIR)/invalid_cpp_name_chsp.chsp
+	test -s $(C_TARGET_DIR)/invalid_cpp_name_chsp.c
+	grep -q 'chsp_func_class' $(C_TARGET_DIR)/invalid_cpp_name_chsp.c
 
 clean:
 	rm -f operators_hsp.ax operators_hsp.i operators_hsp.chi operators_hsp.cpp features_hsp.ax features_hsp.i commands_hsp.ax commands_hsp.i branches_hsp.ax branches_hsp.i nested_hsp.ax nested_hsp.i vectors_hsp.ax vectors_hsp.i scalars_hsp.ax scalars_hsp.i trig_hsp.ax trig_hsp.i random_hsp.ax random_hsp.i inline_if_hsp.ax inline_if_hsp.i precedence_hsp.ax precedence_hsp.i
@@ -212,3 +306,4 @@ clean:
 	rm -f $(CHSP_CASES:%=%.chi) $(CHSP_CASES:%=%.transform.cpp) $(TRANSFORM_STAMPS)
 	rm -f operators_hsp.out operators_chsp.out features_hsp.out features_chsp.out commands_hsp.out commands_chsp.out branches_hsp.out branches_chsp.out nested_hsp.out nested_chsp.out vectors_hsp.out vectors_chsp.out scalars_hsp.out scalars_chsp.out trig_hsp.out trig_chsp.out random_hsp.out random_chsp.out inline_if_hsp.out inline_if_chsp.out inline_else_hsp.out inline_else_chsp.out inline_else_if_hsp.out inline_else_if_chsp.out inline_else_block_hsp.out inline_else_block_chsp.out mixed_if_hsp.out mixed_if_chsp.out loop_return_hsp.out loop_return_chsp.out loop_return_value_hsp.out loop_return_value_chsp.out precedence_hsp.out precedence_chsp.out separators_hsp.out separators_chsp.out continuations_hsp.out continuations_chsp.out int_literals_hsp.out int_literals_chsp.out array_access_hsp.out array_access_chsp.out local_arrays_hsp.out local_arrays_chsp.out array_return_hsp.out array_return_chsp.out array_builtin_args_hsp.out array_builtin_args_chsp.out array_control_hsp.out array_control_chsp.out case_fold_hsp.out case_fold_chsp.out
 	rm -f operators_chsp_native features_chsp_native
+	rm -rf $(C_TARGET_DIR)

@@ -11,7 +11,8 @@ CChspFrontendV2::CChspFrontendV2( const std::shared_ptr<CMemBuf> &errbuf_ ) : er
 {
 }
 
-int CChspFrontendV2::GenerateFromBuffer( const char *source_name, const char *input_text, CMemBuf *hsp_output, CMemBuf *cpp_output )
+int CChspFrontendV2::GenerateFromBuffer( const char *source_name, const char *input_text, CMemBuf *hsp_output, CMemBuf *cpp_output,
+										 ChspNativeTarget target )
 {
 	auto logger = std::make_shared<CLogger>( errbuf );
 	CLogger local_logger( errbuf );
@@ -33,7 +34,7 @@ int CChspFrontendV2::GenerateFromBuffer( const char *source_name, const char *in
 		return -1;
 	}
 	try {
-		return chspv2::GenerateProgramOutput( indexed_lines, program, local_logger, *hsp_output, *cpp_output, source_name );
+		return chspv2::GenerateProgramOutput( indexed_lines, program, local_logger, *hsp_output, *cpp_output, source_name, target );
 	} catch ( ... ) {
 		local_logger.Mesf( "#Error:cHSP lexer/parser frontend v2 aborted during output generation [%s]",
 						   source_name != nullptr ? source_name : "<buffer>" );
