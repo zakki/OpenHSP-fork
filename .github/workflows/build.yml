@@ -90,3 +90,5 @@ jobs:
         name: openhsp-win32
         path: |
           src/hsp3/Release/**/*
+          src/hspcmp/extlib/tcc
+          common
