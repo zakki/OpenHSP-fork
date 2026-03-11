@@ -206,6 +206,10 @@ goto *MAIN
 	return
 #chsp_end
 
+; モジュール最適化で削除されないようにダミー関数を置く
+#deffunc dummy
+	return
+
 #chsp_module_end
 
 

@@ -8,6 +8,7 @@ enum class ChspNativeTarget
 {
 	Cpp,
 	C,
+	Plugin,
 };
 
 class CChspFrontendV2

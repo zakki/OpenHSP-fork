@@ -69,7 +69,7 @@ static 	char *p[] = {
 	"       ---------------------------------",
 	"       --syspath=??? set system folder for execute",
 	"       --compath=??? set common path to ???",
-	"       --chsp-target=c|cpp set cHSP native output target (default: c)",
+	"       --chsp-target=c|cpp|plugin set cHSP native output target (default: c)",
 	"       --chsp-compile=libtcc|none set cHSP native compile mode (default: libtcc)",
 	NULL };
 	int i;
@@ -163,6 +163,10 @@ int main( int argc, char *argv[] )
 				if ( strcmp( value, "cpp" ) == 0 ) {
 					chsp_target = ChspNativeTarget::Cpp;
 					chsp_compile_mode = ChspNativeCompileMode::None;
+					continue;
+				}
+				if ( strcmp( value, "plugin" ) == 0 ) {
+					chsp_target = ChspNativeTarget::Plugin;
 					continue;
 				}
 				printf( "Invalid cHSP target selected.\n" );
@@ -280,8 +284,10 @@ int main( int argc, char *argv[] )
 		delete hsc3;
 		return 1;
 	}
-	if ( chsp_compile_mode != ChspNativeCompileMode::None && chsp_target != ChspNativeTarget::C ) {
-		printf("cHSP native compilation currently requires --chsp-target=c.\n");
+	if ( chsp_compile_mode != ChspNativeCompileMode::None &&
+		 chsp_target != ChspNativeTarget::C &&
+		 chsp_target != ChspNativeTarget::Plugin ) {
+		printf("cHSP native compilation currently requires --chsp-target=c or --chsp-target=plugin.\n");
 		delete hsc3;
 		return 1;
 	}
@@ -304,7 +310,9 @@ int main( int argc, char *argv[] )
 	}
 	strcpy( fname2, fname ); cutext( fname2 ); addext( fname2,"i" );
 	strcpy( fname_chi, fname ); cutext( fname_chi ); addext( fname_chi,"chi" );
-	strcpy( fname_cpp, fname ); cutext( fname_cpp ); addext( fname_cpp, chsp_target == ChspNativeTarget::C ? "c" : "cpp" );
+	strcpy( fname_cpp, fname );
+	cutext( fname_cpp );
+	addext( fname_cpp, chsp_target == ChspNativeTarget::Cpp ? "cpp" : "c" );
 	if (( has_extension( fname, ".chsp" ) == 0 )&&( has_extension( fname, ".hsp" ) == 0 )) {
 		addext( fname,"hsp" );			// 拡張子がなければ追加する
 	}

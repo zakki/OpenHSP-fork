@@ -99,6 +99,11 @@ std::string ToHspParamType( const ChspParam &param )
 	return "var";
 }
 
+std::string PluginCommandName( const ChspFunction &func )
+{
+	return func.name;
+}
+
 std::string ToCppType( const ChspParam &param )
 {
 	if ( param.is_array ) {
@@ -125,7 +130,7 @@ std::string DefaultReturnExpr( const std::string &type )
 
 std::string BuiltinTarget( const std::string &name, size_t arg_count, ChspNativeTarget target )
 {
-	if ( target == ChspNativeTarget::C ) {
+	if ( target == ChspNativeTarget::C || target == ChspNativeTarget::Plugin ) {
 		if ( name == "abs" ) {
 			return "chsp_hsp_abs";
 		}
@@ -859,7 +864,7 @@ void WriteLocalDeclsToNative( CMemBuf &buf, const ChspFunction &func, const Tran
 			buf.PutStr( "[" );
 			buf.PutStr( std::to_string( param.array_length ).c_str() );
 			buf.PutStr( "] = {0};" );
-		} else if ( ctx.target == ChspNativeTarget::C ) {
+		} else if ( ctx.target == ChspNativeTarget::C || ctx.target == ChspNativeTarget::Plugin ) {
 			buf.PutStr( " = 0;" );
 		} else {
 			buf.PutStr( " {};" );
@@ -868,38 +873,8 @@ void WriteLocalDeclsToNative( CMemBuf &buf, const ChspFunction &func, const Tran
 	}
 }
 
-void WriteFunctionToNative( CMemBuf &buf, const ChspFunction &func,
-							const std::unordered_map<std::string, std::string> &function_cpp_names,
-							ChspNativeTarget target )
+void WriteFunctionBodyToNative( CMemBuf &buf, const ChspFunction &func, TranslateContext &ctx )
 {
-	const auto cpp_name_it = function_cpp_names.find( func.name );
-	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
-	auto ctx = BuildTranslateContext( func, function_cpp_names, target );
-	if ( target == ChspNativeTarget::C ) {
-		buf.PutStr( "CHSP_EXPORT " );
-	} else {
-		buf.PutStr( "extern \"C\" CHSP_EXPORT " );
-	}
-	buf.PutStr( func.return_type.c_str() );
-	buf.PutStr( " " );
-	buf.PutStr( cpp_name.c_str() );
-	buf.PutStr( "(" );
-	bool first = true;
-	for ( const auto &param : func.params ) {
-		if ( param.is_local ) {
-			continue;
-		}
-		if ( !first ) {
-			buf.PutStr( ", " );
-		}
-		first = false;
-		buf.PutStr( ToNativeType( param, target ).c_str() );
-		buf.PutStr( " " );
-		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
-	}
-	buf.PutStr( ")" );
-	buf.PutCR();
-	buf.PutStr( "{\n" );
 	WriteLocalDeclsToNative( buf, func, ctx );
 	int indent_level = 1;
 	bool emitted_explicit_return = false;
@@ -949,10 +924,262 @@ void WriteFunctionToNative( CMemBuf &buf, const ChspFunction &func,
 		buf.PutStr( ret.c_str() );
 		buf.PutStr( ";\n" );
 	}
+}
+
+void WriteFunctionToNative( CMemBuf &buf, const ChspFunction &func,
+							const std::unordered_map<std::string, std::string> &function_cpp_names,
+							ChspNativeTarget target )
+{
+	const auto cpp_name_it = function_cpp_names.find( func.name );
+	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
+	auto ctx = BuildTranslateContext( func, function_cpp_names, target );
+	if ( target == ChspNativeTarget::Plugin ) {
+		buf.PutStr( "static " );
+	} else if ( target == ChspNativeTarget::C ) {
+		buf.PutStr( "CHSP_EXPORT " );
+	} else {
+		buf.PutStr( "extern \"C\" CHSP_EXPORT " );
+	}
+	buf.PutStr( func.return_type.c_str() );
+	buf.PutStr( " " );
+	buf.PutStr( cpp_name.c_str() );
+	buf.PutStr( "(" );
+	bool first = true;
+	for ( const auto &param : func.params ) {
+		if ( param.is_local ) {
+			continue;
+		}
+		if ( !first ) {
+			buf.PutStr( ", " );
+		}
+		first = false;
+		buf.PutStr( ToNativeType( param, target ).c_str() );
+		buf.PutStr( " " );
+		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
+	}
+	buf.PutStr( ")" );
+	buf.PutCR();
+	buf.PutStr( "{\n" );
+	WriteFunctionBodyToNative( buf, func, ctx );
 	buf.PutStr( "}\n\n" );
 }
 
-void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const std::string &module_name )
+void WritePluginFunctionDeclToHsp( CMemBuf &buf, const ChspFunction &func, int command_id )
+{
+	const std::string command_name = PluginCommandName( func );
+	char idbuf[16];
+	std::snprintf( idbuf, sizeof( idbuf ), "$%02x", command_id );
+	buf.PutStr( "#cmd " );
+	buf.PutStr( command_name.c_str() );
+	buf.PutStr( " " );
+	buf.PutStr( idbuf );
+	buf.PutCR();
+}
+
+void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
+								const std::unordered_map<std::string, std::string> &function_cpp_names )
+{
+	for ( const auto &func : module.functions ) {
+		WriteFunctionToNative( buf, func, function_cpp_names, ChspNativeTarget::Plugin );
+	}
+
+	buf.PutStr( "static int chsp_plugin_ref_int;\n" );
+	buf.PutStr( "static double chsp_plugin_ref_double;\n\n" );
+
+	buf.PutStr( "static int cmdfunc( int cmd )\n{\n" );
+	buf.PutStr( "    code_next();\n" );
+	buf.PutStr( "    switch( cmd ) {\n" );
+	for ( size_t i = 0; i < module.functions.size(); ++i ) {
+		const auto &func = module.functions[i];
+		const auto cpp_name_it = function_cpp_names.find( func.name );
+		const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
+		buf.PutStr( "    case " );
+		buf.PutStr( std::to_string( i ).c_str() );
+		buf.PutStr( ": {\n" );
+		for ( const auto &param : func.params ) {
+			if ( param.is_local || !param.is_array ) {
+				continue;
+			}
+			const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
+			buf.PutStr( "        PVal *pval_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " = NULL; APTR aptr_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " = code_getva( &pval_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " );\n" );
+			buf.PutStr( "        " );
+			buf.PutStr( param.base_type.c_str() );
+			buf.PutStr( " *" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " = " );
+			buf.PutStr( param.base_type == "int" ? "chsp_plugin_int_ptr" : "chsp_plugin_double_ptr" );
+			buf.PutStr( "( pval_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( ", aptr_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " );\n" );
+		}
+		buf.PutStr( "        " );
+		if ( func.kind == ChspFuncKind::DefCFunc ) {
+			buf.PutStr( func.return_type.c_str() );
+			buf.PutStr( " result = " );
+		}
+		buf.PutStr( cpp_name.c_str() );
+		buf.PutStr( "(" );
+		bool first = true;
+		for ( const auto &param : func.params ) {
+			if ( param.is_local ) {
+				continue;
+			}
+			if ( !first ) {
+				buf.PutStr( ", " );
+			}
+			first = false;
+			if ( param.is_array ) {
+				const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
+				buf.PutStr( var_name.c_str() );
+			} else if ( param.base_type == "int" ) {
+				buf.PutStr( "code_getdi(0)" );
+			} else {
+				buf.PutStr( "exinfo->HspFunc_prm_getdd(0.0)" );
+			}
+		}
+		buf.PutStr( ");\n" );
+		if ( func.kind == ChspFuncKind::DefCFunc ) {
+			if ( func.return_type == "double" ) {
+				buf.PutStr( "        ctx->refdval = result;\n" );
+			} else {
+				buf.PutStr( "        stat = result;\n" );
+			}
+		}
+		buf.PutStr( "        break;\n" );
+		buf.PutStr( "    }\n" );
+	}
+	buf.PutStr( "    default:\n" );
+	buf.PutStr( "        puterror( HSPERR_UNSUPPORTED_FUNCTION );\n" );
+	buf.PutStr( "        break;\n" );
+	buf.PutStr( "    }\n" );
+	buf.PutStr( "    return RUNMODE_RUN;\n" );
+	buf.PutStr( "}\n\n" );
+	buf.PutStr( "static void *reffunc( int *type_res, int cmd )\n{\n" );
+	buf.PutStr( "    if ( *type != TYPE_MARK ) puterror( HSPERR_INVALID_FUNCPARAM );\n" );
+	buf.PutStr( "    if ( *val != '(' ) puterror( HSPERR_INVALID_FUNCPARAM );\n" );
+	buf.PutStr( "    code_next();\n" );
+	buf.PutStr( "    switch( cmd ) {\n" );
+	for ( size_t i = 0; i < module.functions.size(); ++i ) {
+		const auto &func = module.functions[i];
+		if ( func.kind != ChspFuncKind::DefCFunc ) {
+			continue;
+		}
+		const auto cpp_name_it = function_cpp_names.find( func.name );
+		const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
+		buf.PutStr( "    case " );
+		buf.PutStr( std::to_string( i ).c_str() );
+		buf.PutStr( ": {\n" );
+		for ( const auto &param : func.params ) {
+			if ( param.is_local || !param.is_array ) {
+				continue;
+			}
+			const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
+			buf.PutStr( "        PVal *pval_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " = NULL; APTR aptr_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " = code_getva( &pval_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " );\n" );
+			buf.PutStr( "        " );
+			buf.PutStr( param.base_type.c_str() );
+			buf.PutStr( " *" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " = " );
+			buf.PutStr( param.base_type == "int" ? "chsp_plugin_int_ptr" : "chsp_plugin_double_ptr" );
+			buf.PutStr( "( pval_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( ", aptr_" );
+			buf.PutStr( var_name.c_str() );
+			buf.PutStr( " );\n" );
+		}
+		if ( func.return_type == "double" ) {
+			buf.PutStr( "        chsp_plugin_ref_double = " );
+		} else {
+			buf.PutStr( "        chsp_plugin_ref_int = " );
+		}
+		buf.PutStr( cpp_name.c_str() );
+		buf.PutStr( "(" );
+		bool first = true;
+		for ( const auto &param : func.params ) {
+			if ( param.is_local ) {
+				continue;
+			}
+			if ( !first ) {
+				buf.PutStr( ", " );
+			}
+			first = false;
+			if ( param.is_array ) {
+				const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
+				buf.PutStr( var_name.c_str() );
+			} else if ( param.base_type == "int" ) {
+				buf.PutStr( "code_geti()" );
+			} else {
+				buf.PutStr( "exinfo->HspFunc_prm_getd()" );
+			}
+		}
+		buf.PutStr( ");\n" );
+		buf.PutStr( "        break;\n" );
+		buf.PutStr( "    }\n" );
+	}
+	buf.PutStr( "    default:\n" );
+	buf.PutStr( "        puterror( HSPERR_UNSUPPORTED_FUNCTION );\n" );
+	buf.PutStr( "        break;\n" );
+	buf.PutStr( "    }\n" );
+	buf.PutStr( "    if ( *type != TYPE_MARK ) puterror( HSPERR_INVALID_FUNCPARAM );\n" );
+	buf.PutStr( "    if ( *val != ')' ) puterror( HSPERR_INVALID_FUNCPARAM );\n" );
+	buf.PutStr( "    code_next();\n" );
+	buf.PutStr( "    if ( cmd < 0 ) puterror( HSPERR_UNSUPPORTED_FUNCTION );\n" );
+	buf.PutStr( "    switch( cmd ) {\n" );
+	for ( size_t i = 0; i < module.functions.size(); ++i ) {
+		const auto &func = module.functions[i];
+		if ( func.kind != ChspFuncKind::DefCFunc ) {
+			continue;
+		}
+		buf.PutStr( "    case " );
+		buf.PutStr( std::to_string( i ).c_str() );
+		buf.PutStr( ":\n" );
+		if ( func.return_type == "double" ) {
+			buf.PutStr( "        *type_res = HSPVAR_FLAG_DOUBLE;\n" );
+			buf.PutStr( "        return &chsp_plugin_ref_double;\n" );
+		} else {
+			buf.PutStr( "        *type_res = HSPVAR_FLAG_INT;\n" );
+			buf.PutStr( "        return &chsp_plugin_ref_int;\n" );
+		}
+	}
+	buf.PutStr( "    default:\n" );
+	buf.PutStr( "        puterror( HSPERR_UNSUPPORTED_FUNCTION );\n" );
+	buf.PutStr( "        return NULL;\n" );
+	buf.PutStr( "    }\n" );
+	buf.PutStr( "}\n\n" );
+	buf.PutStr( "EXPORT void WINAPI hsp3cmdinit( HSP3TYPEINFO *info )\n{\n" );
+	buf.PutStr( "    chsp_plugin_sdk_init( info );\n" );
+	buf.PutStr( "    info->cmdfunc = cmdfunc;\n" );
+	buf.PutStr( "    info->reffunc = reffunc;\n" );
+	buf.PutStr( "    info->termfunc = NULL;\n" );
+	buf.PutStr( "}\n" );
+}
+
+std::string ModuleLibraryName( const std::string &module_name )
+{
+#if defined( HSPWIN )
+	return module_name + ".dll";
+#elif defined( HSPMAC )
+	return module_name + ".dylib";
+#else
+	return module_name + ".so";
+#endif
+}
+
+void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const std::string &module_name, ChspNativeTarget target )
 {
 	buf.PutStr( "#module " );
 	buf.PutStr( module_tag.c_str() );
@@ -962,23 +1189,20 @@ void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const 
 	buf.PutStr( "_exit" );
 	buf.PutCR();
 	buf.PutCR();
-	buf.PutStr( "#uselib \"" );
-	buf.PutStr( module_name.c_str() );
-#if defined( HSPWIN )
-	buf.PutStr( ".dll\"\n\n" );
-#elif defined( HSPMAC )
-	buf.PutStr( ".dylib\"\n\n" );
-#else
-	buf.PutStr( ".so\"\n\n" );
-#endif
+
+	if ( target == ChspNativeTarget::Plugin ) {
+		buf.PutStr( "#regcmd \"hsp3cmdinit\", \"" );
+		buf.PutStr( ModuleLibraryName( module_name ).c_str() );
+		buf.PutStr( "\"\n\n" );
+	} else {
+		buf.PutStr( "#uselib \"" );
+		buf.PutStr( ModuleLibraryName( module_name ).c_str() );
+		buf.PutStr( "\"\n\n" );
+	}
 }
 
 void WriteModuleFooterToHsp( CMemBuf &buf, const std::string &module_tag )
 {
-	buf.PutCR();
-	buf.PutStr( "#deffunc dummy " );
-	buf.PutCR();
-	buf.PutStr( "return@hsp" );
 	buf.PutCR();
 	buf.PutStr( "*_" );
 	buf.PutStr( module_tag.c_str() );
@@ -991,6 +1215,30 @@ void WriteModuleFooterToHsp( CMemBuf &buf, const std::string &module_tag )
 void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 {
 	native_out.PutStr( "// Generated by OpenHSP cHSP frontend. Do not edit this file directly.\n" );
+	if ( target == ChspNativeTarget::Plugin ) {
+		native_out.PutStr( "#include <stdlib.h>\n" );
+		native_out.PutStr( "#include \"common/chsp/chsp_runtime.h\"\n" );
+		native_out.PutStr( "#if defined(HSPWIN)\n" );
+		native_out.PutStr( "#include \"src/plugins/win32/hpi3sample/hsp3plugin.h\"\n" );
+		native_out.PutStr( "#else\n" );
+		native_out.PutStr( "#include \"src/plugins/linux/hpi3sample/hsp3plugin.h\"\n" );
+		native_out.PutStr( "#endif\n\n" );
+		native_out.PutStr( "int p1,p2,p3,p4,p5,p6;\n" );
+		native_out.PutStr( "int *type;\n" );
+		native_out.PutStr( "int *val;\n" );
+		native_out.PutStr( "PVal *mpval;\n" );
+		native_out.PutStr( "HSPCTX *ctx;\n" );
+		native_out.PutStr( "HSPEXINFO *exinfo;\n\n" );
+		native_out.PutStr( "static void chsp_plugin_sdk_init( HSP3TYPEINFO *info )\n{\n" );
+		native_out.PutStr( "    ctx = info->hspctx;\n" );
+		native_out.PutStr( "    exinfo = info->hspexinfo;\n" );
+		native_out.PutStr( "    type = exinfo->nptype;\n" );
+		native_out.PutStr( "    val = exinfo->npval;\n" );
+		native_out.PutStr( "}\n\n" );
+		native_out.PutStr( "static int *chsp_plugin_int_ptr( PVal *pval, APTR aptr ) { return ((int *)pval->pt) + aptr; }\n" );
+		native_out.PutStr( "static double *chsp_plugin_double_ptr( PVal *pval, APTR aptr ) { return ((double *)pval->pt) + aptr; }\n\n" );
+		return;
+	}
 	if ( target == ChspNativeTarget::C ) {
 		native_out.PutStr( "#include \"common/chsp/chsp_runtime.h\"\n\n" );
 	} else {
@@ -1008,6 +1256,11 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspProgram &program, CLogger &logger,
 						   CMemBuf &hsp_out, CMemBuf &native_out, const char *source_name, ChspNativeTarget target )
 {
+	if ( target == ChspNativeTarget::Plugin && program.modules.size() != 1 ) {
+		logger.Mesf( "#Error:cHSP plugin backend currently supports exactly one #chsp_module [%s]",
+					 source_name != nullptr ? source_name : "<buffer>" );
+		return -1;
+	}
 	WriteNativePreamble( native_out, target );
 
 	const auto function_cpp_names = BuildFunctionCppNames( program );
@@ -1041,7 +1294,7 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 				return -1;
 			}
 			current_module_tag = "m" + std::to_string( module_index );
-			WriteModuleHeaderToHsp( hsp_out, current_module_tag, program.modules[module_index].name );
+			WriteModuleHeaderToHsp( hsp_out, current_module_tag, program.modules[module_index].name, target );
 			function_index = 0;
 			++module_index;
 			break;
@@ -1075,8 +1328,15 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 				const auto cpp_name_it = function_cpp_names.find( function.name );
 				const std::string cpp_name =
 					cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : function.name;
-				WriteFunctionDeclToHsp( hsp_out, function, cpp_name );
-				WriteFunctionToNative( native_out, function, function_cpp_names, target );
+				if ( target == ChspNativeTarget::Plugin ) {
+					WritePluginFunctionDeclToHsp( hsp_out, function, static_cast<int>( function_index ) );
+					if ( function_index + 1 == module.functions.size() ) {
+						WritePluginNativeDispatch( native_out, module, function_cpp_names );
+					}
+				} else {
+					WriteFunctionDeclToHsp( hsp_out, function, cpp_name );
+					WriteFunctionToNative( native_out, function, function_cpp_names, target );
+				}
 			}
 			++function_index;
 			in_function = false;

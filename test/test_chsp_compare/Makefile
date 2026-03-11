@@ -13,7 +13,7 @@ C_NATIVE_SOFLAGS ?= -shared -fPIC
 C_NATIVE_LDLIBS ?= -lm
 CPP_TARGET_HSPCMP_FLAGS := -d -i -u --chsp-target=cpp --compath=$(COMPATH)
 C_TARGET_HSPCMP_FLAGS := -d -i -u --chsp-target=c --compath=$(COMPATH)
-C_LIBTCC_HSPCMP_FLAGS := -d -i -u --chsp-target=c --chsp-compile=libtcc --compath=$(COMPATH)
+C_LIBTCC_HSPCMP_FLAGS := -d -i -u --chsp-target=plugin --chsp-compile=libtcc --compath=$(COMPATH)
 
 HSP_CASES := operators_hsp features_hsp commands_hsp branches_hsp nested_hsp vectors_hsp scalars_hsp trig_hsp random_hsp inline_if_hsp inline_else_hsp inline_else_if_hsp inline_else_block_hsp mixed_if_hsp loop_return_hsp loop_return_value_hsp precedence_hsp separators_hsp continuations_hsp int_literals_hsp array_access_hsp local_arrays_hsp array_return_hsp array_builtin_args_hsp array_control_hsp case_fold_hsp
 CHSP_CASES := operators_chsp features_chsp commands_chsp branches_chsp nested_chsp vectors_chsp scalars_chsp trig_chsp random_chsp inline_if_chsp inline_else_chsp inline_else_if_chsp inline_else_block_chsp mixed_if_chsp loop_return_chsp loop_return_value_chsp precedence_chsp separators_chsp continuations_chsp int_literals_chsp array_access_chsp local_arrays_chsp array_return_chsp array_builtin_args_chsp array_control_chsp case_fold_chsp

@@ -106,6 +106,43 @@ static std::vector<std::string> collect_chsp_library_names( CMemBuf &hsp_out, in
 		}
 		cursor = end + 1;
 	}
+	cursor = 0;
+	while ( names.size() < static_cast<size_t>( max_names ) ) {
+		cursor = text.find( "#regcmd ", cursor );
+		if ( cursor == std::string::npos ) {
+			break;
+		}
+		const std::string::size_type first_quote = text.find( '"', cursor );
+		if ( first_quote == std::string::npos ) {
+			break;
+		}
+		const std::string::size_type second_quote = text.find( '"', first_quote + 1 );
+		if ( second_quote == std::string::npos ) {
+			break;
+		}
+		const std::string::size_type third_quote = text.find( '"', second_quote + 1 );
+		if ( third_quote == std::string::npos ) {
+			break;
+		}
+		const std::string::size_type fourth_quote = text.find( '"', third_quote + 1 );
+		if ( fourth_quote == std::string::npos ) {
+			break;
+		}
+		if ( fourth_quote > third_quote + 1 ) {
+			const std::string candidate = text.substr( third_quote + 1, fourth_quote - third_quote - 1 );
+			bool exists = false;
+			for ( const std::string &name : names ) {
+				if ( name == candidate ) {
+					exists = true;
+					break;
+				}
+			}
+			if ( !exists ) {
+				names.push_back( candidate );
+			}
+		}
+		cursor = fourth_quote + 1;
+	}
 	return names;
 }
 
