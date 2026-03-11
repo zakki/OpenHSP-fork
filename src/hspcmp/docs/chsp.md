@@ -197,6 +197,13 @@ cl /std:c++17 /O2 /EHsc /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.cp
 MVP では HSP SDK 連携は行わず、純粋な C ABI で受け渡し可能な型だけを対象にします。
 将来的に HSP ランタイム連携を導入する場合は、`ddim` / `sdim`、文字列、HSP 関数呼び出しなどをこの層で扱います。
 
+追加案の詳細は別ファイルに分離しています。
+
+- runtime-linked mode 案
+  - [chsp-runtime-linked-mode.md](chsp-runtime-linked-mode.md)
+- plugin backend 案
+  - [chsp-plugin-backend.md](chsp-plugin-backend.md)
+
 ### 組み込み関数
 
 MVP では、組み込み関数名は HSP 名をそのまま受け付け、C++ 側では `common/chsp/chsp_runtime.hpp` のラッパーまたは `std::` 系数学関数へ変換します。
