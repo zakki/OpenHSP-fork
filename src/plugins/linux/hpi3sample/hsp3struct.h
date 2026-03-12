@@ -5,23 +5,13 @@
 #ifndef __hsp3struct_h
 #define __hsp3struct_h
 
-#include <cstdint>
 #include "hspvar_core.h"
 #include "hsp3debug.h"
 
-#if UINTPTR_MAX == 0xffffffffffffffffu
+#ifdef _WIN64
 #define PTR64BIT        //  ポインタは64bit
-#ifndef HSP64
-#warning HSP64 is not defined, but pointer is 64bit
-#endif
-#elif UINTPTR_MAX == 0xffffffff
-#define PTR32BIT        //  ポインタは32bit
-
-#ifdef HSP64
-#warning HSP64 is defined, but pointer is 32bit
-#endif
 #else
-#error Unknown pointer size
+#define PTR32BIT        //  ポインタは32bit
 #endif
 
 //		HSPが使用する実数型
@@ -57,8 +47,6 @@
 #define TYPE_DLLCTRL 17
 #define TYPE_USERDEF 18
 
-#define TYPE_PLUGIN 100
-
 #define TYPE_ERROR -1
 #define TYPE_CALCERROR -2
 
@@ -70,8 +58,6 @@
 
 #define HSP3_FUNC_MAX 18
 #define HSP3_TYPE_USER 18
-
-#define HSP3_TYPE_PLUGIN 100
 
 #define EXFLG_0 0x1000
 #define EXFLG_1 0x2000
@@ -149,10 +135,9 @@ typedef struct HSPHED
 
 #define HSPHED_EXOPTION_TAG_NONE 0
 #define HSPHED_EXOPTION_TAG_DSINDEX 1
-#define HSPHED_EXOPTION_TAG_VARFIX 2
-#define HSPHED_EXOPTION_TAG_SIZEX 3
-#define HSPHED_EXOPTION_TAG_SIZEY 4
-#define HSPHED_EXOPTION_TAG_SYSREQ 5
+#define HSPHED_EXOPTION_TAG_SIZEX 2
+#define HSPHED_EXOPTION_TAG_SIZEY 3
+#define HSPHED_EXOPTION_TAG_SYSREQ 4
 
 
 typedef struct MEM_HPIDAT {		// native HPIDAT
@@ -593,10 +578,6 @@ struct HSPCTX
 	char *tvfoldername;					// HSPTV Folder Name Parameters (HSPAPI)
 	char *homefoldername;				// System Folder Name Parameters (HSPAPI)
 	char langcode[4];					// Language country code (2byte ansi)
-
-	char* estmp;						// Extra string buffer
-	int estmp_ptr;						// Extra string buffer pointer
-	int estmp_max;						// Extra string buffer size
 };
 
 #define HSPCTX_REFSTR_MAX 4096

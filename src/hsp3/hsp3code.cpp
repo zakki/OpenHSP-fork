@@ -3008,8 +3008,8 @@ void code_init( void )
 
 	//		標準typefunc登録
 	//
-	hsp3tinfo = (HSP3TYPEINFO *)sbAlloc( sizeof(HSP3TYPEINFO) * HSP3_FUNC_MAX );
-	tinfo_cur = HSP3_FUNC_MAX;
+	hsp3tinfo = (HSP3TYPEINFO *)sbAlloc( sizeof(HSP3TYPEINFO) * HSP3_TYPE_PLUGIN );
+	tinfo_cur = HSP3_TYPE_PLUGIN;
 	for(i=0;i<tinfo_cur;i++) {
 		hsp3typeinit_default( i );
 	}
@@ -3035,7 +3035,7 @@ void code_init( void )
 
 	//		プラグイン追加の準備
 	//
-	tinfo_cur = HSP3_TYPE_USER;
+	tinfo_cur = HSP3_TYPE_PLUGIN;
 
 #ifdef HSPDEBUG
 	//		デバッグ情報の初期化
@@ -3298,7 +3298,7 @@ static int call_eventfunc( int option, int event, int prm1, int prm2, void *prm3
 	//
 	int i,res;
 	HSP3TYPEINFO *info;
-	for( i=HSP3_TYPE_USER; i<tinfo_cur; i++) {
+	for( i=HSP3_TYPE_PLUGIN; i<tinfo_cur; i++) {
 		info = GetTypeInfoPtr( i );
 		if ( info->option & option ) {
 			if ( info->eventfunc != NULL ) {
