@@ -10,6 +10,7 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 
 - HSPスクリプトの文法を基本とします。
 - 高速化したい関数を含むモジュールを `#chsp_module` と `#chsp_module_end` で囲みます。
+  - module 単位で native target を指定できます。
 - 高速化したい関数は`#chsp_defcfunc`や`#chsp_deffunc`として定義します。
   - この関数は `#chsp_end` で終了します。
 - cHSP 関数の引数やローカル変数には型指定が必須です。
@@ -59,8 +60,8 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
   - `#chsp_*`ブロックが、ネイティブコードで実装された機能を呼び出すHSPコードに置き換えられます。
   - ネイティブ側で処理される変数の受け渡し処理などが自動的に挿入されます。
 - **Cソースコード (`.c`)**:
-  - 既定では plugin backend 用の C ソースを生成します。
-  - `--chsp-target=c` を指定した場合は、素の C backend 用の C ソースを生成します。
+  - module ごとに target に応じた C ソースを生成します。
+  - target 未指定の module は既定で plugin backend 用の C ソースを生成します。
 
 ### 変数共有
 
@@ -82,7 +83,7 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
    - MVP ではこの段階を既存 HSP プリプロセッサより前に実行します。
 2. **ネイティブコード生成**:
    - `#chsp_*`ブロック内のコードを C の関数に変換します。
-   - plugin target は plugin backend の補助関数呼び出し、C target は `common/chsp/chsp_runtime.h` の薄いラッパー呼び出しに変換します。
+   - 各 `#chsp_module` の target 指定に応じて、plugin backend の補助関数呼び出しか、素の C backend 向けコードに変換します。
 3. **HSPコード生成**:
    - `#chsp_*`ブロックを、生成したネイティブ関数を呼び出す`#uselib`、`#func`、`#cfunc`命令に置き換えます。
 4. **ファイル出力**:
@@ -91,20 +92,45 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
    - 生成された`.c`を、DLLや共有ライブラリにコンパイルします。
    - コンパイルされたライブラリは、生成された`.hsp` / `.ax`から呼び出されます。
 
-#### cHSP native target の切り替え
+#### `#chsp_module` ごとの native target 指定
 
-- 既定値は `plugin`
+- backend の既定値は `plugin`
 - 既定の native compile mode は `libtcc`
-- `--chsp-target=c`
-- `--chsp-target=plugin`
-- `--chsp-compile=libtcc`
-- `--chsp-compile=none`
+- backend の指定は CLI オプションではなく、`#chsp_module` 行で行います
+- compile mode の指定は従来どおり `--chsp-compile=...` で行います
 
-`--chsp-target=c` は C backend の試作で、`rnd` / `randomize` は `rand` / `srand` ベースです。`mt19937` (`HSPRANDMT`) には対応しません。
+書式:
 
-現在の既定動作は `--chsp-target=plugin --chsp-compile=libtcc` 相当です。つまり `.chsp` を処理すると、plugin backend 用の C ソースを生成した上で、その場で共有ライブラリまで出力します。素の C backend を使いたい場合は `--chsp-target=c` を指定します。
+```hsp
+#chsp_module target=plugin
+    ; ...
+#chsp_module_end
 
-`--chsp-compile=libtcc` は Linux と Win32 で使えます。`--chsp-target=plugin` または `--chsp-target=c` と組み合わせると、`hspcmp` が生成した `.c` をその場で `libtcc` に渡して共有ライブラリまで出力します。
+#chsp_module target=c
+    ; ...
+#chsp_module_end
+```
+
+- `target=plugin`
+  - plugin backend を使います。
+- `target=c`
+  - 素の C backend を使います。
+- target を省略した場合
+  - `target=plugin` と同じ扱いにします。
+
+`target=c` は C backend の試作で、`rnd` / `randomize` は `rand` / `srand` ベースです。`mt19937` (`HSPRANDMT`) には対応しません。
+
+現在の既定動作は、target 未指定 module を plugin backend として扱い、`--chsp-compile=libtcc` と組み合わせてその場で共有ライブラリまで出力する形です。
+
+`--chsp-compile=libtcc` は Linux と Win32 で使えます。混在した target を含む `.chsp` でも、各 module から生成した `.c` を順に `libtcc` に渡して共有ライブラリまで出力します。
+
+#### mixed target を含む `.chsp` の出力方針
+
+- `#chsp_module` ごとに独立した `.c` と共有ライブラリを生成します。
+- 生成される HSP 側コードでは、module ごとに対応する `#uselib` を 1 回だけ出力します。
+- 同一 `.chsp` 内で `target=plugin` と `target=c` を混在させられます。
+- 出力ファイル名は module 単位で一意になる必要があります。
+  - MVP では module の出現順を使い、`foo.chsp` から `foo_1.c` / `foo_1.so`、`foo_2.c` / `foo_2.so` のように出力します。
 
 ```sh
 ./hspcmp -d -i -u --compath=common/ sample/chsp/ao_opt.chsp
@@ -133,6 +159,8 @@ make -C test/test_chsp_compare check-c-libtcc
   - C backend を `tcc` で共有ライブラリ化して、同じ比較テストと transform テストを通します。
 - `check-c-libtcc`
   - `hspcmp --chsp-compile=libtcc` で直接共有ライブラリを出力し、比較テストを通します。
+
+mixed target 対応後は、少なくとも「plugin module のみ」「C module のみ」「plugin / C 混在」の 3 パターンを比較テストで通します。
 
 ### 生成された `.c` のビルド方法
 
@@ -190,16 +218,14 @@ cl /O2 /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.c
 MVP では HSP SDK 連携は行わず、純粋な C ABI で受け渡し可能な型だけを対象にします。
 将来的に HSP ランタイム連携を導入する場合は、`ddim` / `sdim`、文字列、HSP 関数呼び出しなどをこの層で扱います。
 
-追加案の詳細は別ファイルに分離しています。
+採用した backend 案の詳細は別ファイルに分離しています。
 
-- runtime-linked mode 案
-  - [chsp-runtime-linked-mode.md](chsp-runtime-linked-mode.md)
-- plugin backend 案
+- plugin backend
   - [chsp-plugin-backend.md](chsp-plugin-backend.md)
 
 ### 組み込み関数
 
-MVP では、組み込み関数名は HSP 名をそのまま受け付け、ネイティブ側では plugin backend の補助関数または C ランタイム関数へ変換します。
+MVP では、組み込み関数名は HSP 名をそのまま受け付け、ネイティブ側では plugin backend の補助関数または C backend 向けの実装へ変換します。
 
 対応済みの主な関数:
 
