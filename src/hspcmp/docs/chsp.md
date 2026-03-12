@@ -2,7 +2,7 @@
 
 ## 概要
 
-cHSPは、HSPスクリプトの一部をC++コードに変換し、コンパイルすることで、実行速度を向上させるための仕組みです。
+cHSPは、HSPスクリプトの一部をネイティブコードに変換し、コンパイルすることで、実行速度を向上させるための仕組みです。
 
 ## 仕様
 
@@ -56,24 +56,23 @@ cHSPは、HSPスクリプトの一部をC++コードに変換し、コンパイ�
 ### 生成されるファイル
 
 - **最適化AXスクリプト (`.ax`)**:
-  - `#chsp_*`ブロックが、C++で実装された機能を呼び出すHSPコードに置き換えられます。
-  - C++側で処理される変数の受け渡し処理などが自動的に挿入されます。
-- **C++ソースコード (`.cpp`)**:
-  - `#chsp_*`ブロック内のコードが、C++の関数として実装されます。
+  - `#chsp_*`ブロックが、ネイティブコードで実装された機能を呼び出すHSPコードに置き換えられます。
+  - ネイティブ側で処理される変数の受け渡し処理などが自動的に挿入されます。
 - **Cソースコード (`.c`)**:
-  - `--chsp-target=c` を指定した場合は、C互換ランタイムを呼ぶ C ソースを生成します。
+  - 既定では plugin backend 用の C ソースを生成します。
+  - `--chsp-target=c` を指定した場合は、素の C backend 用の C ソースを生成します。
 
 ### 変数共有
 
-- MVP では引数として HSP の数値と数値配列を C++ 側に渡します。
-- HSP側のグローバル変数はC++側では利用できません。
+- MVP では引数として HSP の数値と数値配列をネイティブ側に渡します。
+- HSP側のグローバル変数はネイティブ側では利用できません。
 - cHSP ブロックから通常の HSP 関数は呼べません。
 
 ## 設計
 
 ### コンパイラ (hspcmp)
 
-`hspcmp`は、`.chsp`ファイルを解釈し、`.ax`とネイティブソース (`.cpp` または `.c`) を生成します。
+`hspcmp`は、`.chsp`ファイルを解釈し、`.ax`とネイティブソース (`.c`) を生成します。
 既存文法だけの`.hsp`ファイルを受け取った場合は、既存のhspcmpと同様の処理を行います。
 
 #### 処理フロー
@@ -82,42 +81,36 @@ cHSPは、HSPスクリプトの一部をC++コードに変換し、コンパイ�
    - `#chsp_*`ブロックとそれ以外のHSPコードを分離します。
    - MVP ではこの段階を既存 HSP プリプロセッサより前に実行します。
 2. **ネイティブコード生成**:
-   - `#chsp_*`ブロック内のコードを C++ または C の関数に変換します。
-   - C++ target は `common/chsp/chsp_runtime.hpp`、C target は `common/chsp/chsp_runtime.h` の薄いラッパー呼び出しに変換します。
+   - `#chsp_*`ブロック内のコードを C の関数に変換します。
+   - plugin target は plugin backend の補助関数呼び出し、C target は `common/chsp/chsp_runtime.h` の薄いラッパー呼び出しに変換します。
 3. **HSPコード生成**:
    - `#chsp_*`ブロックを、生成したネイティブ関数を呼び出す`#uselib`、`#func`、`#cfunc`命令に置き換えます。
 4. **ファイル出力**:
-   - `.ax`とネイティブソース (`.cpp` または `.c`) を出力します。
+   - `.ax`とネイティブソース (`.c`) を出力します。
 5. **ネイティブコードのコンパイル**:
-   - 生成された`.cpp`または`.c`を、DLLや共有ライブラリにコンパイルします。
+   - 生成された`.c`を、DLLや共有ライブラリにコンパイルします。
    - コンパイルされたライブラリは、生成された`.hsp` / `.ax`から呼び出されます。
 
 #### cHSP native target の切り替え
 
-- 既定値は `c`
+- 既定値は `plugin`
 - 既定の native compile mode は `libtcc`
-- `--chsp-target=cpp`
 - `--chsp-target=c`
+- `--chsp-target=plugin`
 - `--chsp-compile=libtcc`
 - `--chsp-compile=none`
 
 `--chsp-target=c` は C backend の試作で、`rnd` / `randomize` は `rand` / `srand` ベースです。`mt19937` (`HSPRANDMT`) には対応しません。
 
-現在の既定動作は `--chsp-target=c --chsp-compile=libtcc` 相当です。つまり `.chsp` を処理すると、C ソースを生成した上で、その場で共有ライブラリまで出力します。C++ ソースを出したい場合は `--chsp-target=cpp` を指定します。
+現在の既定動作は `--chsp-target=plugin --chsp-compile=libtcc` 相当です。つまり `.chsp` を処理すると、plugin backend 用の C ソースを生成した上で、その場で共有ライブラリまで出力します。素の C backend を使いたい場合は `--chsp-target=c` を指定します。
 
-`--chsp-compile=libtcc` は Linux と Win32 で使えます。`--chsp-target=c` と組み合わせると、`hspcmp` が生成した `.c` をその場で `libtcc` に渡して共有ライブラリまで出力します。
+`--chsp-compile=libtcc` は Linux と Win32 で使えます。`--chsp-target=plugin` または `--chsp-target=c` と組み合わせると、`hspcmp` が生成した `.c` をその場で `libtcc` に渡して共有ライブラリまで出力します。
 
 ```sh
 ./hspcmp -d -i -u --compath=common/ sample/chsp/ao_opt.chsp
 ```
 
 Linux では `sample/chsp/ao_opt.c` と `sample/chsp/ao_opt.so`、Win32 では `sample\chsp\ao_opt.c` と `sample\chsp\ao_opt.dll` がまとめて生成されます。
-
-```sh
-./hspcmp -d -i -u --chsp-target=cpp --compath=common/ sample/chsp/ao_opt.chsp
-```
-
-この場合は従来通り `sample/chsp/ao_opt.cpp` を生成し、`libtcc` による直接コンパイルは行いません。
 
 Win32 では `libtcc` のヘッダと import library を参照できるように、`src/hspcmp/win32/hspcmp.vcxproj` が `$(LIBTCC_DIR)\include` と `$(LIBTCC_DIR)\lib` を見に行きます。実行時の `libtcc` ランタイム探索は以下の順です。
 
@@ -141,19 +134,19 @@ make -C test/test_chsp_compare check-c-libtcc
 - `check-c-libtcc`
   - `hspcmp --chsp-compile=libtcc` で直接共有ライブラリを出力し、比較テストを通します。
 
-### 生成された `.cpp` のビルド方法
+### 生成された `.c` のビルド方法
 
-生成された `.cpp` は `common/chsp/chsp_runtime.hpp` を `#include` するため、ビルド時には OpenHSP リポジトリのルートを include path に含めます。
+生成された `.c` は、ビルド時には OpenHSP リポジトリのルートを include path に含めます。
 Windows 向けの生成コードは `CHSP_EXPORT` マクロで `__declspec(dllexport)` が付くため、追加の `.def` は不要です。
 
-以下では、リポジトリのルートで `sample/chsp/ao_opt.chsp` から `sample/chsp/ao_opt.cpp` を生成済みとします。
+以下では、リポジトリのルートで `sample/chsp/ao_opt.chsp` から `sample/chsp/ao_opt.c` を生成済みとします。
 
 #### Linux
 
 `.so` を生成します。
 
 ```sh
-g++ -std=c++17 -O2 -shared -fPIC -I. -o sample/chsp/ao_opt.so sample/chsp/ao_opt.cpp
+cc -std=c11 -O2 -shared -fPIC -I. -o sample/chsp/ao_opt.so sample/chsp/ao_opt.c -lm
 ```
 
 HSP 側の `#uselib` は Linux では `.so` を参照します。
@@ -167,7 +160,7 @@ HSP 側の `#uselib` は Linux では `.so` を参照します。
 Visual Studio の `x86 Native Tools Command Prompt for VS` など、32bit 向けの MSVC 環境を開いてから `cl` を実行します。
 
 ```bat
-cl /std:c++17 /O2 /EHsc /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.cpp
+cl /O2 /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.c
 ```
 
 HSP 側の `#uselib` は `.dll` を参照します。
@@ -181,7 +174,7 @@ HSP 側の `#uselib` は `.dll` を参照します。
 Visual Studio の `x64 Native Tools Command Prompt for VS` など、64bit 向けの MSVC 環境を開いてから `cl` を実行します。
 
 ```bat
-cl /std:c++17 /O2 /EHsc /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.cpp
+cl /O2 /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.c
 ```
 
 出力ファイル名は Win32 と同じ `.dll` で問題ありません。32bit 用 HSP からは Win32 版 DLL、64bit 用 HSP からは Win64 版 DLL を読み込ませます。
@@ -206,7 +199,7 @@ MVP では HSP SDK 連携は行わず、純粋な C ABI で受け渡し可能な
 
 ### 組み込み関数
 
-MVP では、組み込み関数名は HSP 名をそのまま受け付け、C++ 側では `common/chsp/chsp_runtime.hpp` のラッパーまたは `std::` 系数学関数へ変換します。
+MVP では、組み込み関数名は HSP 名をそのまま受け付け、ネイティブ側では plugin backend の補助関数または C ランタイム関数へ変換します。
 
 対応済みの主な関数:
 
@@ -233,20 +226,20 @@ MVP では、組み込み関数名は HSP 名をそのまま受け付け、C++ �
 ## aobenchの例
 
 `aobench`は、アンビエントオクルージョンという3DCGのレンダリング手法のベンチマークプログラムです。
-このサンプルでは、`ao_original.hsp`（オリジナルのHSPスクリプト）の処理のうち、特に計算負荷の高いレイトレーシングの部分を`#chsp`ブロックに記述し、C++コードに置き換えることで高速化を図っています (`ao_opt.chsp`)。
+このサンプルでは、`ao_original.hsp`（オリジナルのHSPスクリプト）の処理のうち、特に計算負荷の高いレイトレーシングの部分を`#chsp`ブロックに記述し、ネイティブコードに置き換えることで高速化を図っています (`ao_opt.chsp`)。
 
-このように、cHSPは計算量の多い処理をC++にオフロードすることで、HSPスクリプトの実行速度を6倍程度に向上させることができる例を示しています。
+このように、cHSPは計算量の多い処理をネイティブコードにオフロードすることで、HSPスクリプトの実行速度を6倍程度に向上させることができる例を示しています。
 
 ### `ao_original.hsp` と `ao_opt.chsp` の主な変更点
 
-`ao_opt.chsp`では、パフォーマンス向上のため、以下の関数が`#chsp`ブロックで囲われ、C++コードとしてコンパイルされるように変更されています。
+`ao_opt.chsp`では、パフォーマンス向上のため、以下の関数が`#chsp`ブロックで囲われ、ネイティブコードとしてコンパイルされるように変更されています。
 
 - ベクトル計算: `vdot`, `vcross`, `vnormalize` などのベクトル演算関数。
 - レイとオブジェクトの交差判定: `ray_sphere_intersect`, `ray_plane_intersect` といった、レイトレーシングの中核となる関数。
 
-これらの関数は、ピクセルごとに何度も呼び出されるため、C++化による高速化の効果が特に大きくなります。
+これらの関数は、ピクセルごとに何度も呼び出されるため、ネイティブ化による高速化の効果が特に大きくなります。
 
-DLLに分離したC++関数として実装するため変更が必要です。
+DLLに分離したネイティブ関数として実装するため変更が必要です。
 
 - 多次元配列を1次元配列に書き換える
 - グローバル変数参照を関数の引数に書き換える
@@ -262,7 +255,7 @@ DLLに分離したC++関数として実装するため変更が必要です。
 #chsp_end
 ```
 
-生成されるC++コード: `ao_opt.cpp`
+生成されるCコード: `ao_opt.c`
 
 ```c++
 extern "C" CHSP_EXPORT void vcross(double *c, double *v0, double *v1) {

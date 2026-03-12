@@ -18,7 +18,7 @@ namespace
 
 struct TranslateContext
 {
-	ChspNativeTarget target = ChspNativeTarget::Cpp;
+	ChspNativeTarget target = ChspNativeTarget::Plugin;
 	std::unordered_set<std::string> array_names;
 	std::unordered_map<std::string, std::string> identifier_cpp_names;
 	std::unordered_map<std::string, std::string> function_cpp_names;
@@ -1239,11 +1239,7 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 		native_out.PutStr( "static double *chsp_plugin_double_ptr( PVal *pval, APTR aptr ) { return ((double *)pval->pt) + aptr; }\n\n" );
 		return;
 	}
-	if ( target == ChspNativeTarget::C ) {
-		native_out.PutStr( "#include \"common/chsp/chsp_runtime.h\"\n\n" );
-	} else {
-		native_out.PutStr( "#include \"common/chsp/chsp_runtime.hpp\"\n\n" );
-	}
+	native_out.PutStr( "#include \"common/chsp/chsp_runtime.h\"\n\n" );
 	native_out.PutStr( "#if defined(_WIN32)\n" );
 	native_out.PutStr( "#define CHSP_EXPORT __declspec(dllexport)\n" );
 	native_out.PutStr( "#else\n" );
@@ -1256,7 +1252,7 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspProgram &program, CLogger &logger,
 						   CMemBuf &hsp_out, CMemBuf &native_out, const char *source_name, ChspNativeTarget target )
 {
-	if ( target == ChspNativeTarget::Plugin && program.modules.size() != 1 ) {
+	if ( target == ChspNativeTarget::Plugin && program.modules.size() > 1 ) {
 		logger.Mesf( "#Error:cHSP plugin backend currently supports exactly one #chsp_module [%s]",
 					 source_name != nullptr ? source_name : "<buffer>" );
 		return -1;

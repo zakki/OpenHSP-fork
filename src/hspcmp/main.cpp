@@ -69,7 +69,7 @@ static 	char *p[] = {
 	"       ---------------------------------",
 	"       --syspath=??? set system folder for execute",
 	"       --compath=??? set common path to ???",
-	"       --chsp-target=c|cpp|plugin set cHSP native output target (default: c)",
+	"       --chsp-target=c|plugin set cHSP native output target (default: plugin)",
 	"       --chsp-compile=libtcc|none set cHSP native compile mode (default: libtcc)",
 	NULL };
 	int i;
@@ -127,7 +127,7 @@ int main( int argc, char *argv[] )
 	oname[0]=0;
 	syspath[0]=0;
 	helpkey[0] = 0;
-	chsp_target = ChspNativeTarget::C;
+	chsp_target = ChspNativeTarget::Plugin;
 	chsp_compile_mode = ChspNativeCompileMode::Libtcc;
 
 #ifdef HSPLINUX
@@ -158,11 +158,6 @@ int main( int argc, char *argv[] )
 				const char *value = argv[b] + 14;
 				if ( strcmp( value, "c" ) == 0 ) {
 					chsp_target = ChspNativeTarget::C;
-					continue;
-				}
-				if ( strcmp( value, "cpp" ) == 0 ) {
-					chsp_target = ChspNativeTarget::Cpp;
-					chsp_compile_mode = ChspNativeCompileMode::None;
 					continue;
 				}
 				if ( strcmp( value, "plugin" ) == 0 ) {
@@ -312,7 +307,7 @@ int main( int argc, char *argv[] )
 	strcpy( fname_chi, fname ); cutext( fname_chi ); addext( fname_chi,"chi" );
 	strcpy( fname_cpp, fname );
 	cutext( fname_cpp );
-	addext( fname_cpp, chsp_target == ChspNativeTarget::Cpp ? "cpp" : "c" );
+	addext( fname_cpp, "c" );
 	if (( has_extension( fname, ".chsp" ) == 0 )&&( has_extension( fname, ".hsp" ) == 0 )) {
 		addext( fname,"hsp" );			// 拡張子がなければ追加する
 	}
@@ -389,42 +384,45 @@ int main( int argc, char *argv[] )
 
 	} else {
 		//		通常のコンパイル
+		int has_chsp = 0;
 		st = hsc3->PreProcess( fname, fname2, ppopt, fname );
 		if (( pponly == 0 )&&( st == 0 )) {
-			std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
-			CChspFrontendV2 frontend( frontend_errbuf );
-			CMemBuf transformed_out;
-			CMemBuf cpp_out;
 			char *preprocessed = hsc3->outbuf != NULL ? hsc3->outbuf->GetBuffer() : NULL;
-				int has_chsp = contains_chsp_directive( preprocessed );
+			has_chsp = contains_chsp_directive( preprocessed );
+			if ( has_chsp ) {
+				std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
+				CChspFrontendV2 frontend( frontend_errbuf );
+				CMemBuf transformed_out;
+				CMemBuf cpp_out;
 				st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out, chsp_target );
-				if (( st == 0 )&&( has_chsp || ( chsp_transform_only != 0 ) )) {
+				if ( st == 0 ) {
 					if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
 						hsc3->Print( (char *)"#Can't write generated cHSP native file." );
 						st = -1;
 					}
 				}
-				if (( st == 0 )&&( has_chsp )&&( chsp_transform_only == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
+				if (( st == 0 )&&( chsp_transform_only == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
 #ifdef CHSP_HAS_LIBTCC
 					st = chsp_compile_library_with_libtcc( hsc3, fname_cpp, compath, transformed_out );
 #endif
 				}
-			if (( st == 0 )&&( chsp_transform_only != 0 )) {
-				if ( transformed_out.SaveFile( fname_chi ) < 0 ) {
-					hsc3->Print( (char *)"#Can't write generated cHSP transform file." );
-					st = -1;
+				if (( st == 0 )&&( chsp_transform_only != 0 )) {
+					if ( transformed_out.SaveFile( fname_chi ) < 0 ) {
+						hsc3->Print( (char *)"#Can't write generated cHSP transform file." );
+						st = -1;
+					}
+				} else if ( st == 0 ) {
+					CMemBuf *next_outbuf = new CMemBuf( transformed_out.GetSize() + 1 );
+					if ( transformed_out.GetSize() > 0 ) {
+						next_outbuf->PutData( transformed_out.GetBuffer(), transformed_out.GetSize() );
+					}
+					next_outbuf->Put( (char)0 );
+					delete hsc3->outbuf;
+					hsc3->outbuf = next_outbuf;
 				}
-			} else if ( st == 0 ) {
-				CMemBuf *next_outbuf = new CMemBuf( transformed_out.GetSize() + 1 );
-				if ( transformed_out.GetSize() > 0 ) {
-					next_outbuf->PutData( transformed_out.GetBuffer(), transformed_out.GetSize() );
-				}
-				next_outbuf->Put( (char)0 );
-				delete hsc3->outbuf;
-				hsc3->outbuf = next_outbuf;
 			}
 		}
-		if (( pponly == 0 )&&( chsp_transform_only == 0 )&&( st == 0 )) {
+		if (( pponly == 0 )&&( ( chsp_transform_only == 0 ) || ( has_chsp == 0 ) )&&( st == 0 )) {
 			st = hsc3->Compile( fname2, oname, cmpopt );
 		}
 		puts( hsc3->GetError() );

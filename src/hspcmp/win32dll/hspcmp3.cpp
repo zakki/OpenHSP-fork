@@ -65,7 +65,7 @@ enum class ChspNativeCompileMode
 
 enum
 {
-	HSC3_CHSP_TARGET_CPP = 64,
+	HSC3_CHSP_TARGET_C = 64,
 	HSC3_CHSP_COMPILE_NONE = 128,
 };
 
@@ -315,7 +315,7 @@ EXPORT BOOL WINAPI hsc_comp ( int p1, int p2, int p3, int p4 )
 	//			( ppopt = preprocessor option )
 	//			(       0=default/1=ver2.6 mode )
 	//			(       32=UTF8 input mode )
-	//			(       64=cHSP C++ target )
+	//			(       64=cHSP C target )
 	//			(      128=disable cHSP native compile )
 	//			( dbgopt = debug window option )
 	//			(       0=default/1=debug mode )
@@ -346,16 +346,15 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	strcpy( fname2, fname );
 	strcat( fname2, ".i" );
 	strcpy( fname_cpp, fname );
-	chsp_target = ChspNativeTarget::C;
+	chsp_target = ChspNativeTarget::Plugin;
 	chsp_compile_mode = ChspNativeCompileMode::Libtcc;
-	if ( p2 & HSC3_CHSP_TARGET_CPP ) {
-		chsp_target = ChspNativeTarget::Cpp;
-		chsp_compile_mode = ChspNativeCompileMode::None;
+	if ( p2 & HSC3_CHSP_TARGET_C ) {
+		chsp_target = ChspNativeTarget::C;
 	}
 	if ( p2 & HSC3_CHSP_COMPILE_NONE ) {
 		chsp_compile_mode = ChspNativeCompileMode::None;
 	}
-	strcat( fname_cpp, chsp_target == ChspNativeTarget::C ? ".c" : ".cpp" );
+	strcat( fname_cpp, ".c" );
 	hsc3->SetCommonPath( compath );
 	ppopt = 0;
 	if (p1 & 1) ppopt |= HSC3_OPT_DEBUGMODE;
@@ -379,39 +378,36 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	}
 
 	{
-		std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
-		CChspFrontendV2 frontend( frontend_errbuf );
-		CMemBuf transformed_out;
-		CMemBuf cpp_out;
 		char *preprocessed = hsc3->outbuf != NULL ? hsc3->outbuf->GetBuffer() : NULL;
 		int has_chsp = contains_chsp_directive( preprocessed );
-		st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out,
-										  chsp_target );
-		if (( st == 0 )&&( has_chsp )) {
-			if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
-				hsc3->Print( (char *)"#Can't write generated cHSP native file." );
-				st = -1;
-			}
-			if (( st == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
-				if ( chsp_target != ChspNativeTarget::C ) {
-					hsc3->Print( (char *)"#cHSP libtcc compilation requires C target." );
+		if ( has_chsp ) {
+			std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
+			CChspFrontendV2 frontend( frontend_errbuf );
+			CMemBuf transformed_out;
+			CMemBuf cpp_out;
+			st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out,
+											  chsp_target );
+			if ( st == 0 ) {
+				if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
+					hsc3->Print( (char *)"#Can't write generated cHSP native file." );
 					st = -1;
-				} else {
-					st = chsp_compile_library_with_libtcc( hsc3, fname_cpp, compath, transformed_out );
 				}
 			}
+			if (( st == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
+				st = chsp_compile_library_with_libtcc( hsc3, fname_cpp, compath, transformed_out );
+			}
+			if ( st != 0 ) {
+				hsc3->PreProcessEnd();
+				return st;
+			}
+			CMemBuf *next_outbuf = new CMemBuf( transformed_out.GetSize() + 1 );
+			if ( transformed_out.GetSize() > 0 ) {
+				next_outbuf->PutData( transformed_out.GetBuffer(), transformed_out.GetSize() );
+			}
+			next_outbuf->Put( (char)0 );
+			delete hsc3->outbuf;
+			hsc3->outbuf = next_outbuf;
 		}
-		if ( st != 0 ) {
-			hsc3->PreProcessEnd();
-			return st;
-		}
-		CMemBuf *next_outbuf = new CMemBuf( transformed_out.GetSize() + 1 );
-		if ( transformed_out.GetSize() > 0 ) {
-			next_outbuf->PutData( transformed_out.GetBuffer(), transformed_out.GetSize() );
-		}
-		next_outbuf->Put( (char)0 );
-		delete hsc3->outbuf;
-		hsc3->outbuf = next_outbuf;
 	}
 
 	cmpmode = p1 & HSC3_MODE_DEBUG;
