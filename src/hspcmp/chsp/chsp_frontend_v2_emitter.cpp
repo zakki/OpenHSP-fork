@@ -997,28 +997,38 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
 		buf.PutStr( std::to_string( i ).c_str() );
 		buf.PutStr( ": {\n" );
 		for ( const auto &param : func.params ) {
-			if ( param.is_local || !param.is_array ) {
+			if ( param.is_local ) {
 				continue;
 			}
 			const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
-			buf.PutStr( "        PVal *pval_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " = NULL; APTR aptr_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " = code_getva( &pval_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " );\n" );
-			buf.PutStr( "        " );
-			buf.PutStr( param.base_type.c_str() );
-			buf.PutStr( " *" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " = " );
-			buf.PutStr( param.base_type == "int" ? "chsp_plugin_int_ptr" : "chsp_plugin_double_ptr" );
-			buf.PutStr( "( pval_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( ", aptr_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " );\n" );
+			if ( param.is_array ) {
+				buf.PutStr( "        PVal *pval_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = NULL; APTR aptr_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = code_getva( &pval_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " );\n" );
+				buf.PutStr( "        " );
+				buf.PutStr( param.base_type.c_str() );
+				buf.PutStr( " *" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = " );
+				buf.PutStr( param.base_type == "int" ? "chsp_plugin_int_ptr" : "chsp_plugin_double_ptr" );
+				buf.PutStr( "( pval_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( ", aptr_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " );\n" );
+			} else {
+				buf.PutStr( "        " );
+				buf.PutStr( param.base_type.c_str() );
+				buf.PutStr( " " );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = " );
+				buf.PutStr( param.base_type == "int" ? "code_getdi(0)" : "exinfo->HspFunc_prm_getdd(0.0)" );
+				buf.PutStr( ";\n" );
+			}
 		}
 		buf.PutStr( "        " );
 		if ( func.kind == ChspFuncKind::DefCFunc ) {
@@ -1036,14 +1046,8 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
 				buf.PutStr( ", " );
 			}
 			first = false;
-			if ( param.is_array ) {
-				const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
-				buf.PutStr( var_name.c_str() );
-			} else if ( param.base_type == "int" ) {
-				buf.PutStr( "code_getdi(0)" );
-			} else {
-				buf.PutStr( "exinfo->HspFunc_prm_getdd(0.0)" );
-			}
+			const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
+			buf.PutStr( var_name.c_str() );
 		}
 		buf.PutStr( ");\n" );
 		if ( func.kind == ChspFuncKind::DefCFunc ) {
@@ -1078,28 +1082,38 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
 		buf.PutStr( std::to_string( i ).c_str() );
 		buf.PutStr( ": {\n" );
 		for ( const auto &param : func.params ) {
-			if ( param.is_local || !param.is_array ) {
+			if ( param.is_local ) {
 				continue;
 			}
 			const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
-			buf.PutStr( "        PVal *pval_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " = NULL; APTR aptr_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " = code_getva( &pval_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " );\n" );
-			buf.PutStr( "        " );
-			buf.PutStr( param.base_type.c_str() );
-			buf.PutStr( " *" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " = " );
-			buf.PutStr( param.base_type == "int" ? "chsp_plugin_int_ptr" : "chsp_plugin_double_ptr" );
-			buf.PutStr( "( pval_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( ", aptr_" );
-			buf.PutStr( var_name.c_str() );
-			buf.PutStr( " );\n" );
+			if ( param.is_array ) {
+				buf.PutStr( "        PVal *pval_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = NULL; APTR aptr_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = code_getva( &pval_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " );\n" );
+				buf.PutStr( "        " );
+				buf.PutStr( param.base_type.c_str() );
+				buf.PutStr( " *" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = " );
+				buf.PutStr( param.base_type == "int" ? "chsp_plugin_int_ptr" : "chsp_plugin_double_ptr" );
+				buf.PutStr( "( pval_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( ", aptr_" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " );\n" );
+			} else {
+				buf.PutStr( "        " );
+				buf.PutStr( param.base_type.c_str() );
+				buf.PutStr( " " );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = " );
+				buf.PutStr( param.base_type == "int" ? "code_geti()" : "exinfo->HspFunc_prm_getd()" );
+				buf.PutStr( ";\n" );
+			}
 		}
 		if ( func.return_type == "double" ) {
 			buf.PutStr( "        chsp_plugin_ref_double = " );
@@ -1117,14 +1131,8 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
 				buf.PutStr( ", " );
 			}
 			first = false;
-			if ( param.is_array ) {
-				const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
-				buf.PutStr( var_name.c_str() );
-			} else if ( param.base_type == "int" ) {
-				buf.PutStr( "code_geti()" );
-			} else {
-				buf.PutStr( "exinfo->HspFunc_prm_getd()" );
-			}
+			const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
+			buf.PutStr( var_name.c_str() );
 		}
 		buf.PutStr( ");\n" );
 		buf.PutStr( "        break;\n" );
