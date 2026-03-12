@@ -57,6 +57,8 @@
 #define TYPE_DLLCTRL 17
 #define TYPE_USERDEF 18
 
+#define TYPE_PLUGIN 100
+
 #define TYPE_ERROR -1
 #define TYPE_CALCERROR -2
 
@@ -68,6 +70,8 @@
 
 #define HSP3_FUNC_MAX 18
 #define HSP3_TYPE_USER 18
+
+#define HSP3_TYPE_PLUGIN 100
 
 #define EXFLG_0 0x1000
 #define EXFLG_1 0x2000
