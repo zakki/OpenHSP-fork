@@ -17,6 +17,8 @@ C_LIBTCC_HSPCMP_FLAGS := -d -i -u --chsp-target=plugin --chsp-compile=libtcc --c
 
 HSP_CASES := operators_hsp features_hsp commands_hsp branches_hsp nested_hsp vectors_hsp scalars_hsp trig_hsp random_hsp inline_if_hsp inline_else_hsp inline_else_if_hsp inline_else_block_hsp mixed_if_hsp loop_return_hsp loop_return_value_hsp precedence_hsp separators_hsp continuations_hsp int_literals_hsp array_access_hsp local_arrays_hsp array_return_hsp array_builtin_args_hsp array_control_hsp case_fold_hsp
 CHSP_CASES := operators_chsp features_chsp commands_chsp branches_chsp nested_chsp vectors_chsp scalars_chsp trig_chsp random_chsp inline_if_chsp inline_else_chsp inline_else_if_chsp inline_else_block_chsp mixed_if_chsp loop_return_chsp loop_return_value_chsp precedence_chsp separators_chsp continuations_chsp int_literals_chsp array_access_chsp local_arrays_chsp array_return_chsp array_builtin_args_chsp array_control_chsp case_fold_chsp
+PLUGIN_HSP_CASES := double_return_hsp
+PLUGIN_CHSP_CASES := double_return_chsp
 TRANSFORM_STAMPS := $(CHSP_CASES:%=%.transform-ok)
 C_COMPARE_OUTS := $(CHSP_CASES:%=$(C_TARGET_DIR)/%.out)
 C_TRANSFORM_STAMPS := $(CHSP_CASES:%=$(C_TARGET_DIR)/%.transform-ok)
@@ -157,7 +159,10 @@ array_control_chsp.out: array_control_chsp.so array_control_chsp.ax
 case_fold_chsp.out: case_fold_chsp.so case_fold_chsp.ax
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):." $(HSP3CL) case_fold_chsp.ax | tr -d '\r' | grep -v '^gpiod initalize failed\.$$' > $@
 
-compare: operators_hsp.out operators_chsp.out features_hsp.out features_chsp.out commands_hsp.out commands_chsp.out branches_hsp.out branches_chsp.out nested_hsp.out nested_chsp.out vectors_hsp.out vectors_chsp.out scalars_hsp.out scalars_chsp.out trig_hsp.out trig_chsp.out random_hsp.out random_chsp.out inline_if_hsp.out inline_if_chsp.out inline_else_hsp.out inline_else_chsp.out inline_else_if_hsp.out inline_else_if_chsp.out inline_else_block_hsp.out inline_else_block_chsp.out mixed_if_hsp.out mixed_if_chsp.out loop_return_hsp.out loop_return_chsp.out loop_return_value_hsp.out loop_return_value_chsp.out precedence_hsp.out precedence_chsp.out separators_hsp.out separators_chsp.out continuations_hsp.out continuations_chsp.out int_literals_hsp.out int_literals_chsp.out array_access_hsp.out array_access_chsp.out local_arrays_hsp.out local_arrays_chsp.out array_return_hsp.out array_return_chsp.out array_builtin_args_hsp.out array_builtin_args_chsp.out array_control_hsp.out array_control_chsp.out case_fold_hsp.out case_fold_chsp.out
+double_return_chsp.out: double_return_chsp.so double_return_chsp.ax
+	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):." $(HSP3CL) double_return_chsp.ax | tr -d '\r' | grep -v '^gpiod initalize failed\.$$' > $@
+
+compare: operators_hsp.out operators_chsp.out features_hsp.out features_chsp.out commands_hsp.out commands_chsp.out branches_hsp.out branches_chsp.out nested_hsp.out nested_chsp.out vectors_hsp.out vectors_chsp.out scalars_hsp.out scalars_chsp.out trig_hsp.out trig_chsp.out random_hsp.out random_chsp.out inline_if_hsp.out inline_if_chsp.out inline_else_hsp.out inline_else_chsp.out inline_else_if_hsp.out inline_else_if_chsp.out inline_else_block_hsp.out inline_else_block_chsp.out mixed_if_hsp.out mixed_if_chsp.out loop_return_hsp.out loop_return_chsp.out loop_return_value_hsp.out loop_return_value_chsp.out precedence_hsp.out precedence_chsp.out separators_hsp.out separators_chsp.out continuations_hsp.out continuations_chsp.out int_literals_hsp.out int_literals_chsp.out array_access_hsp.out array_access_chsp.out local_arrays_hsp.out local_arrays_chsp.out array_return_hsp.out array_return_chsp.out array_builtin_args_hsp.out array_builtin_args_chsp.out array_control_hsp.out array_control_chsp.out case_fold_hsp.out case_fold_chsp.out double_return_hsp.out double_return_chsp.out
 	diff -u operators_hsp.out operators_chsp.out
 	diff -u features_hsp.out features_chsp.out
 	diff -u commands_hsp.out commands_chsp.out
@@ -184,6 +189,7 @@ compare: operators_hsp.out operators_chsp.out features_hsp.out features_chsp.out
 	diff -u array_builtin_args_hsp.out array_builtin_args_chsp.out
 	diff -u array_control_hsp.out array_control_chsp.out
 	diff -u case_fold_hsp.out case_fold_chsp.out
+	diff -u double_return_hsp.out double_return_chsp.out
 
 compare-c: $(HSP_CASES:%=%.out) $(C_COMPARE_OUTS)
 	diff -u operators_hsp.out $(C_TARGET_DIR)/operators_chsp.out
@@ -212,8 +218,9 @@ compare-c: $(HSP_CASES:%=%.out) $(C_COMPARE_OUTS)
 	diff -u array_builtin_args_hsp.out $(C_TARGET_DIR)/array_builtin_args_chsp.out
 	diff -u array_control_hsp.out $(C_TARGET_DIR)/array_control_chsp.out
 	diff -u case_fold_hsp.out $(C_TARGET_DIR)/case_fold_chsp.out
+	diff -u double_return_hsp.out $(C_TARGET_DIR)/double_return_chsp.out
 
-compare-c-libtcc: $(HSP_CASES:%=%.out) $(C_LIBTCC_COMPARE_OUTS)
+compare-c-libtcc: $(HSP_CASES:%=%.out) $(C_LIBTCC_COMPARE_OUTS) $(PLUGIN_HSP_CASES:%=%.out) $(PLUGIN_CHSP_CASES:%=$(C_LIBTCC_TARGET_DIR)/%.out)
 	diff -u operators_hsp.out $(C_LIBTCC_TARGET_DIR)/operators_chsp.out
 	diff -u features_hsp.out $(C_LIBTCC_TARGET_DIR)/features_chsp.out
 	diff -u commands_hsp.out $(C_LIBTCC_TARGET_DIR)/commands_chsp.out
@@ -240,6 +247,7 @@ compare-c-libtcc: $(HSP_CASES:%=%.out) $(C_LIBTCC_COMPARE_OUTS)
 	diff -u array_builtin_args_hsp.out $(C_LIBTCC_TARGET_DIR)/array_builtin_args_chsp.out
 	diff -u array_control_hsp.out $(C_LIBTCC_TARGET_DIR)/array_control_chsp.out
 	diff -u case_fold_hsp.out $(C_LIBTCC_TARGET_DIR)/case_fold_chsp.out
+	diff -u double_return_hsp.out $(C_LIBTCC_TARGET_DIR)/double_return_chsp.out
 
 transform: $(TRANSFORM_STAMPS) transform-cli-check
 
@@ -350,9 +358,11 @@ clean:
 	rm -f array_control_chsp.ax array_control_chsp.hsp array_control_chsp.cpp array_control_chsp.i array_control_chsp.so
 	rm -f case_fold_hsp.ax case_fold_hsp.i
 	rm -f case_fold_chsp.ax case_fold_chsp.hsp case_fold_chsp.cpp case_fold_chsp.i case_fold_chsp.so
+	rm -f double_return_hsp.ax double_return_hsp.i
+	rm -f double_return_chsp.ax double_return_chsp.hsp double_return_chsp.cpp double_return_chsp.i double_return_chsp.so
 	rm -f invalid_cpp_name_chsp.ax invalid_cpp_name_chsp.hsp invalid_cpp_name_chsp.cpp invalid_cpp_name_chsp.i invalid_cpp_name_chsp.chi invalid_cpp_name_chsp.so
 	rm -f $(CHSP_CASES:%=%.chi) $(CHSP_CASES:%=%.transform.cpp) $(TRANSFORM_STAMPS)
-	rm -f operators_hsp.out operators_chsp.out features_hsp.out features_chsp.out commands_hsp.out commands_chsp.out branches_hsp.out branches_chsp.out nested_hsp.out nested_chsp.out vectors_hsp.out vectors_chsp.out scalars_hsp.out scalars_chsp.out trig_hsp.out trig_chsp.out random_hsp.out random_chsp.out inline_if_hsp.out inline_if_chsp.out inline_else_hsp.out inline_else_chsp.out inline_else_if_hsp.out inline_else_if_chsp.out inline_else_block_hsp.out inline_else_block_chsp.out mixed_if_hsp.out mixed_if_chsp.out loop_return_hsp.out loop_return_chsp.out loop_return_value_hsp.out loop_return_value_chsp.out precedence_hsp.out precedence_chsp.out separators_hsp.out separators_chsp.out continuations_hsp.out continuations_chsp.out int_literals_hsp.out int_literals_chsp.out array_access_hsp.out array_access_chsp.out local_arrays_hsp.out local_arrays_chsp.out array_return_hsp.out array_return_chsp.out array_builtin_args_hsp.out array_builtin_args_chsp.out array_control_hsp.out array_control_chsp.out case_fold_hsp.out case_fold_chsp.out
+	rm -f operators_hsp.out operators_chsp.out features_hsp.out features_chsp.out commands_hsp.out commands_chsp.out branches_hsp.out branches_chsp.out nested_hsp.out nested_chsp.out vectors_hsp.out vectors_chsp.out scalars_hsp.out scalars_chsp.out trig_hsp.out trig_chsp.out random_hsp.out random_chsp.out inline_if_hsp.out inline_if_chsp.out inline_else_hsp.out inline_else_chsp.out inline_else_if_hsp.out inline_else_if_chsp.out inline_else_block_hsp.out inline_else_block_chsp.out mixed_if_hsp.out mixed_if_chsp.out loop_return_hsp.out loop_return_chsp.out loop_return_value_hsp.out loop_return_value_chsp.out precedence_hsp.out precedence_chsp.out separators_hsp.out separators_chsp.out continuations_hsp.out continuations_chsp.out int_literals_hsp.out int_literals_chsp.out array_access_hsp.out array_access_chsp.out local_arrays_hsp.out local_arrays_chsp.out array_return_hsp.out array_return_chsp.out array_builtin_args_hsp.out array_builtin_args_chsp.out array_control_hsp.out array_control_chsp.out case_fold_hsp.out case_fold_chsp.out double_return_hsp.out double_return_chsp.out
 	rm -f operators_chsp_native features_chsp_native
 	rm -rf $(C_TARGET_DIR)
 	rm -rf $(C_LIBTCC_TARGET_DIR)

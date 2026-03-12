@@ -1,0 +1,21 @@
+#include "hsp3cl.as"
+
+#module m0
+
+#defcfunc blend_value double x, double y, local v
+	v = x * 1.5 + y * 0.25
+	v = limitf(v + sqrt(4.0), 0.0, 10.0)
+	return v
+
+#global
+
+	ddim out, 3
+	out(0) = blend_value(1.0, 2.0)
+	out(1) = blend_value(-4.0, 1.0)
+	out(2) = blend_value(3.0, 8.0)
+
+	mes "DOUBLE_RETURN"
+	mes strf("%.3f", out(0))
+	mes strf("%.3f", out(1))
+	mes strf("%.3f", out(2))
+	end
