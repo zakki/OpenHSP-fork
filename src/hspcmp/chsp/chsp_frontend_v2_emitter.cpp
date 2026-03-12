@@ -1226,11 +1226,7 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 	if ( target == ChspNativeTarget::Plugin ) {
 		native_out.PutStr( "#include <stdlib.h>\n" );
 		native_out.PutStr( "#include \"common/chsp/chsp_runtime.h\"\n" );
-		native_out.PutStr( "#if defined(HSPWIN)\n" );
-		native_out.PutStr( "#include \"src/plugins/win32/hpi3sample/hsp3plugin.h\"\n" );
-		native_out.PutStr( "#else\n" );
-		native_out.PutStr( "#include \"src/plugins/linux/hpi3sample/hsp3plugin.h\"\n" );
-		native_out.PutStr( "#endif\n\n" );
+		native_out.PutStr( "#include \"common/chsp/hsp3plugin.h\"\n" );
 		native_out.PutStr( "int p1,p2,p3,p4,p5,p6;\n" );
 		native_out.PutStr( "int *type;\n" );
 		native_out.PutStr( "int *val;\n" );
