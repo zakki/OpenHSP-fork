@@ -385,11 +385,38 @@ bool ParseModuleHeader( const ChspSourceLine &line, ChspModule &module )
 	if ( !ConsumeDirectivePrefix( cursor, "chsp_module" ) ) {
 		return false;
 	}
-	if ( !ConsumeString( cursor, module.name ) ) {
+	if ( !cursor.End() ) {
+		size_t save_pos = cursor.Position();
+		if ( !ConsumeString( cursor, module.name ) ) {
+			cursor.SetPosition( save_pos );
+		}
+	}
+	while ( !cursor.End() ) {
+		std::string key;
+		std::string value;
+		if ( !ConsumeObject( cursor, key ) ) {
+			return false;
+		}
+		if ( !ConsumeChar( cursor, '=' ) ) {
+			return false;
+		}
+		if ( !ConsumeObject( cursor, value ) ) {
+			return false;
+		}
+		if ( key == "target" ) {
+			if ( value == "plugin" ) {
+				module.target = ChspNativeTarget::Plugin;
+			} else if ( value == "c" ) {
+				module.target = ChspNativeTarget::C;
+			} else {
+				return false;
+			}
+			continue;
+		}
 		return false;
 	}
 	module.line = line.line;
-	return cursor.End();
+	return true;
 }
 
 bool TokenMatches( const ChspLexedToken *token, int value )

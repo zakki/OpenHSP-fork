@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <filesystem>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -1176,18 +1177,38 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
 	buf.PutStr( "}\n" );
 }
 
-std::string ModuleLibraryName( const std::string &module_name )
+std::string ModuleLibraryName( const std::string &file_stem )
 {
 #if defined( HSPWIN )
-	return module_name + ".dll";
+	return file_stem + ".dll";
 #elif defined( HSPMAC )
-	return module_name + ".dylib";
+	return file_stem + ".dylib";
 #else
-	return module_name + ".so";
+	return file_stem + ".so";
 #endif
 }
 
-void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const std::string &module_name, ChspNativeTarget target )
+std::string DefaultModuleFileStem( const char *source_name, size_t module_index )
+{
+	std::string base = "chsp_module";
+	if ( source_name != nullptr && source_name[0] != '\0' ) {
+		std::filesystem::path source_path( source_name );
+		if ( source_path.has_stem() ) {
+			base = source_path.stem().string();
+		}
+	}
+	return base + "_" + std::to_string( module_index + 1 );
+}
+
+std::string ModuleFileStem( const ChspModule &module, const char *source_name, size_t module_index )
+{
+	if ( !module.name.empty() ) {
+		return module.name;
+	}
+	return DefaultModuleFileStem( source_name, module_index );
+}
+
+void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const std::string &file_stem, ChspNativeTarget target )
 {
 	buf.PutStr( "#module " );
 	buf.PutStr( module_tag.c_str() );
@@ -1200,11 +1221,11 @@ void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const 
 
 	if ( target == ChspNativeTarget::Plugin ) {
 		buf.PutStr( "#regcmd \"hsp3cmdinit\", \"" );
-		buf.PutStr( ModuleLibraryName( module_name ).c_str() );
+		buf.PutStr( ModuleLibraryName( file_stem ).c_str() );
 		buf.PutStr( "\"\n\n" );
 	} else {
 		buf.PutStr( "#uselib \"" );
-		buf.PutStr( ModuleLibraryName( module_name ).c_str() );
+		buf.PutStr( ModuleLibraryName( file_stem ).c_str() );
 		buf.PutStr( "\"\n\n" );
 	}
 }
@@ -1254,14 +1275,21 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 } // namespace
 
 int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspProgram &program, CLogger &logger,
-						   CMemBuf &hsp_out, CMemBuf &native_out, const char *source_name, ChspNativeTarget target )
+						   CMemBuf &hsp_out, std::vector<ChspNativeArtifact> &native_outputs,
+						   const char *source_name )
 {
-	if ( target == ChspNativeTarget::Plugin && program.modules.size() > 1 ) {
-		logger.Mesf( "#Error:cHSP plugin backend currently supports exactly one #chsp_module [%s]",
-					 source_name != nullptr ? source_name : "<buffer>" );
-		return -1;
+	native_outputs.clear();
+	native_outputs.reserve( program.modules.size() );
+	for ( size_t i = 0; i < program.modules.size(); ++i ) {
+		const auto &module = program.modules[i];
+		ChspNativeArtifact artifact;
+		artifact.module_name = module.name;
+		artifact.file_stem = ModuleFileStem( module, source_name, i );
+		artifact.target = module.target;
+		artifact.output = std::make_unique<CMemBuf>();
+		WriteNativePreamble( *artifact.output, artifact.target );
+		native_outputs.push_back( std::move( artifact ) );
 	}
-	WriteNativePreamble( native_out, target );
 
 	const auto function_cpp_names = BuildFunctionCppNames( program );
 
@@ -1281,8 +1309,10 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 				continue;
 			}
 			if ( StartsWith( trimmed, "#define " ) ) {
-				native_out.PutStr( line.text.c_str() );
-				native_out.PutCR();
+				for ( auto &artifact : native_outputs ) {
+					artifact.output->PutStr( line.text.c_str() );
+					artifact.output->PutCR();
+				}
 			}
 			hsp_out.PutStr( line.text.c_str() );
 			hsp_out.PutCR();
@@ -1294,7 +1324,8 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 				return -1;
 			}
 			current_module_tag = "m" + std::to_string( module_index );
-			WriteModuleHeaderToHsp( hsp_out, current_module_tag, program.modules[module_index].name, target );
+			WriteModuleHeaderToHsp( hsp_out, current_module_tag, native_outputs[module_index].file_stem,
+								 program.modules[module_index].target );
 			function_index = 0;
 			++module_index;
 			break;
@@ -1319,6 +1350,7 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 			}
 			{
 				const auto &module = program.modules[module_index - 1];
+				auto &native_out = *native_outputs[module_index - 1].output;
 				if ( function_index >= module.functions.size() ) {
 					logger.Mesf( "#Error:Internal cHSP function index mismatch [%s]",
 								 source_name != nullptr ? source_name : "<buffer>" );
@@ -1328,14 +1360,14 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 				const auto cpp_name_it = function_cpp_names.find( function.name );
 				const std::string cpp_name =
 					cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : function.name;
-				if ( target == ChspNativeTarget::Plugin ) {
+				if ( module.target == ChspNativeTarget::Plugin ) {
 					WritePluginFunctionDeclToHsp( hsp_out, function, static_cast<int>( function_index ) );
 					if ( function_index + 1 == module.functions.size() ) {
 						WritePluginNativeDispatch( native_out, module, function_cpp_names );
 					}
 				} else {
 					WriteFunctionDeclToHsp( hsp_out, function, cpp_name );
-					WriteFunctionToNative( native_out, function, function_cpp_names, target );
+					WriteFunctionToNative( native_out, function, function_cpp_names, module.target );
 				}
 			}
 			++function_index;

@@ -74,6 +74,7 @@ struct ChspModule
 {
 	std::string name;
 	int line = 0;
+	ChspNativeTarget target = ChspNativeTarget::Plugin;
 	std::vector<ChspFunction> functions;
 };
 
@@ -158,6 +159,7 @@ std::vector<ChspSourceLine> BuildSourceIndex( const char *input_text, const std:
 bool ParseProgram( const std::vector<ChspSourceLine> &lines, ChspProgram &program, CLogger &logger,
 				   const char *source_name );
 int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspProgram &program, CLogger &logger,
-						   CMemBuf &hsp_out, CMemBuf &native_out, const char *source_name, ChspNativeTarget target );
+						   CMemBuf &hsp_out, std::vector<ChspNativeArtifact> &native_outputs,
+						   const char *source_name );
 
 } // namespace chspv2

@@ -102,7 +102,7 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 書式:
 
 ```hsp
-#chsp_module target=plugin
+#chsp_module "ao_opt" target=plugin
     ; ...
 #chsp_module_end
 
@@ -111,6 +111,8 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 #chsp_module_end
 ```
 
+- 先頭の module 名文字列は省略できます。
+  - 省略時はソースファイル名と module の出現順から出力ファイル名を自動生成します。
 - `target=plugin`
   - plugin backend を使います。
 - `target=c`

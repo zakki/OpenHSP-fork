@@ -5,7 +5,10 @@
 //
 
 #include <stdio.h>
+#include <filesystem>
 #include <memory>
+#include <string>
+#include <vector>
 #include <windows.h>
 #include <direct.h>
 
@@ -331,7 +334,6 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	int st;
 	int ppopt;
 	int cmpmode;
-	ChspNativeTarget chsp_target;
 	ChspNativeCompileMode chsp_compile_mode;
 	char fname2[_MAX_PATH];
 	char fname_cpp[_MAX_PATH];
@@ -346,10 +348,11 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	strcpy( fname2, fname );
 	strcat( fname2, ".i" );
 	strcpy( fname_cpp, fname );
-	chsp_target = ChspNativeTarget::Plugin;
 	chsp_compile_mode = ChspNativeCompileMode::Libtcc;
 	if ( p2 & HSC3_CHSP_TARGET_C ) {
-		chsp_target = ChspNativeTarget::C;
+		hsc3->Print( (char *)"#--chsp-target is no longer supported. Specify target=plugin or target=c on #chsp_module." );
+		hsc3->PreProcessEnd();
+		return -1;
 	}
 	if ( p2 & HSC3_CHSP_COMPILE_NONE ) {
 		chsp_compile_mode = ChspNativeCompileMode::None;
@@ -384,17 +387,30 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 			std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
 			CChspFrontendV2 frontend( frontend_errbuf );
 			CMemBuf transformed_out;
-			CMemBuf cpp_out;
-			st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out,
-											  chsp_target );
+			std::vector<ChspNativeArtifact> native_outputs;
+			st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out,
+											  &native_outputs );
 			if ( st == 0 ) {
-				if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
-					hsc3->Print( (char *)"#Can't write generated cHSP native file." );
-					st = -1;
+				const std::filesystem::path source_path( fname_cpp );
+				const std::filesystem::path native_dir =
+					source_path.has_parent_path() ? source_path.parent_path() : std::filesystem::path( "." );
+				std::vector<std::string> native_files;
+				native_files.reserve( native_outputs.size() );
+				for ( const auto &artifact : native_outputs ) {
+					const std::filesystem::path native_path = native_dir / ( artifact.file_stem + ".c" );
+					native_files.push_back( native_path.string() );
+					char native_path_buf[_MAX_PATH];
+					strncpy( native_path_buf, native_files.back().c_str(), _MAX_PATH - 1 );
+					native_path_buf[_MAX_PATH - 1] = 0;
+					if ( artifact.output == nullptr || artifact.output->SaveFile( native_path_buf ) < 0 ) {
+						hsc3->Print( (char *)"#Can't write generated cHSP native file." );
+						st = -1;
+						break;
+					}
 				}
-			}
-			if (( st == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
-				st = chsp_compile_library_with_libtcc( hsc3, fname_cpp, compath, transformed_out );
+				if (( st == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
+					st = chsp_compile_library_with_libtcc( hsc3, native_files, compath, native_outputs );
+				}
 			}
 			if ( st != 0 ) {
 				hsc3->PreProcessEnd();

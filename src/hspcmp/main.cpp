@@ -8,7 +8,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <filesystem>
 #include <memory>
+#include <string>
+#include <vector>
 
 #if defined(HSPLINUX)
 #include <unistd.h>
@@ -69,7 +72,6 @@ static 	char *p[] = {
 	"       ---------------------------------",
 	"       --syspath=??? set system folder for execute",
 	"       --compath=??? set common path to ???",
-	"       --chsp-target=c|plugin set cHSP native output target (default: plugin)",
 	"       --chsp-compile=libtcc|none set cHSP native compile mode (default: libtcc)",
 	NULL };
 	int i;
@@ -110,7 +112,6 @@ int main( int argc, char *argv[] )
 	char compath[HSP_MAX_PATH];
 	char syspath[HSP_MAX_PATH];
 	char helpkey[256];
-	ChspNativeTarget chsp_target;
 	ChspNativeCompileMode chsp_compile_mode;
 	CHsc3 *hsc3=NULL;
 
@@ -127,7 +128,6 @@ int main( int argc, char *argv[] )
 	oname[0]=0;
 	syspath[0]=0;
 	helpkey[0] = 0;
-	chsp_target = ChspNativeTarget::Plugin;
 	chsp_compile_mode = ChspNativeCompileMode::Libtcc;
 
 #ifdef HSPLINUX
@@ -155,16 +155,7 @@ int main( int argc, char *argv[] )
 				continue;
 			}
 			if (strncmp(argv[b], "--chsp-target=", 14) == 0) {
-				const char *value = argv[b] + 14;
-				if ( strcmp( value, "c" ) == 0 ) {
-					chsp_target = ChspNativeTarget::C;
-					continue;
-				}
-				if ( strcmp( value, "plugin" ) == 0 ) {
-					chsp_target = ChspNativeTarget::Plugin;
-					continue;
-				}
-				printf( "Invalid cHSP target selected.\n" );
+				printf( "--chsp-target is no longer supported. Specify target=plugin or target=c on #chsp_module.\n" );
 				return 1;
 			}
 			if (strncmp(argv[b], "--chsp-compile=", 15) == 0) {
@@ -279,13 +270,6 @@ int main( int argc, char *argv[] )
 		delete hsc3;
 		return 1;
 	}
-	if ( chsp_compile_mode != ChspNativeCompileMode::None &&
-		 chsp_target != ChspNativeTarget::C &&
-		 chsp_target != ChspNativeTarget::Plugin ) {
-		printf("cHSP native compilation currently requires --chsp-target=c or --chsp-target=plugin.\n");
-		delete hsc3;
-		return 1;
-	}
 #if !defined(HSPLINUX) && !defined(HSPWIN)
 	if ( chsp_compile_mode == ChspNativeCompileMode::Libtcc ) {
 		printf("libtcc native compilation is currently supported only on Linux and Win32.\n");
@@ -393,18 +377,32 @@ int main( int argc, char *argv[] )
 				std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
 				CChspFrontendV2 frontend( frontend_errbuf );
 				CMemBuf transformed_out;
-				CMemBuf cpp_out;
-				st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out, chsp_target );
+				std::vector<ChspNativeArtifact> native_outputs;
+				st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out,
+												 &native_outputs );
 				if ( st == 0 ) {
-					if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
-						hsc3->Print( (char *)"#Can't write generated cHSP native file." );
-						st = -1;
+					const std::filesystem::path source_path( fname_cpp );
+					const std::filesystem::path native_dir =
+						source_path.has_parent_path() ? source_path.parent_path() : std::filesystem::path( "." );
+					std::vector<std::string> native_files;
+					native_files.reserve( native_outputs.size() );
+					for ( const auto &artifact : native_outputs ) {
+						const std::filesystem::path native_path = native_dir / ( artifact.file_stem + ".c" );
+						native_files.push_back( native_path.string() );
+						char native_path_buf[HSP_MAX_PATH];
+						strncpy( native_path_buf, native_files.back().c_str(), HSP_MAX_PATH - 1 );
+						native_path_buf[HSP_MAX_PATH - 1] = 0;
+						if ( artifact.output == nullptr || artifact.output->SaveFile( native_path_buf ) < 0 ) {
+							hsc3->Print( (char *)"#Can't write generated cHSP native file." );
+							st = -1;
+							break;
+						}
 					}
-				}
-				if (( st == 0 )&&( chsp_transform_only == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
+					if (( st == 0 )&&( chsp_transform_only == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
 #ifdef CHSP_HAS_LIBTCC
-					st = chsp_compile_library_with_libtcc( hsc3, fname_cpp, compath, transformed_out );
+						st = chsp_compile_library_with_libtcc( hsc3, native_files, compath, native_outputs );
 #endif
+					}
 				}
 				if (( st == 0 )&&( chsp_transform_only != 0 )) {
 					if ( transformed_out.SaveFile( fname_chi ) < 0 ) {
