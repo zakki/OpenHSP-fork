@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TEST_DIR = Path(__file__).resolve().parent
+TEMPLATE_DIR = TEST_DIR / "templates"
 
 HSP_CASES = [
     "operators_hsp",
@@ -82,6 +83,15 @@ EXPECTED_COMPARE_MISMATCHES = {
     "default": set(),
     "libtcc": set(),
 }
+SECTION_HEADER_PATTERN = re.compile(r"^@@\s+([a-z0-9_]+)\s*$")
+SECTION_REF_PATTERN = re.compile(r"\{\{([a-z0-9_]+)\}\}")
+CASE_TEMPLATES = {
+    "trig": {
+        "path": TEMPLATE_DIR / "trig.case",
+        "hsp_case": "trig_hsp",
+        "chsp_case": "trig_chsp",
+    },
+}
 
 
 def env_path(name: str, default: Path) -> Path:
@@ -115,18 +125,10 @@ DEFAULT_TARGET_HSPCMP_FLAGS = [
     "-u",
     f"--compath={with_trailing_sep(COMPATH)}",
 ]
-C_TARGET_HSPCMP_FLAGS = [
-    "-d",
-    "-i",
-    "-u",
-    "--chsp-target=c",
-    f"--compath={with_trailing_sep(COMPATH)}",
-]
 C_LIBTCC_HSPCMP_FLAGS = [
     "-d",
     "-i",
     "-u",
-    "--chsp-target=plugin",
     "--chsp-compile=libtcc",
     f"--compath={with_trailing_sep(COMPATH)}",
 ]
@@ -208,10 +210,123 @@ def remove_if_exists(path: Path) -> None:
 
 
 def copy_case_source(case: str, suffix: str, target_dir: Path) -> Path:
+    ensure_generated_case_sources(case)
     src = TEST_DIR / f"{case}{suffix}"
     dst = target_dir / src.name
     ensure_parent(dst)
     shutil.copy2(src, dst)
+    return dst
+
+
+def rewrite_chsp_module_for_c_target(text: str) -> str:
+    lines = text.splitlines(keepends=True)
+    out_lines: list[str] = []
+    pattern = re.compile(r"^(\s*#chsp_module\b)(.*?)(\r?\n?)$", flags=re.IGNORECASE)
+    target_pattern = re.compile(r"\btarget\s*=\s*(plugin|c)\b", flags=re.IGNORECASE)
+    for line in lines:
+        match = pattern.match(line)
+        if not match:
+            out_lines.append(line)
+            continue
+        prefix, rest, newline = match.groups()
+        if target_pattern.search(rest):
+            rest = target_pattern.sub("target=c", rest)
+        elif rest.strip():
+            rest = f"{rest} target=c"
+        else:
+            rest = " target=c"
+        out_lines.append(f"{prefix}{rest}{newline}")
+    return "".join(out_lines)
+
+
+def parse_case_template(path: Path) -> dict[str, str]:
+    sections: dict[str, list[str]] = {}
+    current_name: str | None = None
+    current_lines: list[str] = []
+    for raw_line in path.read_text(encoding="utf-8").splitlines(keepends=True):
+        match = SECTION_HEADER_PATTERN.match(raw_line.rstrip("\r\n"))
+        if match:
+            if current_name is not None:
+                sections[current_name] = current_lines
+            current_name = match.group(1)
+            current_lines = []
+            continue
+        if current_name is None:
+            if raw_line.strip():
+                raise CommandError(f"template content before first section: {path}")
+            continue
+        current_lines.append(raw_line)
+    if current_name is not None:
+        sections[current_name] = current_lines
+    if not sections:
+        raise CommandError(f"template has no sections: {path}")
+    return {name: "".join(lines) for name, lines in sections.items()}
+
+
+def render_template_sections(sections: dict[str, str], name: str, stack: tuple[str, ...] = ()) -> str:
+    if name not in sections:
+        raise CommandError(f"missing template section: {name}")
+    if name in stack:
+        chain = " -> ".join((*stack, name))
+        raise CommandError(f"cyclic template section reference: {chain}")
+
+    def replace(match: re.Match[str]) -> str:
+        section_name = match.group(1)
+        return render_template_sections(sections, section_name, (*stack, name))
+
+    return SECTION_REF_PATTERN.sub(replace, sections[name])
+
+
+def generated_case_names() -> set[str]:
+    names: set[str] = set()
+    for entry in CASE_TEMPLATES.values():
+        names.add(entry["hsp_case"])
+        names.add(entry["chsp_case"])
+    return names
+
+
+def template_key_for_case(case: str) -> str | None:
+    for key, entry in CASE_TEMPLATES.items():
+        if case in {entry["hsp_case"], entry["chsp_case"]}:
+            return key
+    return None
+
+
+def render_case_variants(template_key: str) -> dict[str, str]:
+    template_info = CASE_TEMPLATES[template_key]
+    sections = parse_case_template(template_info["path"])
+    outputs = {
+        "hsp": render_template_sections(sections, "hsp"),
+        "chsp": render_template_sections(sections, "chsp"),
+    }
+    if "chsp_c" in sections:
+        outputs["chsp_c"] = render_template_sections(sections, "chsp_c")
+    else:
+        outputs["chsp_c"] = rewrite_chsp_module_for_c_target(outputs["chsp"])
+    return outputs
+
+
+def ensure_generated_case_sources(case: str) -> None:
+    template_key = template_key_for_case(case)
+    if template_key is None:
+        return
+    template_info = CASE_TEMPLATES[template_key]
+    rendered = render_case_variants(template_key)
+    write_text(TEST_DIR / f'{template_info["hsp_case"]}.hsp', rendered["hsp"])
+    write_text(TEST_DIR / f'{template_info["chsp_case"]}.chsp', rendered["chsp"])
+
+
+def copy_c_target_chsp_case(case: str, target_dir: Path) -> Path:
+    src = TEST_DIR / f"{case}.chsp"
+    dst = target_dir / src.name
+    ensure_parent(dst)
+    template_key = template_key_for_case(case)
+    if template_key is not None:
+        rendered = render_case_variants(template_key)
+        write_text(dst, rendered["chsp_c"])
+        return dst
+    text = src.read_text(encoding="utf-8")
+    write_text(dst, rewrite_chsp_module_for_c_target(text))
     return dst
 
 
@@ -241,7 +356,7 @@ def hspcmp_flags(mode: str) -> list[str]:
     if mode == "default":
         return DEFAULT_TARGET_HSPCMP_FLAGS
     if mode == "c":
-        return C_TARGET_HSPCMP_FLAGS
+        return DEFAULT_TARGET_HSPCMP_FLAGS
     if mode == "libtcc":
         return C_LIBTCC_HSPCMP_FLAGS
     raise ValueError(f"unknown mode: {mode}")
@@ -298,6 +413,7 @@ def run_ax(ax_path: Path, lib_dir: Path | None) -> str:
 
 
 def build_hsp_output(case: str) -> Path:
+    ensure_generated_case_sources(case)
     source = TEST_DIR / f"{case}.hsp"
     compile_with_hspcmp(source, "default", quiet_success=True)
     out_path = TEST_DIR / f"{case}.out"
@@ -306,12 +422,13 @@ def build_hsp_output(case: str) -> Path:
 
 
 def build_chsp_output(case: str, mode: str) -> Path:
+    ensure_generated_case_sources(case)
     directory = mode_dir(mode)
     if directory is None:
         source = TEST_DIR / f"{case}.chsp"
     else:
         directory.mkdir(parents=True, exist_ok=True)
-        source = copy_case_source(case, ".chsp", directory)
+        source = copy_c_target_chsp_case(case, directory)
     compile_with_hspcmp(source, mode, quiet_success=True)
     if mode == "c":
         compile_shared_library(source.with_suffix(".c"), source.with_suffix(".so"))
@@ -363,10 +480,11 @@ def same_file_contents(left: Path, right: Path) -> bool:
 
 
 def transform_outputs(case: str, mode: str) -> tuple[Path, Path, Path, Path]:
+    ensure_generated_case_sources(case)
     source = case_path(case, ".chsp", mode)
     if mode != "default":
         source.parent.mkdir(parents=True, exist_ok=True)
-        copy_case_source(case, ".chsp", source.parent)
+        copy_c_target_chsp_case(case, source.parent)
     ax_path = source.with_suffix(".ax")
     chi_path = source.with_suffix(".chi")
     c_path = source.with_suffix(".c")
@@ -426,9 +544,9 @@ def run_transform_cli_check_default() -> None:
 def run_transform_cli_check_c() -> None:
     target_dir = TEST_DIR / C_TARGET_DIR
     target_dir.mkdir(parents=True, exist_ok=True)
-    copy_case_source("operators_chsp", ".chsp", target_dir)
+    copy_c_target_chsp_case("operators_chsp", target_dir)
     copy_case_source("operators_hsp", ".hsp", target_dir)
-    copy_case_source("invalid_cpp_name_chsp", ".chsp", target_dir)
+    copy_c_target_chsp_case("invalid_cpp_name_chsp", target_dir)
 
     for suffix in [".ax", ".chi", ".c"]:
         remove_if_exists(target_dir / f"operators_chsp{suffix}")
@@ -448,7 +566,6 @@ def run_transform_cli_check_c() -> None:
         str(HSPCMP),
         "-p",
         "-t",
-        "--chsp-target=c",
         f"--compath={with_trailing_sep(COMPATH)}",
         str((target_dir / "operators_chsp.chsp").name),
     ]
@@ -484,6 +601,10 @@ def command_clean() -> None:
             remove_if_exists(TEST_DIR / f"{name}{suffix}")
     remove_if_exists(TEST_DIR / C_TARGET_DIR)
     remove_if_exists(TEST_DIR / C_LIBTCC_TARGET_DIR)
+
+
+for case in generated_case_names():
+    ensure_generated_case_sources(case)
 
 
 def parse_args() -> argparse.Namespace:
