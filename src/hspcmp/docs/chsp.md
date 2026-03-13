@@ -150,16 +150,16 @@ Win32 では `libtcc` のヘッダと import library を参照できるように
 `test/test_chsp_compare/Makefile` には C backend 用ターゲットがあります。
 
 ```sh
-make -C test/test_chsp_compare check-c
-make -C test/test_chsp_compare check-c-tcc
-make -C test/test_chsp_compare check-c-libtcc
+make -C test/test_chsp_compare check-emit-c
+make -C test/test_chsp_compare check-emit-c-tcc
+make -C test/test_chsp_compare check-libtcc
 ```
 
-- `check-c`
+- `check-emit-c`
   - C backend を `cc` で共有ライブラリ化して、比較テストと transform テストを通します。
-- `check-c-tcc`
+- `check-emit-c-tcc`
   - C backend を `tcc` で共有ライブラリ化して、同じ比較テストと transform テストを通します。
-- `check-c-libtcc`
+- `check-libtcc`
   - `hspcmp --chsp-compile=libtcc` で直接共有ライブラリを出力し、比較テストを通します。
 
 mixed target 対応後は、少なくとも「plugin module のみ」「C module のみ」「plugin / C 混在」の 3 パターンを比較テストで通します。

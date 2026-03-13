@@ -10,6 +10,7 @@ C_NATIVE_SOFLAGS ?= -shared -fPIC
 C_NATIVE_LDLIBS ?= -lm
 PYTHON ?= python3
 RUNNER := $(PYTHON) ./run_test_matrix.py
+TEMPLATE_GENERATOR := $(PYTHON) ./generate_templates.py
 
 export HSPCMP
 export HSP3CL
@@ -21,39 +22,35 @@ export C_NATIVE_CFLAGS
 export C_NATIVE_SOFLAGS
 export C_NATIVE_LDLIBS
 
-.PHONY: all clean compare compare-c compare-c-libtcc transform transform-c transform-cli-check transform-c-cli-check check-c check-c-tcc check-c-libtcc
+.PHONY: all clean generate-templates clean-templates compare compare-emit-c compare-libtcc check-emit-c check-emit-c-tcc check-libtcc
 
-all: compare compare-c compare-c-libtcc
+all: compare compare-emit-c compare-libtcc
+
+generate-templates:
+	$(TEMPLATE_GENERATOR)
+
+clean-templates:
+	$(TEMPLATE_GENERATOR) --clean
 
 compare:
 	$(RUNNER) compare --mode default
 
-compare-c:
-	$(RUNNER) compare --mode c
+compare-emit-c:
+	$(RUNNER) compare --mode emit-c
 
-compare-c-libtcc:
+compare-libtcc:
 	$(RUNNER) compare --mode libtcc
 
-transform:
-	$(RUNNER) transform --mode default
+check-emit-c: compare-emit-c
 
-transform-c:
-	$(RUNNER) transform --mode c
-
-transform-cli-check: transform
-
-transform-c-cli-check: transform-c
-
-check-c: compare-c transform-c
-
-check-c-tcc:
+check-emit-c-tcc:
 	$(MAKE) clean
-	$(MAKE) compare-c C_NATIVE_CC=tcc
-	$(MAKE) transform-c C_NATIVE_CC=tcc
+	$(MAKE) compare-emit-c C_NATIVE_CC=tcc
 
-check-c-libtcc:
+check-libtcc:
 	$(MAKE) clean
-	$(MAKE) compare-c-libtcc
+	$(MAKE) compare-libtcc
 
 clean:
+	$(TEMPLATE_GENERATOR) --clean
 	$(RUNNER) clean

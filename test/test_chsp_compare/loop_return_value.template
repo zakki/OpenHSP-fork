@@ -1,0 +1,54 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#defcfunc first_over int threshold
+repeat 6
+	if cnt > threshold {
+		return cnt * 10 + 1
+	}
+loop
+return 999
+#global
+@@ chsp_c_module
+#chsp_module "loop_return_value_chsp_c" target=c
+
+#chsp_defcfunc int first_over int limit
+repeat 6
+	if cnt > limit {
+		return cnt * 10 + 1
+	}
+loop
+return 999
+#chsp_end
+
+#chsp_module_end
+@@ chsp_p_module
+#chsp_module "loop_return_value_chsp_p"
+
+#chsp_defcfunc int first_over int limit
+repeat 6
+	if cnt > limit {
+		return cnt * 10 + 1
+	}
+loop
+return 999
+#chsp_end
+
+#chsp_module_end
+@@ main
+
+mes "" + first_over(0)
+mes "" + first_over(5)
+mes "" + first_over(1)
+mes "" + first_over(10)
+
+end
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

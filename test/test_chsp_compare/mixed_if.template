@@ -1,0 +1,75 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc fill_vals array vals, int a0, int a1
+if a0 = 1 {
+	vals(0) = 10
+	vals(0) += 1
+} else : vals(0) = 20
+
+if a1 = 1 {
+	vals(1) = 10
+} else : vals(1) = 20 : vals(1) += 2
+return
+#global
+
+dim vals, 2
+fill_vals vals, 1, 2
+
+repeat 2
+	mes "" + vals(cnt)
+loop
+
+@@ chsp_c_module
+#chsp_module "mixed_if_chsp_c" target=c
+
+#chsp_deffunc fill_vals array[int] vals, int a0, int a1
+if a0=1 {
+	vals(0)=10
+	vals(0)+=1
+} else : vals(0)=20
+
+if a1=1 {
+	vals(1)=10
+} else : vals(1)=20 : vals(1)+=2
+#chsp_end
+
+#chsp_module_end
+
+dim vals, 2
+fill_vals vals, 1, 2
+repeat 2
+	mes "" + vals(cnt)
+loop
+@@ chsp_p_module
+#chsp_module "mixed_if_chsp_p"
+
+#chsp_deffunc fill_vals array[int] vals, int a0, int a1
+if a0=1 {
+	vals(0)=10
+	vals(0)+=1
+} else : vals(0)=20
+
+if a1=1 {
+	vals(1)=10
+} else : vals(1)=20 : vals(1)+=2
+#chsp_end
+
+#chsp_module_end
+
+dim vals, 2
+fill_vals vals, 1, 2
+repeat 2
+	mes "" + vals(cnt)
+loop
+@@ main
+end
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

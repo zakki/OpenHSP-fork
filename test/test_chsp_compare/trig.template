@@ -1,0 +1,65 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc fill_trig array vals, double angle
+	vals(0) = sin(angle)
+	vals(1) = cos(angle)
+	vals(2) = tan(angle * 0.25)
+	vals(3) = atan(1.0)
+	return
+
+#deffunc dummy_00
+	return
+
+#global
+@@ chsp_c_module
+#chsp_module "trig_chsp_c" target=c
+
+#chsp_deffunc fill_trig array[double] vals, double angle
+	vals(0) = sin(angle)
+	vals(1) = cos(angle)
+	vals(2) = tan(angle * 0.25)
+	vals(3) = atan(1.0)
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ chsp_p_module
+#chsp_module "trig_chsp_p"
+
+#chsp_deffunc fill_trig array[double] vals, double angle
+	vals(0) = sin(angle)
+	vals(1) = cos(angle)
+	vals(2) = tan(angle * 0.25)
+	vals(3) = atan(1.0)
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ main
+
+	ddim vals, 4
+	fill_trig vals, 0.5
+
+	mes "TRIG"
+	repeat 4
+		mes strf("%.6f", vals(cnt))
+	loop
+	end
+
+dummy_00
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}
