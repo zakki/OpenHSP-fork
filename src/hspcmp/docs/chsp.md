@@ -45,6 +45,11 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
   - 組み込み関数呼び出し
   - 1次元数値配列アクセス
 
+注意:
+
+- `int` / `double` の混在演算と、混在式を `int` / `double` 返り値や代入先へ載せたときのセマンティクスは未確定です。
+- 現在は compare テストで plugin backend の現挙動を観測・固定している段階であり、HSP 準拠に寄せるか、C の usual arithmetic conversions に寄せるかは今後の検討事項です。
+
 ### MVP では対象外
 
 - `str` / `array[str]`

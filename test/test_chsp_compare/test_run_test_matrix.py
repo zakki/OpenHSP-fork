@@ -33,6 +33,7 @@ class RunTestMatrixConfigTest(unittest.TestCase):
         self.assertIn("libtcc", proc.stdout)
 
     def test_template_cases_follow_templates_with_gt(self) -> None:
+        self.assertIn("mixed_numeric_return", TEMPLATE_CASES)
         self.assertIn("operators", TEMPLATE_CASES)
         self.assertIn("trig", TEMPLATE_CASES)
         self.assertNotIn("double_return", TEMPLATE_CASES)
