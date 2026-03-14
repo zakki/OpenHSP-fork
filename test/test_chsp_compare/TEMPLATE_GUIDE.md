@@ -2,7 +2,7 @@
 
 ## 目的
 
-`test/test_chsp_compare` では、同じテスト本体から以下の 3 バリアントを生成できるようにすることを想定する。
+`test/test_chsp_compare` では、同じテスト本体から必要なバリアントだけを生成し、比較できるようにすることを想定する。
 
 - `test_a.hsp`
 - `test_a_chsp_c.hsp`
@@ -17,7 +17,7 @@
 
 ## 想定するファイル構成
 
-テンプレート 1 個から、同じディレクトリに 3 ファイルを生成する。
+テンプレート 1 個から、同じディレクトリに必要なファイルを生成する。
 
 ```text
 test_x.template
@@ -32,11 +32,18 @@ gen/test_x_chsp_p.hsp
 - `test_x_chsp_c.hsp`: `#chsp_module ... target=c` のCターゲット用
 - `test_x_chsp_p.hsp`: `#chsp_module ...` のプラグインターゲット用
 
+テンプレートによっては、`hsp` と `chsp_p` だけ、あるいは `chsp_p` だけを生成してもよい。
+
 ## テンプレートの基本仕様
 
 テンプレートは section ベースのプレーンテキストとし、`@@ section_name` で区切る。
 
 ```text
+@@ meta
+compare_default = hsp, chsp_p
+compare_emit_c = chsp_p
+compare_libtcc = chsp_p
+
 @@ header
 ...
 
@@ -57,11 +64,6 @@ gen/test_x_chsp_p.hsp
 {{hsp_module}}
 {{main}}
 
-@@ chsp_c
-{{header}}
-{{chsp_c_module}}
-{{main}}
-
 @@ chsp_p
 {{header}}
 {{chsp_p_module}}
@@ -71,9 +73,18 @@ gen/test_x_chsp_p.hsp
 仕様の要点は以下。
 
 - `{{section_name}}` で別 section を参照できる
-- 生成対象の最上位 section は `hsp` / `chsp_c` / `chsp_p`
+- `meta` は任意で、compare 時の対象バリアントを mode ごとに指定できる
+- 最上位 section は `hsp` / `chsp_c` / `chsp_p` のうち必要なものだけ置ける
 - 共通化したいヘッダー、補助関数、呼び出し部は別 section に切り出す
 - 差分を持たせたい箇所は `hsp_module` / `chsp_c_module` / `chsp_p_module` に分ける
+
+`meta` で使えるキーは以下。
+
+- `compare_default`
+- `compare_emit_c`
+- `compare_libtcc`
+
+値は `hsp`, `chsp_c`, `chsp_p` のカンマ区切りまたは空白区切り。省略した mode では、その mode で通常比較されるバリアントのうち、実際に top-level section が存在するものだけが比較対象になる。
 
 ## section の役割
 
@@ -154,9 +165,9 @@ gen/test_x_chsp_p.hsp
 {{chsp_c_module}}
 {{main}}
 
-@@ p
+@@ chsp_p
 {{header}}
-{{p_module}}
+{{chsp_p_module}}
 {{main}}
 ```
 
@@ -201,11 +212,12 @@ gen/test_x_chsp_p.hsp
 2. まず `header`、`main` を書いて共通部分を固める
 3. `hsp_module`、`chsp_c_module`、`chsp_p_module` を最小差分で書く
 4. `hsp`、`chsp_c`、`chsp_p` の最上位 section で組み立てる
-5. 生成後の 3 ファイルを見比べて、差分が意図どおりモジュール定義だけに収まっているか確認する
+5. 必要なら `meta` を追加して、mode ごとの比較対象を絞る
+6. 生成後のファイルを見比べて、差分が意図どおりモジュール定義だけに収まっているか確認する
 
 ## make / Python スクリプトへの接続方針
 
-実装時は、Python スクリプトが `*.template` を走査して 3 ファイルを生成し、その後に `run_test_matrix.py` を呼ぶ構成を想定する。
+実装時は、Python スクリプトが `*.template` を走査して必要なファイルを生成し、その後に `run_test_matrix.py` を呼ぶ構成を想定する。
 
 流れは次のイメージ。
 
@@ -219,10 +231,11 @@ make
 
 - template generator
   - `*.template` の解釈
-  - 3 ファイルの生成
+  - 必要なバリアントのファイル生成
   - 必要なら生成ファイルの clean
 - `run_test_matrix.py`
   - 生成済みソースを使った compare / transform 実行
+  - template ごとの compare 対象バリアントの解釈
 
 ## 初回導入候補
 

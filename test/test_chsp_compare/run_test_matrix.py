@@ -12,7 +12,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from generate_templates import DEFAULT_OUTPUT_DIR, discover_templates, generate_template
+from generate_templates import (
+    DEFAULT_OUTPUT_DIR,
+    TOP_LEVEL_SECTIONS,
+    discover_templates,
+    generate_template,
+    parse_template,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 TEST_DIR = Path(__file__).resolve().parent
@@ -74,6 +80,9 @@ TEMPLATE_CASES = tuple(
         if (TEST_DIR / f"{path.stem}.gt").exists()
     )
 )
+TEMPLATE_SPECS = {
+    case: parse_template(TEST_DIR / f"{case}.template") for case in TEMPLATE_CASES
+}
 
 # mode selects the native compile path used by hspcmp for cHSP modules.
 # variant selects which generated source kind from a template is executed.
@@ -222,6 +231,17 @@ def variants_for_mode(mode: str) -> tuple[str, ...]:
     raise ValueError(f"unknown mode: {mode}")
 
 
+def compare_variants_for_case(case: str, mode: str) -> tuple[str, ...]:
+    spec = TEMPLATE_SPECS[case]
+    if mode in spec.compare_variants:
+        return spec.compare_variants[mode]
+    return tuple(
+        variant
+        for variant in variants_for_mode(mode)
+        if variant in spec.top_level_sections and variant in TOP_LEVEL_SECTIONS
+    )
+
+
 def generated_source_path(case: str, variant: str, output_dir: Path) -> Path:
     if variant == "hsp":
         return output_dir / f"{case}.hsp"
@@ -237,7 +257,7 @@ def generate_case_sources(case: str, output_dir: Path) -> dict[str, Path]:
     generate_template(template_path, output_dir)
     return {
         variant: generated_source_path(case, variant, output_dir)
-        for variant in ("hsp", "chsp_c", "chsp_p")
+        for variant in TEMPLATE_SPECS[case].top_level_sections
     }
 
 
@@ -293,7 +313,7 @@ def command_compare(mode: str, output_dir: Path) -> None:
     for case in TEMPLATE_CASES:
         expected = TEST_DIR / f"{case}.gt"
         generated = generate_case_sources(case, output_dir)
-        for variant in variants_for_mode(mode):
+        for variant in compare_variants_for_case(case, mode):
             actual = build_variant_output(generated[variant], variant, mode)
             if not compare_text(expected, actual):
                 raise CommandError(f"compare failed: {mode} {case} ({variant})")
