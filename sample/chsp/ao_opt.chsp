@@ -53,9 +53,9 @@ goto *MAIN
 	return
 
 #chsp_deffunc ray_sphere_intersect array[double] spheres_center, array[double] spheres_radius, array[double] spheres_col, array[double] isect, array[double] isect_p, array[double] isect_n, array[double] ray_org, array[double] ray_dir, int no, local[double[3]] rs, local[double] b, local[double] c, local[double] d, local[double] t
-	rs(0) = ray_org(0) - spheres_center(no, 0)
-	rs(1) = ray_org(1) - spheres_center(no, 1)
-	rs(2) = ray_org(2) - spheres_center(no, 2)
+	rs(0) = ray_org(0) - spheres_center(no * 3 + 0)
+	rs(1) = ray_org(1) - spheres_center(no * 3 + 1)
+	rs(2) = ray_org(2) - spheres_center(no * 3 + 2)
 
 	b = vdot(rs, ray_dir)
 	c = vdot(rs, rs) - spheres_radius@(no) * spheres_radius@(no)
@@ -66,17 +66,17 @@ goto *MAIN
 			isect(0) = t
 			isect(1) += 1.0
 
-			isect(2) = spheres_col@(no, 0)
-			isect(3) = spheres_col@(no, 1)
-			isect(4) = spheres_col@(no, 2)
+			isect(2) = spheres_col@(no * 3 + 0)
+			isect(3) = spheres_col@(no * 3 + 1)
+			isect(4) = spheres_col@(no * 3 + 2)
 
 			isect_p(0) = ray_org(0) + ray_dir(0) * t
 			isect_p(1) = ray_org(1) + ray_dir(1) * t
 			isect_p(2) = ray_org(2) + ray_dir(2) * t
 
-			isect_n(0) = isect_p(0) - spheres_center(no, 0)
-			isect_n(1) = isect_p(1) - spheres_center(no, 1)
-			isect_n(2) = isect_p(2) - spheres_center(no, 2)
+			isect_n(0) = isect_p(0) - spheres_center(no * 3 + 0)
+			isect_n(1) = isect_p(1) - spheres_center(no * 3 + 1)
+			isect_n(2) = isect_p(2) - spheres_center(no * 3 + 2)
 
 			vnormalize isect_n
 		}
