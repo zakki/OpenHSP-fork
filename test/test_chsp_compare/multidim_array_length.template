@@ -1,0 +1,87 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc fill_dims array a2, array a3, array a4
+	a2(1,2) = 120
+	a3(1,2,3) = 1230
+	a4(1,2,3,4) = 1234
+	return
+
+#deffunc dummy_00
+	return
+
+#global
+
+@@ chsp_c_module
+#chsp_module "multidim_array_length_chsp_c" target=c
+
+#chsp_deffunc fill_dims array[int] a2, array[int] a3, array[int] a4
+	a2(1,2) = 120
+	a3(1,2,3) = 1230
+	a4(1,2,3,4) = 1234
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "multidim_array_length_chsp_p"
+
+#chsp_deffunc fill_dims array[int] a2, array[int] a3, array[int] a4
+	a2(1,2) = 120
+	a3(1,2,3) = 1230
+	a4(1,2,3,4) = 1234
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+dim a2, 2, 3
+dim a3, 2, 3, 4
+dim a4, 2, 3, 4, 5
+
+fill_dims a2, a3, a4
+
+mes "A"
+mes "" + length(a2)
+mes "" + length2(a2)
+mes "" + length3(a2)
+mes "" + length4(a2)
+mes "" + a2(1,2)
+
+mes "B"
+mes "" + length(a3)
+mes "" + length2(a3)
+mes "" + length3(a3)
+mes "" + length4(a3)
+mes "" + a3(1,2,3)
+
+mes "C"
+mes "" + length(a4)
+mes "" + length2(a4)
+mes "" + length3(a4)
+mes "" + length4(a4)
+mes "" + a4(1,2,3,4)
+
+end
+
+dummy_00
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}
