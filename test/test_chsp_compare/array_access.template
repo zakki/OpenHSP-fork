@@ -17,29 +17,47 @@
 	i = 2
 	a.i = 3
 	a.i+
+	a(8) = a.i
 	a.i-
+	a(9) = a.i
 	a.i++
+	a(10) = a.i
 	a.i += 2
 	a.i--
+	a(11) = a.i
 	a.i -= 1
+	a(i) = 10
 	a(i)+
+	a(12) = a(i)
 	a(i)-
+	a(13) = a(i)
 	a(i)++
-	a(i)--
+	a(14) = a(i)
 	a(i) += 3
+	a(i)--
+	a(15) = a(i)
 	a(i) -= 3
 	a.(i + 5) = 10
 	a.(i + 5)+
+	a(16) = a.(i + 5)
 	a.(i + 5)-
+	a(17) = a.(i + 5)
 	a.(i + 5)++
-	a.(i + 5)--
+	a(18) = a.(i + 5)
 	a.(i + 5) += 2
+	a.(i + 5)--
+	a(19) = a.(i + 5)
 	a.(i + 5) -= 3
+	a(i + 5) = 20
 	a(i + 5)+
+	a(20) = a(i + 5)
 	a(i + 5)-
+	a(21) = a(i + 5)
 	a(i + 5)++
-	a(i + 5)--
+	a(22) = a(i + 5)
 	a(i + 5) += 4
+	a(i + 5)--
+	a(23) = a(i + 5)
 	a(i + 5) -= 4
 	sum = a(0) + a.i + a.5 + a.(i + 5)
 	a(1) = sum
@@ -70,29 +88,48 @@
 	i = 2
 	a.i = 3
 	a.i+
+	a(8) = a.i
 	a.i-
+	a(9) = a.i
 	a.i++
+	a(10) = a.i
 	a.i += 2
 	a.i--
+	a(11) = a.i
 	a.i -= 1
+	a(i) = 10
 	a(i)+
+	a(12) = a(i)
 	a(i)-
+	a(13) = a(i)
 	a(i)++
-	a(i)--
+	a(14) = a(i)
 	a(i) += 3
+	a(i)--
+	a(15) = a(i)
 	a(i) -= 3
 	a.(i + 5) = 10
 	a.(i + 5)+
+	a(16) = a.(i + 5)
 	a.(i + 5)-
+	a(17) = a.(i + 5)
 	a.(i + 5)++
+	a(18) = a.(i + 5)
+	a.(i + 5) += 2
 	a.(i + 5)--
+	a(19) = a.(i + 5)
 	a.(i + 5) += 2
 	a.(i + 5) -= 3
+	a(i + 5) = 20
 	a(i + 5)+
+	a(20) = a(i + 5)
 	a(i + 5)-
+	a(21) = a(i + 5)
 	a(i + 5)++
-	a(i + 5)--
+	a(22) = a(i + 5)
 	a(i + 5) += 4
+	a(i + 5)--
+	a(23) = a(i + 5)
 	a(i + 5) -= 4
 	sum = a(0) + a.i + a.5 + a.(i + 5)
 	a(1) = sum
@@ -124,29 +161,48 @@
 	i = 2
 	a.i = 3
 	a.i+
+	a(8) = a.i
 	a.i-
+	a(9) = a.i
 	a.i++
+	a(10) = a.i
 	a.i += 2
 	a.i--
+	a(11) = a.i
 	a.i -= 1
+	a(i) = 10
 	a(i)+
+	a(12) = a(i)
 	a(i)-
+	a(13) = a(i)
 	a(i)++
-	a(i)--
+	a(14) = a(i)
 	a(i) += 3
+	a(i)--
+	a(15) = a(i)
 	a(i) -= 3
 	a.(i + 5) = 10
 	a.(i + 5)+
+	a(16) = a.(i + 5)
 	a.(i + 5)-
+	a(17) = a.(i + 5)
 	a.(i + 5)++
+	a(18) = a.(i + 5)
+	a.(i + 5) += 2
 	a.(i + 5)--
+	a(19) = a.(i + 5)
 	a.(i + 5) += 2
 	a.(i + 5) -= 3
+	a(i + 5) = 20
 	a(i + 5)+
+	a(20) = a(i + 5)
 	a(i + 5)-
+	a(21) = a(i + 5)
 	a(i + 5)++
-	a(i + 5)--
+	a(22) = a(i + 5)
 	a(i + 5) += 4
+	a(i + 5)--
+	a(23) = a(i + 5)
 	a(i + 5) -= 4
 	sum = a(0) + a.i + a.5 + a.(i + 5)
 	a(1) = sum
@@ -162,17 +218,37 @@
 #chsp_module_end
 @@ main
 
-dim a, 8
+dim a, 32
+dim check, 24
 write_values a
 
-mes "" + a(0)
-mes "" + a(2)
-mes "" + a(3)
-mes "" + a(4)
-mes "" + a(5)
-mes "" + a(7)
-mes "" + a(1)
-mes "" + a(6)
+check(0) = 0
+check(1) = 2
+check(2) = 3
+check(3) = 4
+check(4) = 5
+check(5) = 7
+check(6) = 1
+check(7) = 6
+check(8) = 8
+check(9) = 9
+check(10) = 10
+check(11) = 11
+check(12) = 12
+check(13) = 13
+check(14) = 14
+check(15) = 15
+check(16) = 16
+check(17) = 17
+check(18) = 18
+check(19) = 19
+check(20) = 20
+check(21) = 21
+check(22) = 22
+check(23) = 23
+repeat 24
+	mes "" + a(check(cnt))
+loop
 
 end
 
