@@ -92,13 +92,13 @@ int CLabel::StrCmp( char *str1, char *str2 )
 }
 
 
-int CLabel::Regist( char *name, int type, int opt )
+int CLabel::Regist( const char *name, int type, int opt )
 {
 	return Regist(name, type, opt, NULL, -1);
 }
 
 
-int CLabel::Regist( char *name, int type, int opt, char const *filename, int line )
+int CLabel::Regist( const char *name, int type, int opt, char const *filename, int line )
 {
 	if ( name[0]==0 ) return -1;
 	if ( cur>=maxlab ) {				// ラベルバッファ拡張
@@ -400,13 +400,13 @@ int CLabel::GetForceType(int id)
 }
 
 
-char *CLabel::RegistSymbol( char *str )
+char *CLabel::RegistSymbol( const char *str )
 {
 	//		シンボルテーブルに文字列を登録
 	//
 	char *p;
 	char *pmaster;
-	char *src;
+	const char *src;
 	char a1,a2;
 	int i;
 	//int hush;

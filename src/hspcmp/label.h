@@ -84,8 +84,8 @@ public:
 	CLabel( int symmax, int worksize );
 	~CLabel();
 	void Reset(void);
-	int Regist( char *name, int type, int opt );
-	int Regist( char *name, int type, int opt, char const *filename, int line );
+	int Regist( const char *name, int type, int opt );
+	int Regist( const char *name, int type, int opt, char const *filename, int line );
 	void SetEternal( int id );
 	int GetEternal( int id );
 	void SetOpt( int id, int val );
@@ -135,7 +135,7 @@ private:
 	void DisposeSymbolBuffer( void );
 	void MakeSymbolBuffer( void );
 
-	char *RegistSymbol( char *str );
+	char *RegistSymbol( const char *str );
 	char *RegistTable( char *str, int size );
 
 	//	data
