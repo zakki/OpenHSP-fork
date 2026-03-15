@@ -73,6 +73,7 @@ public:
 	CCgToken GetTokenCG( int option );
 	std::string GetSymbolCG( const char *str );
 	int PickNextCodeCG( void );
+	const std::string &CurrentLineText() const { return current_line_buffer; }
 
 	const char *NextLine();
 

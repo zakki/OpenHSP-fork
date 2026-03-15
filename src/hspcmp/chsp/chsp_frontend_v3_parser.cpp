@@ -2821,8 +2821,14 @@ void CChspParser::RecordSourceLine( const char *text )
 	}
 	chspv3::ChspV3SourceLine line;
 	line.line = lexer.cg_orgline;
-	line.text = text;
+	line.text = lexer.CurrentLineText();
 	line.directive = detect_source_directive_kind( line.text );
+	if ( !ast_program.source_lines.empty() ) {
+		const auto &last = ast_program.source_lines.back();
+		if ( last.line == line.line && last.text == line.text ) {
+			return;
+		}
+	}
 	ast_program.source_lines.push_back( std::move( line ) );
 }
 

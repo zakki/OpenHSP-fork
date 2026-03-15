@@ -1,0 +1,54 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc noop
+	return
+
+#global
+
+@@ chsp_c_module
+#chsp_module "top_level_separators_chsp_c" target=c
+
+#chsp_deffunc noop
+	return
+#chsp_end
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "top_level_separators_chsp_p"
+
+#chsp_deffunc noop
+	return
+#chsp_end
+
+#chsp_module_end
+
+@@ main
+mes "TOP"
+
+repeat 2
+	i = cnt
+	repeat 3
+		n = i + cnt
+		if n = 0 : mes "n=ZERO" : else : mes "" + n + "=" + i + " + " + cnt
+	loop
+loop
+
+dim topvals, 1: mes "abc"
+mes "mid": mes "tail"
+noop
+mes "END"
+end
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}
