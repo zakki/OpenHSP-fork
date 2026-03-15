@@ -2839,7 +2839,7 @@ int CChspParser::GenerateCode( CMemBuf *srcbuf, const std::string &oname, int mo
 		CStrNote note;
 		CMemBuf srctmp;
 #ifdef JPNMSG
-		logger->Mesf( "%s(%d) : error %d : %s (%d行目)", lexer.cg_orgfile.cg_orgfile.c_str(), lexer.cg_orgline, res,
+		logger->Mesf( "%s(%d) : error %d : %s (%d行目)", lexer.cg_orgfile.c_str(), lexer.cg_orgline, res,
 					  cg_geterror( (CGERROR)res ), lexer.cg_orgline );
 #else
 		logger->Mesf( "%s(%d) : error %d : %s (line %d)", lexer.cg_orgfile.c_str(), lexer.cg_orgline, res,

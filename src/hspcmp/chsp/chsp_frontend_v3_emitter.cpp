@@ -1681,7 +1681,11 @@ void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const 
 	buf.PutCR();
 
 	if ( target == ChspNativeTarget::Plugin ) {
+#if defined( HSPWIN )
+		buf.PutStr( "#regcmd \"_hsp3cmdinit@4\", \"" );
+#else
 		buf.PutStr( "#regcmd \"hsp3cmdinit\", \"" );
+#endif
 		buf.PutStr( ModuleLibraryName( file_stem ).c_str() );
 		buf.PutStr( "\"\n\n" );
 	} else {
