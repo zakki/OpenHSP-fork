@@ -18,6 +18,9 @@ enum class ChspV3SourceDirectiveKind
 	None,
 	Module,
 	ModuleEnd,
+	ChspC,
+	ChspCDecl,
+	ChspCLink,
 	DefFunc,
 	DefCFunc,
 	End,
@@ -144,6 +147,9 @@ struct ChspV3AstModule
 	int token_kind = 0;
 	std::string name;
 	ChspNativeTarget target = ChspNativeTarget::Plugin;
+	std::vector<std::string> native_source_blocks;
+	std::vector<std::string> declared_native_functions;
+	std::vector<std::string> linked_libraries;
 	std::vector<ChspV3AstFunction> functions;
 };
 
@@ -317,7 +323,28 @@ inline std::string SerializeAstProgramJson( const ChspV3AstProgram &program )
 		AppendJsonEscaped( out, module.name );
 		out += ",\"target\":";
 		AppendJsonEscaped( out, module.target == ChspNativeTarget::C ? "c" : "plugin" );
-		out += ",\"functions\":[";
+		out += ",\"native_source_blocks\":[";
+		for ( size_t j = 0; j < module.native_source_blocks.size(); ++j ) {
+			if ( j != 0 ) {
+				out.push_back( ',' );
+			}
+			AppendJsonEscaped( out, module.native_source_blocks[j] );
+		}
+		out += "],\"declared_native_functions\":[";
+		for ( size_t j = 0; j < module.declared_native_functions.size(); ++j ) {
+			if ( j != 0 ) {
+				out.push_back( ',' );
+			}
+			AppendJsonEscaped( out, module.declared_native_functions[j] );
+		}
+		out += "],\"linked_libraries\":[";
+		for ( size_t j = 0; j < module.linked_libraries.size(); ++j ) {
+			if ( j != 0 ) {
+				out.push_back( ',' );
+			}
+			AppendJsonEscaped( out, module.linked_libraries[j] );
+		}
+		out += "],\"functions\":[";
 		for ( size_t j = 0; j < module.functions.size(); ++j ) {
 			if ( j != 0 ) {
 				out.push_back( ',' );

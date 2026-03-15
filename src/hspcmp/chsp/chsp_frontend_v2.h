@@ -20,6 +20,7 @@ struct ChspNativeArtifact
 	std::string module_name;
 	std::string file_stem;
 	ChspNativeTarget target = ChspNativeTarget::Plugin;
+	std::vector<std::string> linked_libraries;
 	std::unique_ptr<CMemBuf> output;
 };
 

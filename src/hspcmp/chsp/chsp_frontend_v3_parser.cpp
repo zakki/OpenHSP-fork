@@ -108,6 +108,15 @@ static chspv3::ChspV3SourceDirectiveKind detect_source_directive_kind( const std
 	if ( chspv2::StartsWith( trimmed, "#chsp_module" ) ) {
 		return chspv3::ChspV3SourceDirectiveKind::Module;
 	}
+	if ( chspv2::StartsWith( trimmed, "#chsp_cdecl" ) ) {
+		return chspv3::ChspV3SourceDirectiveKind::ChspCDecl;
+	}
+	if ( chspv2::StartsWith( trimmed, "#chsp_clink" ) ) {
+		return chspv3::ChspV3SourceDirectiveKind::ChspCLink;
+	}
+	if ( chspv2::StartsWith( trimmed, "#chsp_c" ) ) {
+		return chspv3::ChspV3SourceDirectiveKind::ChspC;
+	}
 	if ( chspv2::StartsWith( trimmed, "#chsp_defcfunc" ) ) {
 		return chspv3::ChspV3SourceDirectiveKind::DefCFunc;
 	}
@@ -2018,6 +2027,59 @@ void CChspParser::GenerateCodePP_chsp_defcfunc()
 }
 
 
+void CChspParser::GenerateCodePP_chsp_c()
+{
+	if ( current_module == nullptr || current_function != nullptr ) {
+		throw CGERROR_PP_SYNTAX;
+	}
+
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_STRING ) {
+		throw CGERROR_PP_SYNTAX;
+	}
+
+	current_module->native_source_blocks.push_back( token.cg_str );
+}
+
+
+void CChspParser::GenerateCodePP_chsp_cdecl()
+{
+	if ( current_module == nullptr || current_function != nullptr ) {
+		throw CGERROR_PP_SYNTAX;
+	}
+
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_OBJ ) {
+		throw CGERROR_PP_NAMEREQUIRED;
+	}
+	current_module->declared_native_functions.push_back( chspv2::NormalizeIdentifier( token.cg_str ) );
+
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype < TK_EOL ) {
+		throw CGERROR_PP_SYNTAX;
+	}
+}
+
+
+void CChspParser::GenerateCodePP_chsp_clink()
+{
+	if ( current_module == nullptr || current_function != nullptr ) {
+		throw CGERROR_PP_SYNTAX;
+	}
+
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype != TK_STRING ) {
+		throw CGERROR_PP_SYNTAX;
+	}
+	current_module->linked_libraries.push_back( token.cg_str );
+
+	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+	if ( token.ttype < TK_EOL ) {
+		throw CGERROR_PP_SYNTAX;
+	}
+}
+
+
 void CChspParser::GenerateCodePP_chsp_module()
 {
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
@@ -2330,6 +2392,18 @@ void CChspParser::GenerateCodePP( const char *buf )
 	}
 	if ( token.cg_str == "chsp_defcfunc" ) {
 		GenerateCodePP_chsp_defcfunc();
+		return;
+	}
+	if ( token.cg_str == "chsp_c" ) {
+		GenerateCodePP_chsp_c();
+		return;
+	}
+	if ( token.cg_str == "chsp_cdecl" ) {
+		GenerateCodePP_chsp_cdecl();
+		return;
+	}
+	if ( token.cg_str == "chsp_clink" ) {
+		GenerateCodePP_chsp_clink();
 		return;
 	}
 	if ( token.cg_str == "chsp_module" ) {

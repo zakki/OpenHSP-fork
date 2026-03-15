@@ -43,6 +43,7 @@ C_NATIVE_CC = env_text("C_NATIVE_CC", "cc")
 C_NATIVE_CFLAGS = env_text("C_NATIVE_CFLAGS", f"-std=c11 -I{ROOT}")
 C_NATIVE_SOFLAGS = env_text("C_NATIVE_SOFLAGS", "-shared -fPIC")
 C_NATIVE_LDLIBS = env_text("C_NATIVE_LDLIBS", "-lm")
+CHSP_CLINK_PATTERN = re.compile(r'^\s*#chsp_clink\s+"([^"]+)"', flags=re.MULTILINE | re.IGNORECASE)
 
 
 def with_trailing_sep(path: Path) -> str:
@@ -293,6 +294,11 @@ def compile_shared_library(c_path: Path, output_path: Path, variant: str) -> Non
     run(args, cwd=TEST_DIR, quiet_success=True)
 
 
+def linked_libraries_for_source(source: Path) -> list[str]:
+    source_text = source.read_text(encoding="utf-8")
+    return [f"-l{match}" for match in CHSP_CLINK_PATTERN.findall(source_text)]
+
+
 def compiled_artifact_paths(source: Path, variant: str) -> tuple[Path, Path]:
     return source.with_suffix(".c"), source.with_suffix(".so")
 
@@ -322,7 +328,20 @@ def build_variant_output(source: Path, variant: str, mode: str) -> Path:
     compile_with_hspcmp(source, mode, quiet_success=True)
     if variant in {"chsp_c", "chsp_p"} and mode == "emit-c":
         c_path, so_path = emitted_artifact_paths(source, variant)
-        compile_shared_library(c_path, so_path, variant)
+        extra_libs = linked_libraries_for_source(source)
+        rel_c_path = os.path.relpath(c_path, TEST_DIR)
+        rel_output_path = os.path.relpath(so_path, TEST_DIR)
+        args = [
+            *shlex.split(C_NATIVE_CC),
+            *shared_library_cflags_for_variant(variant),
+            *shlex.split(C_NATIVE_SOFLAGS),
+            rel_c_path,
+            "-o",
+            rel_output_path,
+            *shlex.split(C_NATIVE_LDLIBS),
+            *extra_libs,
+        ]
+        run(args, cwd=TEST_DIR, quiet_success=True)
         lib_dir: Path | None = source.parent
     else:
         lib_dir = None

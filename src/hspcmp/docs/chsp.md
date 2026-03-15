@@ -13,6 +13,9 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
   - module 単位で native target を指定できます。
 - 高速化したい関数は`#chsp_defcfunc`や`#chsp_deffunc`として定義します。
   - この関数は `#chsp_end` で終了します。
+- module 内では `#chsp_c {"..."}` でネイティブ側へそのまま埋め込む C コードを書けます。
+- module 内では `#chsp_cdecl name` で、`#chsp_c` 内に書いた C 関数名を cHSP から呼べるようにできます。
+- module 内では `#chsp_clink "name"` で、その module の共有ライブラリ生成時に追加でリンクするライブラリを指定できます。
 - cHSP 関数の引数やローカル変数には型指定が必須です。
 - MVP では、cHSP ブロック内のローカル変数・ローカル配列は `local[...]` で宣言します。
 
@@ -133,6 +136,66 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 
 `--chsp-compile=libtcc` は Linux と Win32 で使えます。混在した target を含む `.chsp` でも、各 module から生成した `.c` を順に `libtcc` に渡して共有ライブラリまで出力します。
 
+#### module 内に補助 C コードを書く
+
+`#chsp_c {"..."}` を使うと、module ごとのネイティブソースへ C コードをそのまま埋め込めます。
+
+```hsp
+#chsp_module "native_helper_sample" target=c
+
+#chsp_c {"
+static int helper(int v) {
+    return v + 1;
+}
+"}
+#chsp_cdecl helper
+
+#chsp_defcfunc int add_one int v
+    return helper(v)
+#chsp_end
+
+#chsp_module_end
+```
+
+- `#chsp_c {"..."}` は module の外側では使えません。
+- `#chsp_cdecl` も module の外側や cHSP 関数本体の中では使えません。
+- `#chsp_cdecl` した名前だけを cHSP から呼べます。
+- `#chsp_c` に書いた C コードは、`target=c` / `target=plugin` のどちらでも使えます。
+
+#### module ごとに追加ライブラリをリンクする
+
+ネイティブコードが標準の既定リンク以外のライブラリを必要とする場合は、`#chsp_clink "name"` を使います。
+
+```hsp
+#chsp_module "dl_sample" target=c
+
+#chsp_c {"
+#include <dlfcn.h>
+
+static int can_open_self(void) {
+    void *handle = dlopen(NULL, RTLD_LAZY);
+    if (handle == NULL) {
+        return 0;
+    }
+    dlclose(handle);
+    return 1;
+}
+"}
+#chsp_cdecl can_open_self
+#chsp_clink "dl"
+
+#chsp_defcfunc int check_dl
+    return can_open_self()
+#chsp_end
+
+#chsp_module_end
+```
+
+- `#chsp_clink` は module ごとに有効です。
+- 1 行に 1 つのライブラリ名を書きます。複数必要な場合は複数行書きます。
+- Linux では `#chsp_clink "dl"` のように、通常の `-l<name>` に相当する `<name>` 部分だけを書きます。
+- `#chsp_clink` は `target=c` / `target=plugin` のどちらでも使えます。
+
 #### mixed target を含む `.chsp` の出力方針
 
 - `#chsp_module` ごとに独立した `.c` と共有ライブラリを生成します。
@@ -186,6 +249,12 @@ Windows 向けの生成コードは `CHSP_EXPORT` マクロで `__declspec(dllex
 cc -std=c11 -O2 -shared -fPIC -I. -o sample/chsp/ao_opt.so sample/chsp/ao_opt.c -lm
 ```
 
+`#chsp_clink` を使った module は、必要なライブラリを追加してビルドします。たとえば `#chsp_clink "dl"` を使っている場合は次のようになります。
+
+```sh
+cc -std=c11 -O2 -shared -fPIC -I. -o sample/chsp/dl_sample.so sample/chsp/dl_sample.c -lm -ldl
+```
+
 HSP 側の `#uselib` は Linux では `.so` を参照します。
 
 ```hsp
@@ -199,6 +268,8 @@ Visual Studio の `x86 Native Tools Command Prompt for VS` など、32bit 向け
 ```bat
 cl /O2 /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.c
 ```
+
+追加ライブラリが必要な場合は、`#chsp_clink` に対応する import library を `cl` の引数へ追加します。
 
 HSP 側の `#uselib` は `.dll` を参照します。
 
@@ -320,7 +391,6 @@ extern "C" CHSP_EXPORT void vcross(double *c, double *v0, double *v1) {
   - doubleやstrも返せるように出来るか検討
   - グローバル変数の参照を検出して自動で引数に変換する
     - 変数の型が分からない
-  - インラインにC++を書ける文法も欲しい
 - **実装上の課題**:
   - 専用コマンドとして実装するか、hspcmpのラッパーや拡張として実装するか
   - C++のコンパイルをどのように行うか

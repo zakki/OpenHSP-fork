@@ -419,5 +419,141 @@ class ChspV3ArchitectureGuardrailTest(unittest.TestCase):
             self.assertIn("chsp_func_forward__fill(chsp_var_fill__values_0_out);", native)
             self.assertIn("chsp_var_forward__fill_0_out[1] = chsp_func_fact(5);", native)
 
+    def test_emit_c_accepts_module_scope_chsp_c_native_block(self) -> None:
+        source_text = """\
+#chsp_module "native_blocks_c" target=c
+#chsp_c {"
+static int helper(int v) {
+    return v + 7;
+}
+"}
+#chsp_cdecl helper
+#chsp_defcfunc int add_helper int v
+    return helper(v)
+#chsp_end
+#chsp_module_end
+"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "native_blocks_c.chsp"
+            source.write_text(source_text, encoding="utf-8")
+
+            proc = subprocess.run(
+                [str(HSPCMP), *EMIT_C_HSPCMP_FLAGS, source.name],
+                cwd=source.parent,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(0, proc.returncode, proc.stdout + proc.stderr)
+            native_path = source.with_suffix(".c")
+            self.assertTrue(native_path.exists(), proc.stdout + proc.stderr)
+            native = native_path.read_text(encoding="utf-8")
+            self.assertIn("static int helper(int v)", native)
+            self.assertIn("return helper(", native)
+
+    def test_emit_plugin_accepts_module_scope_chsp_c_native_block(self) -> None:
+        source_text = """\
+#chsp_module "native_blocks_plugin" target=plugin
+#chsp_c {"
+static int helper(int v) {
+    return v * 2;
+}
+"}
+#chsp_cdecl helper
+#chsp_defcfunc int twice int v
+    return helper(v)
+#chsp_end
+#chsp_module_end
+"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "native_blocks_plugin.chsp"
+            source.write_text(source_text, encoding="utf-8")
+
+            proc = subprocess.run(
+                [str(HSPCMP), *EMIT_C_HSPCMP_FLAGS, source.name],
+                cwd=source.parent,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(0, proc.returncode, proc.stdout + proc.stderr)
+            native_path = source.with_suffix(".c")
+            self.assertTrue(native_path.exists(), proc.stdout + proc.stderr)
+            native = native_path.read_text(encoding="utf-8")
+            self.assertIn("static int helper(int v)", native)
+            self.assertLess(native.index("static int helper(int v)"), native.index("chsp_func_twice"))
+
+    def test_rejects_chsp_c_outside_module(self) -> None:
+        source_text = """\
+#chsp_c {"
+static int helper(int v) {
+    return v + 1;
+}
+"}
+"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "native_block_outside_module.chsp"
+            source.write_text(source_text, encoding="utf-8")
+
+            proc = subprocess.run(
+                [str(HSPCMP), *EMIT_C_HSPCMP_FLAGS, source.name],
+                cwd=source.parent,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(0, proc.returncode)
+            self.assertRegex(proc.stdout + proc.stderr, r"error|Error")
+
+    def test_rejects_chsp_cdecl_inside_function_body(self) -> None:
+        source_text = """\
+#chsp_module "native_decl_inside_func" target=c
+#chsp_defcfunc int add_helper int v
+    #chsp_cdecl helper
+    return helper(v)
+#chsp_end
+#chsp_module_end
+"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "native_decl_inside_func.chsp"
+            source.write_text(source_text, encoding="utf-8")
+
+            proc = subprocess.run(
+                [str(HSPCMP), *EMIT_C_HSPCMP_FLAGS, source.name],
+                cwd=source.parent,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(0, proc.returncode)
+            self.assertRegex(proc.stdout + proc.stderr, r"error|Error")
+
+    def test_rejects_undeclared_native_helper_call(self) -> None:
+        source_text = """\
+#chsp_module "native_call_without_decl" target=c
+#chsp_c {"
+static int helper(int v) {
+    return v + 1;
+}
+"}
+#chsp_defcfunc int add_helper int v
+    return helper(v)
+#chsp_end
+#chsp_module_end
+"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "native_call_without_decl.chsp"
+            source.write_text(source_text, encoding="utf-8")
+
+            proc = subprocess.run(
+                [str(HSPCMP), *EMIT_C_HSPCMP_FLAGS, source.name],
+                cwd=source.parent,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(0, proc.returncode)
+            self.assertRegex(proc.stdout + proc.stderr, r"error|Error")
+
 if __name__ == "__main__":
     unittest.main()

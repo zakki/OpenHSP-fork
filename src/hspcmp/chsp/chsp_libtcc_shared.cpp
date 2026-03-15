@@ -82,7 +82,8 @@ static std::string shared_library_name_for_artifact( const ChspNativeArtifact &a
 
 static int compile_one_library_with_libtcc( CHsc3 *hsc3, const std::filesystem::path &native_path,
 											const std::filesystem::path &repo_root,
-											const std::filesystem::path &output_path )
+											const std::filesystem::path &output_path,
+											const ChspNativeArtifact &artifact )
 {
 	TCCState *tcc = tcc_new();
 	if ( tcc == nullptr ) {
@@ -115,6 +116,13 @@ static int compile_one_library_with_libtcc( CHsc3 *hsc3, const std::filesystem::
 		return -1;
 	}
 #endif
+	for ( const auto &lib : artifact.linked_libraries ) {
+		if ( tcc_add_library( tcc, lib.c_str() ) < 0 ) {
+			tcc_delete( tcc );
+			hsc3->Print( (char *)"#libtcc failed to link requested cHSP library." );
+			return -1;
+		}
+	}
 	const std::string native_path_str = native_path.string();
 	if ( tcc_add_file( tcc, native_path_str.c_str() ) < 0 ) {
 		tcc_delete( tcc );
@@ -150,7 +158,7 @@ int chsp_compile_library_with_libtcc( CHsc3 *hsc3, const std::vector<std::string
 		const std::filesystem::path native_dir =
 			native_path.has_parent_path() ? native_path.parent_path() : std::filesystem::path( "." );
 		const std::filesystem::path output_path = native_dir / shared_library_name_for_artifact( native_artifacts[i] );
-		if ( compile_one_library_with_libtcc( hsc3, native_path, repo_root, output_path ) != 0 ) {
+		if ( compile_one_library_with_libtcc( hsc3, native_path, repo_root, output_path, native_artifacts[i] ) != 0 ) {
 			return -1;
 		}
 	}

@@ -86,6 +86,9 @@ private:
 	void GenerateCodePP_chsp_deffunc0( int is_command );
 	void GenerateCodePP_chsp_deffunc( void );
 	void GenerateCodePP_chsp_defcfunc( void );
+	void GenerateCodePP_chsp_c( void );
+	void GenerateCodePP_chsp_cdecl( void );
+	void GenerateCodePP_chsp_clink( void );
 	void GenerateCodePP_chsp_module( void );
 	void GenerateCodePP_chsp_module_end( void );
 	void GenerateCodePP_uselib( void );

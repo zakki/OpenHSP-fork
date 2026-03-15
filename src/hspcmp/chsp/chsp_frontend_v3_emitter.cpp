@@ -25,6 +25,7 @@ struct TranslateContext
 {
 	ChspNativeTarget target = ChspNativeTarget::Plugin;
 	std::unordered_set<std::string> array_names;
+	std::unordered_set<std::string> declared_native_functions;
 	std::unordered_map<std::string, std::string> identifier_cpp_names;
 	std::unordered_map<std::string, std::string> function_cpp_names;
 	std::unordered_map<std::string, const ChspV3AstFunction *> function_defs;
@@ -560,6 +561,7 @@ int ExprPrecedence( const ChspV3AstExpr &expr )
 }
 
 TranslateContext BuildTranslateContext( const ChspV3AstFunction &func,
+										const ChspV3AstModule &module,
 										const std::unordered_map<std::string, std::string> &function_cpp_names,
 										const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
 										const std::unordered_map<std::string, bool> &function_array_metadata_needs,
@@ -571,6 +573,9 @@ TranslateContext BuildTranslateContext( const ChspV3AstFunction &func,
 	ctx.function_defs = function_defs;
 	ctx.function_array_metadata_needs = function_array_metadata_needs;
 	ctx.identifier_cpp_names = BuildIdentifierCppNames( func );
+	for ( const auto &name : module.declared_native_functions ) {
+		ctx.declared_native_functions.insert( name );
+	}
 	for ( const auto &param : func.params ) {
 		if ( !param.is_array ) {
 			continue;
@@ -691,8 +696,11 @@ std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ct
 		const auto function_it = ctx.function_cpp_names.find( name );
 		if ( function_it != ctx.function_cpp_names.end() ) {
 			target = function_it->second;
+		} else if ( ctx.declared_native_functions.find( name ) != ctx.declared_native_functions.end() ) {
+			target = name;
 		} else {
-			target = LookupCppIdentifier( ctx, name );
+			ok = false;
+			return "";
 		}
 	}
 	std::string out = target + "(";
@@ -793,8 +801,11 @@ std::string RenderCommandCall( const ChspV3AstStmt &stmt, TranslateContext &ctx,
 		const auto cpp_it = ctx.function_cpp_names.find( name );
 		if ( cpp_it != ctx.function_cpp_names.end() ) {
 			target = cpp_it->second;
+		} else if ( ctx.declared_native_functions.find( name ) != ctx.declared_native_functions.end() ) {
+			target = name;
 		} else {
-			target = LookupCppIdentifier( ctx, name );
+			ok = false;
+			return "";
 		}
 	}
 	std::string out = target + "(";
@@ -1231,7 +1242,7 @@ bool WriteFunctionBodyToNative( CMemBuf &buf, const ChspV3AstFunction &func, Tra
 	return true;
 }
 
-bool WriteFunctionToNative( CMemBuf &buf, const ChspV3AstFunction &func,
+bool WriteFunctionToNative( CMemBuf &buf, const ChspV3AstModule &module, const ChspV3AstFunction &func,
 							const std::unordered_map<std::string, std::string> &function_cpp_names,
 							const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
 							const std::unordered_map<std::string, bool> &function_array_metadata_needs,
@@ -1240,7 +1251,8 @@ bool WriteFunctionToNative( CMemBuf &buf, const ChspV3AstFunction &func,
 	const bool needs_array_metadata = FunctionNeedsArrayMetadata( function_array_metadata_needs, func );
 	const auto cpp_name_it = function_cpp_names.find( func.name );
 	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
-	auto ctx = BuildTranslateContext( func, function_cpp_names, function_defs, function_array_metadata_needs, target );
+	auto ctx = BuildTranslateContext( func, module, function_cpp_names, function_defs, function_array_metadata_needs,
+									  target );
 	if ( target == ChspNativeTarget::Plugin ) {
 		buf.PutStr( "static " );
 	} else if ( target == ChspNativeTarget::C ) {
@@ -1283,6 +1295,7 @@ bool WriteFunctionToNative( CMemBuf &buf, const ChspV3AstFunction &func,
 }
 
 void WriteFunctionPrototypeToNative( CMemBuf &buf, const ChspV3AstFunction &func,
+									 const ChspV3AstModule &module,
 									 const std::unordered_map<std::string, std::string> &function_cpp_names,
 									 const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
 									 const std::unordered_map<std::string, bool> &function_array_metadata_needs,
@@ -1291,7 +1304,8 @@ void WriteFunctionPrototypeToNative( CMemBuf &buf, const ChspV3AstFunction &func
 	const bool needs_array_metadata = FunctionNeedsArrayMetadata( function_array_metadata_needs, func );
 	const auto cpp_name_it = function_cpp_names.find( func.name );
 	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
-	auto ctx = BuildTranslateContext( func, function_cpp_names, function_defs, function_array_metadata_needs, target );
+	auto ctx = BuildTranslateContext( func, module, function_cpp_names, function_defs, function_array_metadata_needs,
+									  target );
 	if ( target == ChspNativeTarget::Plugin ) {
 		buf.PutStr( "static " );
 	} else if ( target == ChspNativeTarget::C ) {
@@ -1372,15 +1386,15 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
 								CLogger &logger )
 {
 	for ( const auto &func : module.functions ) {
-		WriteFunctionPrototypeToNative( buf, func, function_cpp_names, function_defs, function_array_metadata_needs,
-										ChspNativeTarget::Plugin );
+		WriteFunctionPrototypeToNative( buf, func, module, function_cpp_names, function_defs,
+										function_array_metadata_needs, ChspNativeTarget::Plugin );
 	}
 	if ( !module.functions.empty() ) {
 		buf.PutCR();
 	}
 	for ( const auto &func : module.functions ) {
-		if ( !WriteFunctionToNative( buf, func, function_cpp_names, function_defs, function_array_metadata_needs,
-									 ChspNativeTarget::Plugin, logger ) ) {
+		if ( !WriteFunctionToNative( buf, module, func, function_cpp_names, function_defs,
+									 function_array_metadata_needs, ChspNativeTarget::Plugin, logger ) ) {
 			return false;
 		}
 	}
@@ -1721,6 +1735,17 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 	native_out.PutStr( "#endif\n\n" );
 }
 
+void WriteNativeSourceBlocks( CMemBuf &native_out, const ChspV3AstModule &module )
+{
+	for ( const auto &block : module.native_source_blocks ) {
+		native_out.PutStr( block.c_str() );
+		if ( block.empty() || block.back() != '\n' ) {
+			native_out.PutCR();
+		}
+		native_out.PutCR();
+	}
+}
+
 } // namespace
 
 int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger, CMemBuf &hsp_out,
@@ -1734,8 +1759,10 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 		artifact.module_name = module.name;
 		artifact.file_stem = ModuleFileStem( module, source_name, i );
 		artifact.target = module.target;
+		artifact.linked_libraries = module.linked_libraries;
 		artifact.output = std::make_unique<CMemBuf>();
 		WriteNativePreamble( *artifact.output, artifact.target );
+		WriteNativeSourceBlocks( *artifact.output, module );
 		native_outputs.push_back( std::move( artifact ) );
 	}
 
@@ -1796,6 +1823,10 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 			++module_index;
 			in_function = false;
 			break;
+		case ChspV3SourceDirectiveKind::ChspC:
+		case ChspV3SourceDirectiveKind::ChspCDecl:
+		case ChspV3SourceDirectiveKind::ChspCLink:
+			break;
 		case ChspV3SourceDirectiveKind::DefFunc:
 		case ChspV3SourceDirectiveKind::DefCFunc:
 			in_function = true;
@@ -1830,7 +1861,7 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 				return -1;
 			}
 			if ( native_outputs[module_index].target != ChspNativeTarget::Plugin ) {
-				if ( !WriteFunctionToNative( *native_outputs[module_index].output,
+				if ( !WriteFunctionToNative( *native_outputs[module_index].output, ast_program.modules[module_index],
 											 ast_program.modules[module_index].functions[function_index],
 											 function_cpp_names, function_defs, function_array_metadata_needs,
 											 native_outputs[module_index].target, logger ) ) {
