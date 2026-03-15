@@ -30,9 +30,29 @@ struct TranslateContext
 	std::unordered_map<std::string, const ChspV3AstFunction *> function_defs;
 	std::unordered_map<std::string, bool> function_array_metadata_needs;
 	std::unordered_map<std::string, std::vector<std::string>> array_dimension_exprs;
-	std::map<std::string, int> array_strides;
 	std::vector<std::string> loop_stack;
 };
+
+std::vector<std::string> FixedDimsToDimensionExprs( const std::vector<int> &dims )
+{
+	std::vector<std::string> out = { "0", "0", "0", "0" };
+	for ( size_t i = 0; i < dims.size() && i < 4; ++i ) {
+		out[i] = std::to_string( dims[i] );
+	}
+	return out;
+}
+
+int FlatArraySize( const std::vector<int> &dims )
+{
+	if ( dims.empty() ) {
+		return 0;
+	}
+	int size = 1;
+	for ( int dim : dims ) {
+		size *= dim;
+	}
+	return size;
+}
 
 std::string NormalizeScopedName( const std::string &name )
 {
@@ -348,13 +368,16 @@ std::string TranslateArrayAccess( const ChspV3AstExpr &expr, const TranslateCont
 	}
 
 	std::string offset = TranslateExpr( *expr.children[1], ctx, ok, 0, false );
-	std::string stride = dimensions[0];
 	for ( size_t i = 2; i < expr.children.size(); ++i ) {
-		offset =
-			"(" + offset + ") + (" + TranslateExpr( *expr.children[i], ctx, ok, 0, false ) + ") * (" + stride + ")";
-		if ( i - 1 < dimensions.size() ) {
-			stride = "(" + stride + ") * (" + dimensions[i - 1] + ")";
+		std::string multiplier = "1";
+		for ( size_t dim = 0; dim + 1 < i && dim < dimensions.size(); ++dim ) {
+			if ( dimensions[dim] == "0" ) {
+				continue;
+			}
+			multiplier = "(" + multiplier + ") * (" + dimensions[dim] + ")";
 		}
+		offset = "(" + offset + ") + (" + TranslateExpr( *expr.children[i], ctx, ok, 0, false ) + ") * (" +
+				 multiplier + ")";
 	}
 	return cpp_name + "[" + offset + "]";
 }
@@ -536,53 +559,6 @@ int ExprPrecedence( const ChspV3AstExpr &expr )
 	}
 }
 
-int IntLiteralValue( const ChspV3AstExpr &expr )
-{
-	return std::atoi( expr.text.c_str() );
-}
-
-void CollectArrayStrideFromExpr( const ChspV3AstExpr &expr, const std::unordered_set<std::string> &array_names,
-								 std::map<std::string, int> &array_strides )
-{
-	if ( expr.kind == ChspV3AstExprKind::Call && !expr.children.empty() ) {
-		const auto &callee = expr.children[0];
-		if ( callee != nullptr && callee->kind == ChspV3AstExprKind::Identifier &&
-			 array_names.find( callee->text ) != array_names.end() && expr.children.size() == 3 ) {
-			const auto &index_expr = expr.children[2];
-			if ( index_expr != nullptr && index_expr->kind == ChspV3AstExprKind::IntLiteral ) {
-				array_strides[callee->text] =
-					std::max( array_strides[callee->text], IntLiteralValue( *index_expr ) + 1 );
-			}
-		}
-	}
-	for ( const auto &child : expr.children ) {
-		if ( child != nullptr ) {
-			CollectArrayStrideFromExpr( *child, array_names, array_strides );
-		}
-	}
-}
-
-void CollectArrayStrideFromStmt( const ChspV3AstStmt &stmt, const std::unordered_set<std::string> &array_names,
-								 std::map<std::string, int> &array_strides )
-{
-	if ( stmt.lhs != nullptr ) {
-		CollectArrayStrideFromExpr( *stmt.lhs, array_names, array_strides );
-	}
-	if ( stmt.rhs != nullptr ) {
-		CollectArrayStrideFromExpr( *stmt.rhs, array_names, array_strides );
-	}
-	for ( const auto &expr : stmt.exprs ) {
-		if ( expr != nullptr ) {
-			CollectArrayStrideFromExpr( *expr, array_names, array_strides );
-		}
-	}
-	for ( const auto &child : stmt.children ) {
-		if ( child != nullptr ) {
-			CollectArrayStrideFromStmt( *child, array_names, array_strides );
-		}
-	}
-}
-
 TranslateContext BuildTranslateContext( const ChspV3AstFunction &func,
 										const std::unordered_map<std::string, std::string> &function_cpp_names,
 										const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
@@ -602,13 +578,7 @@ TranslateContext BuildTranslateContext( const ChspV3AstFunction &func,
 		const auto normalized_name = NormalizeScopedName( param.name );
 		ctx.array_names.insert( normalized_name );
 		if ( param.is_local ) {
-			ctx.array_dimension_exprs[normalized_name] = {
-				std::to_string( param.array_length ),
-				"0",
-				"0",
-				"0",
-			};
-			ctx.array_strides[normalized_name] = param.array_length;
+			ctx.array_dimension_exprs[normalized_name] = FixedDimsToDimensionExprs( param.array_dims );
 		} else {
 			const size_t param_index = &param - func.params.data();
 			ctx.array_dimension_exprs[normalized_name] = {
@@ -617,11 +587,6 @@ TranslateContext BuildTranslateContext( const ChspV3AstFunction &func,
 				ArrayDimensionCppName( func, param_index, 3 ),
 				ArrayDimensionCppName( func, param_index, 4 ),
 			};
-		}
-	}
-	for ( const auto &stmt : func.body_stmts ) {
-		if ( stmt != nullptr ) {
-			CollectArrayStrideFromStmt( *stmt, ctx.array_names, ctx.array_strides );
 		}
 	}
 	return ctx;
@@ -1230,8 +1195,9 @@ void WriteLocalDeclsToNative( CMemBuf &buf, const ChspV3AstFunction &func, const
 		buf.PutStr( " " );
 		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
 		if ( param.is_array ) {
+			const int flat_size = FlatArraySize( param.array_dims );
 			buf.PutStr( "[" );
-			buf.PutStr( std::to_string( param.array_length ).c_str() );
+			buf.PutStr( std::to_string( flat_size ).c_str() );
 			buf.PutStr( "] = {0};" );
 		} else if ( ctx.target == ChspNativeTarget::C || ctx.target == ChspNativeTarget::Plugin ) {
 			buf.PutStr( " = 0;" );

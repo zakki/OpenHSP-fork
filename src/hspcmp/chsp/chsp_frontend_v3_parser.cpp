@@ -1881,7 +1881,7 @@ void CChspParser::ParseChspSignatureType( bool allow_extended_type, chspv3::Chsp
 		param_ast->base_type = type_name;
 		param_ast->is_array = false;
 		param_ast->is_local = false;
-		param_ast->array_length = 0;
+		param_ast->array_dims.clear();
 	}
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
@@ -1901,21 +1901,26 @@ void CChspParser::ParseChspSignatureType( bool allow_extended_type, chspv3::Chsp
 			param_ast->is_local = ( type_name == "local" );
 		}
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
-		if ( token.ttype == TK_NONE && token.val == '[' ) {
-			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
-			if ( token.ttype != TK_NUM ) {
-				throw CGERROR_PP_WRONG_PARAM_NAME;
+		if ( type_name == "local" ) {
+			while ( token.ttype == TK_NONE && token.val == '[' ) {
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+				if ( token.ttype != TK_NUM ) {
+					throw CGERROR_PP_WRONG_PARAM_NAME;
+				}
+				if ( param_ast != nullptr ) {
+					param_ast->type_name += "[" + std::to_string( token.val ) + "]";
+					param_ast->array_dims.push_back( token.val );
+					param_ast->is_array = true;
+					if ( param_ast->array_dims.size() > 4 ) {
+						throw CGERROR_PP_WRONG_PARAM_NAME;
+					}
+				}
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+				if ( !( token.ttype == TK_NONE && token.val == ']' ) ) {
+					throw CGERROR_PP_WRONG_PARAM_NAME;
+				}
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 			}
-			if ( param_ast != nullptr ) {
-				param_ast->type_name += "[" + std::to_string( token.val ) + "]";
-				param_ast->array_length = token.val;
-				param_ast->is_array = true;
-			}
-			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
-			if ( !( token.ttype == TK_NONE && token.val == ']' ) ) {
-				throw CGERROR_PP_WRONG_PARAM_NAME;
-			}
-			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		}
 		if ( !( token.ttype == TK_NONE && token.val == ']' ) ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;

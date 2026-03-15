@@ -125,7 +125,7 @@ struct ChspV3AstParam
 	std::string name;
 	bool is_array = false;
 	bool is_local = false;
-	int array_length = 0;
+	std::vector<int> array_dims;
 };
 
 struct ChspV3AstFunction
@@ -349,8 +349,14 @@ inline std::string SerializeAstProgramJson( const ChspV3AstProgram &program )
 				out += param.is_array ? "true" : "false";
 				out += ",\"is_local\":";
 				out += param.is_local ? "true" : "false";
-				out += ",\"array_length\":";
-				out += std::to_string( param.array_length );
+				out += ",\"array_dims\":[";
+				for ( size_t m = 0; m < param.array_dims.size(); ++m ) {
+					if ( m != 0 ) {
+						out.push_back( ',' );
+					}
+					out += std::to_string( param.array_dims[m] );
+				}
+				out.push_back( ']' );
 				out += ",\"name\":";
 				AppendJsonEscaped( out, param.name );
 				out.push_back( '}' );
