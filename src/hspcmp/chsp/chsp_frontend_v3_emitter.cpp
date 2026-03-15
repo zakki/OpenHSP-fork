@@ -28,6 +28,7 @@ struct TranslateContext
 	std::unordered_map<std::string, std::string> identifier_cpp_names;
 	std::unordered_map<std::string, std::string> function_cpp_names;
 	std::unordered_map<std::string, const ChspV3AstFunction *> function_defs;
+	std::unordered_map<std::string, bool> function_array_metadata_needs;
 	std::unordered_map<std::string, std::vector<std::string>> array_dimension_exprs;
 	std::map<std::string, int> array_strides;
 	std::vector<std::string> loop_stack;
@@ -195,7 +196,7 @@ bool StmtUsesArrayMetadata( const ChspV3AstStmt &stmt, const std::unordered_set<
 	return false;
 }
 
-bool FunctionNeedsArrayMetadata( const ChspV3AstFunction &func )
+std::unordered_set<std::string> BuildFunctionArrayNames( const ChspV3AstFunction &func )
 {
 	std::unordered_set<std::string> array_names;
 	for ( const auto &param : func.params ) {
@@ -203,12 +204,131 @@ bool FunctionNeedsArrayMetadata( const ChspV3AstFunction &func )
 			array_names.insert( NormalizeScopedName( param.name ) );
 		}
 	}
+	return array_names;
+}
+
+bool FunctionUsesArrayMetadataDirect( const ChspV3AstFunction &func )
+{
+	const auto array_names = BuildFunctionArrayNames( func );
 	for ( const auto &stmt : func.body_stmts ) {
 		if ( stmt != nullptr && StmtUsesArrayMetadata( *stmt, array_names ) ) {
 			return true;
 		}
 	}
 	return false;
+}
+
+bool ExprForwardsArrayMetadata( const ChspV3AstExpr &expr, const std::unordered_set<std::string> &array_names,
+								const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
+								const std::unordered_map<std::string, bool> &function_array_metadata_needs )
+{
+	if ( expr.kind == ChspV3AstExprKind::Call && !expr.children.empty() && expr.children[0] != nullptr &&
+		 expr.children[0]->kind == ChspV3AstExprKind::Identifier ) {
+		const auto callee_name = NormalizeScopedName( expr.children[0]->text );
+		const auto needs_it = function_array_metadata_needs.find( callee_name );
+		const auto def_it = function_defs.find( callee_name );
+		if ( needs_it != function_array_metadata_needs.end() && needs_it->second && def_it != function_defs.end() ) {
+			const auto &callee = *def_it->second;
+			for ( size_t i = 1; i < expr.children.size() && ( i - 1 ) < callee.params.size(); ++i ) {
+				if ( !callee.params[i - 1].is_array || expr.children[i] == nullptr ||
+					 expr.children[i]->kind != ChspV3AstExprKind::Identifier ) {
+					continue;
+				}
+				if ( array_names.find( NormalizeScopedName( expr.children[i]->text ) ) != array_names.end() ) {
+					return true;
+				}
+			}
+		}
+	}
+	for ( const auto &child : expr.children ) {
+		if ( child != nullptr && ExprForwardsArrayMetadata( *child, array_names, function_defs, function_array_metadata_needs ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool StmtForwardsArrayMetadata( const ChspV3AstStmt &stmt, const std::unordered_set<std::string> &array_names,
+								const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
+								const std::unordered_map<std::string, bool> &function_array_metadata_needs )
+{
+	if ( stmt.kind == ChspV3AstStmtKind::Command ) {
+		const auto callee_name = NormalizeScopedName( stmt.text );
+		const auto needs_it = function_array_metadata_needs.find( callee_name );
+		const auto def_it = function_defs.find( callee_name );
+		if ( needs_it != function_array_metadata_needs.end() && needs_it->second && def_it != function_defs.end() ) {
+			const auto &callee = *def_it->second;
+			for ( size_t i = 0; i < stmt.exprs.size() && i < callee.params.size(); ++i ) {
+				if ( !callee.params[i].is_array || stmt.exprs[i] == nullptr ||
+					 stmt.exprs[i]->kind != ChspV3AstExprKind::Identifier ) {
+					continue;
+				}
+				if ( array_names.find( NormalizeScopedName( stmt.exprs[i]->text ) ) != array_names.end() ) {
+					return true;
+				}
+			}
+		}
+	}
+	if ( stmt.lhs != nullptr &&
+		 ExprForwardsArrayMetadata( *stmt.lhs, array_names, function_defs, function_array_metadata_needs ) ) {
+		return true;
+	}
+	if ( stmt.rhs != nullptr &&
+		 ExprForwardsArrayMetadata( *stmt.rhs, array_names, function_defs, function_array_metadata_needs ) ) {
+		return true;
+	}
+	for ( const auto &expr : stmt.exprs ) {
+		if ( expr != nullptr &&
+			 ExprForwardsArrayMetadata( *expr, array_names, function_defs, function_array_metadata_needs ) ) {
+			return true;
+		}
+	}
+	for ( const auto &child : stmt.children ) {
+		if ( child != nullptr &&
+			 StmtForwardsArrayMetadata( *child, array_names, function_defs, function_array_metadata_needs ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+std::unordered_map<std::string, bool> BuildFunctionArrayMetadataNeeds(
+	const ChspV3AstProgram &program, const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs )
+{
+	std::unordered_map<std::string, bool> needs;
+	for ( const auto &module : program.modules ) {
+		for ( const auto &func : module.functions ) {
+			needs[NormalizeScopedName( func.name )] = FunctionUsesArrayMetadataDirect( func );
+		}
+	}
+	bool changed = true;
+	while ( changed ) {
+		changed = false;
+		for ( const auto &module : program.modules ) {
+			for ( const auto &func : module.functions ) {
+				const auto name = NormalizeScopedName( func.name );
+				if ( needs[name] ) {
+					continue;
+				}
+				const auto array_names = BuildFunctionArrayNames( func );
+				for ( const auto &stmt : func.body_stmts ) {
+					if ( stmt != nullptr && StmtForwardsArrayMetadata( *stmt, array_names, function_defs, needs ) ) {
+						needs[name] = true;
+						changed = true;
+						break;
+					}
+				}
+			}
+		}
+	}
+	return needs;
+}
+
+bool FunctionNeedsArrayMetadata( const std::unordered_map<std::string, bool> &function_array_metadata_needs,
+								 const ChspV3AstFunction &func )
+{
+	const auto it = function_array_metadata_needs.find( NormalizeScopedName( func.name ) );
+	return it != function_array_metadata_needs.end() && it->second;
 }
 
 std::string TranslateArrayAccess( const ChspV3AstExpr &expr, const TranslateContext &ctx, bool &ok )
@@ -225,9 +345,12 @@ std::string TranslateArrayAccess( const ChspV3AstExpr &expr, const TranslateCont
 	}
 
 	std::string offset = TranslateExpr( *expr.children[1], ctx, ok, 0, false );
+	std::string stride = dimensions[0];
 	for ( size_t i = 2; i < expr.children.size(); ++i ) {
-		offset = "(" + offset + ") * (" + dimensions[i - 1] + ") + (" +
-				 TranslateExpr( *expr.children[i], ctx, ok, 0, false ) + ")";
+		offset = "(" + offset + ") + (" + TranslateExpr( *expr.children[i], ctx, ok, 0, false ) + ") * (" + stride + ")";
+		if ( i - 1 < dimensions.size() ) {
+			stride = "(" + stride + ") * (" + dimensions[i - 1] + ")";
+		}
 	}
 	return cpp_name + "[" + offset + "]";
 }
@@ -458,12 +581,14 @@ void CollectArrayStrideFromStmt( const ChspV3AstStmt &stmt, const std::unordered
 TranslateContext BuildTranslateContext( const ChspV3AstFunction &func,
 										const std::unordered_map<std::string, std::string> &function_cpp_names,
 										const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
+										const std::unordered_map<std::string, bool> &function_array_metadata_needs,
 										ChspNativeTarget target )
 {
 	TranslateContext ctx;
 	ctx.target = target;
 	ctx.function_cpp_names = function_cpp_names;
 	ctx.function_defs = function_defs;
+	ctx.function_array_metadata_needs = function_array_metadata_needs;
 	ctx.identifier_cpp_names = BuildIdentifierCppNames( func );
 	for ( const auto &param : func.params ) {
 		if ( !param.is_array ) {
@@ -606,7 +731,8 @@ std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ct
 			out += ", ";
 		}
 		out += TranslateExpr( *expr.children[i], ctx, ok, 0, false );
-		if ( callee != nullptr && FunctionNeedsArrayMetadata( *callee ) && ( i - 1 ) < callee->params.size() &&
+		if ( callee != nullptr && FunctionNeedsArrayMetadata( ctx.function_array_metadata_needs, *callee ) &&
+			 ( i - 1 ) < callee->params.size() &&
 			 callee->params[i - 1].is_array ) {
 			if ( !AppendArrayArgumentMetadata( *expr.children[i], ctx, ok, out ) ) {
 				return "";
@@ -707,7 +833,8 @@ std::string RenderCommandCall( const ChspV3AstStmt &stmt, TranslateContext &ctx,
 			out += ", ";
 		}
 		out += TranslateExpr( *stmt.exprs[i], ctx, ok );
-		if ( callee != nullptr && FunctionNeedsArrayMetadata( *callee ) && i < callee->params.size() &&
+		if ( callee != nullptr && FunctionNeedsArrayMetadata( ctx.function_array_metadata_needs, *callee ) &&
+			 i < callee->params.size() &&
 			 callee->params[i].is_array ) {
 			if ( !AppendArrayArgumentMetadata( *stmt.exprs[i], ctx, ok, out ) ) {
 				return "";
@@ -1020,9 +1147,10 @@ std::string ToPublicHspParamType( const ChspV3AstParam &param )
 	return "var";
 }
 
-void WriteFunctionWrapperToHsp( CMemBuf &buf, const ChspV3AstFunction &func, const std::string &internal_name )
+void WriteFunctionWrapperToHsp( CMemBuf &buf, const ChspV3AstFunction &func, const std::string &internal_name,
+								const std::unordered_map<std::string, bool> &function_array_metadata_needs )
 {
-	const bool needs_array_metadata = FunctionNeedsArrayMetadata( func );
+	const bool needs_array_metadata = FunctionNeedsArrayMetadata( function_array_metadata_needs, func );
 	buf.PutStr( IsDefCFunc( func ) ? "#defcfunc " : "#deffunc " );
 	buf.PutStr( NormalizeScopedName( func.name ).c_str() );
 	bool first = true;
@@ -1129,12 +1257,13 @@ bool WriteFunctionBodyToNative( CMemBuf &buf, const ChspV3AstFunction &func, Tra
 bool WriteFunctionToNative( CMemBuf &buf, const ChspV3AstFunction &func,
 							const std::unordered_map<std::string, std::string> &function_cpp_names,
 							const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
+							const std::unordered_map<std::string, bool> &function_array_metadata_needs,
 							ChspNativeTarget target, CLogger &logger )
 {
-	const bool needs_array_metadata = FunctionNeedsArrayMetadata( func );
+	const bool needs_array_metadata = FunctionNeedsArrayMetadata( function_array_metadata_needs, func );
 	const auto cpp_name_it = function_cpp_names.find( func.name );
 	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
-	auto ctx = BuildTranslateContext( func, function_cpp_names, function_defs, target );
+	auto ctx = BuildTranslateContext( func, function_cpp_names, function_defs, function_array_metadata_needs, target );
 	if ( target == ChspNativeTarget::Plugin ) {
 		buf.PutStr( "static " );
 	} else if ( target == ChspNativeTarget::C ) {
@@ -1179,12 +1308,13 @@ bool WriteFunctionToNative( CMemBuf &buf, const ChspV3AstFunction &func,
 void WriteFunctionPrototypeToNative( CMemBuf &buf, const ChspV3AstFunction &func,
 									 const std::unordered_map<std::string, std::string> &function_cpp_names,
 									 const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
+									 const std::unordered_map<std::string, bool> &function_array_metadata_needs,
 									 ChspNativeTarget target )
 {
-	const bool needs_array_metadata = FunctionNeedsArrayMetadata( func );
+	const bool needs_array_metadata = FunctionNeedsArrayMetadata( function_array_metadata_needs, func );
 	const auto cpp_name_it = function_cpp_names.find( func.name );
 	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
-	auto ctx = BuildTranslateContext( func, function_cpp_names, function_defs, target );
+	auto ctx = BuildTranslateContext( func, function_cpp_names, function_defs, function_array_metadata_needs, target );
 	if ( target == ChspNativeTarget::Plugin ) {
 		buf.PutStr( "static " );
 	} else if ( target == ChspNativeTarget::C ) {
@@ -1220,9 +1350,10 @@ void WriteFunctionPrototypeToNative( CMemBuf &buf, const ChspV3AstFunction &func
 }
 
 void WriteFunctionDeclToHspInternal( CMemBuf &buf, const ChspV3AstFunction &func, const std::string &name,
-									 const std::string &cpp_name )
+									 const std::string &cpp_name,
+									 const std::unordered_map<std::string, bool> &function_array_metadata_needs )
 {
-	const bool needs_array_metadata = FunctionNeedsArrayMetadata( func );
+	const bool needs_array_metadata = FunctionNeedsArrayMetadata( function_array_metadata_needs, func );
 	buf.PutStr( IsDefCFunc( func ) ? "#cfunc " : "#func " );
 	buf.PutStr( name.c_str() );
 	buf.PutStr( " \"" );
@@ -1259,16 +1390,19 @@ void WritePluginFunctionDeclToHsp( CMemBuf &buf, const ChspV3AstFunction &func, 
 
 bool WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
 								const std::unordered_map<std::string, std::string> &function_cpp_names,
-								const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs, CLogger &logger )
+								const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
+								const std::unordered_map<std::string, bool> &function_array_metadata_needs, CLogger &logger )
 {
 	for ( const auto &func : module.functions ) {
-		WriteFunctionPrototypeToNative( buf, func, function_cpp_names, function_defs, ChspNativeTarget::Plugin );
+		WriteFunctionPrototypeToNative( buf, func, function_cpp_names, function_defs, function_array_metadata_needs,
+									   ChspNativeTarget::Plugin );
 	}
 	if ( !module.functions.empty() ) {
 		buf.PutCR();
 	}
 	for ( const auto &func : module.functions ) {
-		if ( !WriteFunctionToNative( buf, func, function_cpp_names, function_defs, ChspNativeTarget::Plugin, logger ) ) {
+		if ( !WriteFunctionToNative( buf, func, function_cpp_names, function_defs, function_array_metadata_needs,
+									 ChspNativeTarget::Plugin, logger ) ) {
 			return false;
 		}
 	}
@@ -1281,7 +1415,7 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
 	buf.PutStr( "    switch( cmd ) {\n" );
 	for ( size_t i = 0; i < module.functions.size(); ++i ) {
 		const auto &func = module.functions[i];
-		const bool needs_array_metadata = FunctionNeedsArrayMetadata( func );
+		const bool needs_array_metadata = FunctionNeedsArrayMetadata( function_array_metadata_needs, func );
 		const auto cpp_name_it = function_cpp_names.find( func.name );
 		const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
 		buf.PutStr( "    case " );
@@ -1388,7 +1522,7 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
 		if ( !IsDefCFunc( func ) ) {
 			continue;
 		}
-		const bool needs_array_metadata = FunctionNeedsArrayMetadata( func );
+		const bool needs_array_metadata = FunctionNeedsArrayMetadata( function_array_metadata_needs, func );
 		const auto cpp_name_it = function_cpp_names.find( func.name );
 		const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
 		buf.PutStr( "    case " );
@@ -1628,6 +1762,7 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 
 	const auto function_cpp_names = BuildFunctionCppNames( ast_program );
 	const auto function_defs = BuildFunctionDefs( ast_program );
+	const auto function_array_metadata_needs = BuildFunctionArrayMetadataNeeds( ast_program, function_defs );
 
 	size_t module_index = 0;
 	size_t function_index = 0;
@@ -1673,7 +1808,7 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 			}
 			if ( native_outputs[module_index].target == ChspNativeTarget::Plugin ) {
 				if ( !WritePluginNativeDispatch( *native_outputs[module_index].output, ast_program.modules[module_index],
-												function_cpp_names, function_defs, logger ) ) {
+												function_cpp_names, function_defs, function_array_metadata_needs, logger ) ) {
 					return -1;
 				}
 			}
@@ -1698,10 +1833,11 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 				const auto cpp_name_it = function_cpp_names.find( func.name );
 				const std::string cpp_name =
 					cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
-				if ( FunctionNeedsArrayMetadata( func ) ) {
+				if ( FunctionNeedsArrayMetadata( function_array_metadata_needs, func ) ) {
 					const auto internal_name = HspInternalFunctionDeclName( func );
-					WriteFunctionDeclToHspInternal( hsp_out, func, internal_name, cpp_name );
-					WriteFunctionWrapperToHsp( hsp_out, func, internal_name );
+					WriteFunctionDeclToHspInternal( hsp_out, func, internal_name, cpp_name,
+												   function_array_metadata_needs );
+					WriteFunctionWrapperToHsp( hsp_out, func, internal_name, function_array_metadata_needs );
 				} else {
 					WriteFunctionDeclToHsp( hsp_out, func, cpp_name );
 				}
@@ -1717,7 +1853,7 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 			if ( native_outputs[module_index].target != ChspNativeTarget::Plugin ) {
 				if ( !WriteFunctionToNative( *native_outputs[module_index].output,
 											 ast_program.modules[module_index].functions[function_index], function_cpp_names,
-											 function_defs,
+											 function_defs, function_array_metadata_needs,
 											 native_outputs[module_index].target, logger ) ) {
 					return -1;
 				}
