@@ -59,13 +59,13 @@ private:
 
 	//		For Code Generate
 	//
-	void ResetGenerator( unsigned char *ptr );
+	void ResetGenerator( const char *ptr );
 	int GenerateCodeMain( CMemBuf *src );
 	int GenerateCodeMainSkipError( CMemBuf *src );
 	void RegisterFuncLabels( void );
 	int GenerateCodeBlock( void );
 	int GenerateCodeSub( void );
-	void GenerateCodePP( char *buf );
+	void GenerateCodePP( const char *buf );
 	void GenerateCodeCMD( int id );
 	void GenerateCodeLET( int id, bool first = false );
 	void GenerateCodeVAR( int id, int ex, std::unique_ptr<chspv3::ChspV3AstExpr> *ast_target = nullptr );

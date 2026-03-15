@@ -52,8 +52,7 @@ void CChspParser::CalcCG_token_exprbeg_redo()
 {
 	//		GETTOKEN_EXPRBEG でトークンを取得し直す
 	//
-	//		GetTokenCG は 文字列リテラルや文字コードリテラルの場合、
-	//		cg_ptr のバッファを破壊するので常に取得し直すわけにはいかない
+	//		先頭が単項演算子の場合だけ読み直す
 	//
 	if ( token.ttype == TK_NONE ) {
 		token.ttype = token.val;
@@ -2229,7 +2228,7 @@ int CChspParser::SetVarsFixed( const std::string &varname, int fixedvalue )
 }
 
 
-void CChspParser::GenerateCodePP( char *buf )
+void CChspParser::GenerateCodePP( const char *buf )
 {
 	//		HSP3Codeを展開する(プリプロセスコマンド)
 	//
@@ -2486,7 +2485,6 @@ int CChspParser::GenerateCodeBlock()
 	int id;
 	int ff;
 	char a1;
-	char *p;
 	res = GenerateCodeSub();
 	if ( res == TK_EOF ) {
 		return res;
@@ -2522,12 +2520,11 @@ int CChspParser::GenerateCodeBlock()
 
 			ff = 0;
 			auto np = lexer.GetTokenCG( lexer.cg_ptr, GETTOKEN_DEFAULT );
-			p = np.first;
 			token = np.second;
 
 			if ( token.ttype == TK_EOL ) { // 次行のコマンドがelseかどうか調べる
 				if ( lexer.cg_wp != nullptr ) {
-					auto sym = lexer.GetSymbolCG( (char *)lexer.cg_wp );
+					auto sym = lexer.GetSymbolCG( lexer.cg_wp );
 					if ( !sym.empty() ) {
 						id = symtab->lb->Search( sym.data() );
 						if ( id >= 0 ) {
@@ -2578,7 +2575,7 @@ void CChspParser::RegisterFuncLabels()
 }
 
 
-void CChspParser::ResetGenerator( unsigned char *ptr )
+void CChspParser::ResetGenerator( const char *ptr )
 {
 	cg_flag = CG_FLAG_ENABLE;
 	cg_valcnt = 0;
@@ -2589,7 +2586,7 @@ void CChspParser::ResetGenerator( unsigned char *ptr )
 	lexer.cg_orgline = 0;
 	lexer.cg_wp = ptr;
 	lexer.NextLine();
-	lexer.cg_orgfile[0] = 0;
+	lexer.cg_orgfile.clear();
 	lexer.cg_orgfilefull.clear();
 	cg_libindex = -1;
 	cg_libmode = CG_LIBMODE_NONE;
@@ -2610,9 +2607,8 @@ void CChspParser::ResetGenerator( unsigned char *ptr )
 int CChspParser::GenerateCodeMain( CMemBuf *buf )
 {
 	//		ソースをHSP3Codeに展開する
-	//		(ソースのバッファを書き換えるので注意)
 	//
-	ResetGenerator( (unsigned char *)buf->GetBuffer() );
+	ResetGenerator( reinterpret_cast<const char *>( buf->GetBuffer() ) );
 	int a;
 
 	try {
@@ -2685,7 +2681,7 @@ int CChspParser::GenerateCodeMainSkipError( CMemBuf *buf )
 {
 	//		ソースをHSP3Codeに展開する(エラースキップ)
 	//
-	ResetGenerator( (unsigned char *)buf->GetBuffer() );
+	ResetGenerator( reinterpret_cast<const char *>( buf->GetBuffer() ) );
 
 	try {
 		RegisterFuncLabels();
