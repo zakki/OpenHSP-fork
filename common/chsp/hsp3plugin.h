@@ -5,7 +5,7 @@
 #ifndef __hsp3plugin_h
 #define __hsp3plugin_h
 
-//	エクスポート定義
+// Export definitions
 #ifdef _WIN32
 #  ifdef __cplusplus
 #    define EXPORT extern "C" __declspec(dllexport)

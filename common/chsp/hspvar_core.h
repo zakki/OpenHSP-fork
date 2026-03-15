@@ -13,7 +13,7 @@
 #define HSPVAR_FLAG_STRUCT 5
 #define HSPVAR_FLAG_COMSTRUCT 6
 
-//	7はVARIANTで予約済み
+// 7 is reserved for VARIANT
 
 #define HSPVAR_FLAG_USERDEF 8
 #define HSPVAR_FLAG_MAX 8
@@ -28,29 +28,29 @@
 #define HSPVAR_ERROR_ARRAYOVER HSPERR_ARRAY_OVERFLOW
 #define HSPVAR_ERROR_ILLEGALPRM HSPERR_ILLEGAL_FUNCTION
 
-#define HSPVAR_SUPPORT_STORAGE 1				// 固定長ストレージサポート
-#define HSPVAR_SUPPORT_FLEXSTORAGE 2			// 可変長ストレージサポート
-#define HSPVAR_SUPPORT_FIXEDARRAY 4				// 配列サポート
-#define HSPVAR_SUPPORT_FLEXARRAY 8				// 可変長配列サポート
-#define HSPVAR_SUPPORT_ARRAYOBJ 16				// 連想配列サポート
-#define HSPVAR_SUPPORT_FLEXSIZE 32				// 要素ごとのデータが可変長
-#define HSPVAR_SUPPORT_NOCONVERT 64				// 代入時の型変換を無効にする
-#define HSPVAR_SUPPORT_VARUSE 128				// varuse関数のチェックを有効にする
-#define HSPVAR_SUPPORT_TEMPVAR 256				// テンポラリ変数として使用する
-#define HSPVAR_SUPPORT_FIXEDTYPE 0x400			// (debug)型固定変数
-#define HSPVAR_SUPPORT_FIXEDVALUE 0x800			// (debug)値固定変数
-#define HSPVAR_SUPPORT_SETNOTICE 0x1000			// (debug)代入時に通知
-#define HSPVAR_SUPPORT_ARRAYNOTICE 0x2000		// (debug)代入時に通知(すべての配列)
-#define HSPVAR_SUPPORT_USER1 0x4000				// ユーザーフラグ1
-#define HSPVAR_SUPPORT_USER2 0x8000				// ユーザーフラグ2
+#define HSPVAR_SUPPORT_STORAGE 1				// Fixed-length storage support
+#define HSPVAR_SUPPORT_FLEXSTORAGE 2			// Variable-length storage support
+#define HSPVAR_SUPPORT_FIXEDARRAY 4				// Array support
+#define HSPVAR_SUPPORT_FLEXARRAY 8				// Variable-length array support
+#define HSPVAR_SUPPORT_ARRAYOBJ 16				// Associative array support
+#define HSPVAR_SUPPORT_FLEXSIZE 32				// Per-element data size is variable
+#define HSPVAR_SUPPORT_NOCONVERT 64				// Disable type conversion on assignment
+#define HSPVAR_SUPPORT_VARUSE 128				// Enable varuse checks
+#define HSPVAR_SUPPORT_TEMPVAR 256				// Use as a temporary variable
+#define HSPVAR_SUPPORT_FIXEDTYPE 0x400			// (debug) Fixed-type variable
+#define HSPVAR_SUPPORT_FIXEDVALUE 0x800			// (debug) Fixed-value variable
+#define HSPVAR_SUPPORT_SETNOTICE 0x1000			// (debug) Notify on assignment
+#define HSPVAR_SUPPORT_ARRAYNOTICE 0x2000		// (debug) Notify on assignment for all array elements
+#define HSPVAR_SUPPORT_USER1 0x4000				// User flag 1
+#define HSPVAR_SUPPORT_USER2 0x8000				// User flag 2
 
-#define HSPVAR_SUPPORT_DEBUGVAR 0x3C00			// (debug)varprop命令で設定されるフラグ群
-#define HSPVAR_SUPPORT_ASSERTVAR 0x3000			// (debug)変数logで使用されるフラグ群
+#define HSPVAR_SUPPORT_DEBUGVAR 0x3C00			// (debug) Flags set by varprop
+#define HSPVAR_SUPPORT_ASSERTVAR 0x3000			// (debug) Flags used by varlog
 
 #define HSPVAR_SUPPORT_MISCTYPE (HSPVAR_SUPPORT_ARRAYOBJ)
 
-typedef void * PDAT;							// データの実態へのポインタ
-typedef int APTR;								// 配列データへのオフセット値
+typedef void * PDAT;							// Pointer to the actual data
+typedef int APTR;								// Offset into array data
 
 enum
 {
@@ -100,51 +100,51 @@ typedef struct
 //
 typedef struct
 {
-	//		データフィールド
+	//		Data fields
 	//
-	short flag;							// 型タイプ値 (親アプリケーションで設定されます)
-	short aftertype;					// 演算後のタイプ値
-	short version;						// 型タイプランタイムバージョン(0x100 = 1.0)
-	unsigned short support;				// サポート状況フラグ(HSPVAR_SUPPORT_*)
-	short basesize;						// １つのデータが使用するサイズ(byte) / 可変長の時は-1
-	short opt;							// (未使用)
+	short flag;							// Type value (set by the host application)
+	short aftertype;					// Type value after evaluation
+	short version;						// Type runtime version (0x100 = 1.0)
+	unsigned short support;				// Support flags (HSPVAR_SUPPORT_*)
+	short basesize;						// Size used by one datum in bytes, or -1 for variable size
+	short opt;							// (unused)
 
-	char *vartype_name;					// 型タイプ名文字列へのポインタ
-	char *user;							// ユーザーデータ(未使用)
+	char *vartype_name;					// Pointer to the type name string
+	char *user;							// User data (unused)
 
-	//		システム参照・型変換用
+	//		System lookup and type conversion
 	//
 	void *(*Cnv)( const void *buffer, int flag );
 	void *(*CnvCustom)( const void *buffer, int flag );
 	PDAT *(*GetPtr)( PVal *pval );
 
-	void *(*ArrayObjectRead)( PVal *pval, int *mptype );// 配列要素の指定 (連想配列/読み出し)
-	void (*ArrayObject)( PVal *pval );							// 配列要素の指定 (連想配列/書き込み準備)
-	void (*ObjectWrite)( PVal *pval, void *data, int type );		// HSPVAR_SUPPORT_NOCONVERT指定時の代入
-	void (*ObjectMethod)( PVal *pval );							// 変数に対するメソッドの指定
+	void *(*ArrayObjectRead)( PVal *pval, int *mptype );// Select an array element (associative array / read)
+	void (*ArrayObject)( PVal *pval );							// Select an array element (associative array / prepare write)
+	void (*ObjectWrite)( PVal *pval, void *data, int type );		// Assignment when HSPVAR_SUPPORT_NOCONVERT is set
+	void (*ObjectMethod)( PVal *pval );							// Select a method for the variable
 
-	void (*Alloc)( PVal *pval, const PVal *pval2 );		// 変数メモリを確保する
-	void (*Free)( PVal *pval );						// 変数メモリを解放する
+	void (*Alloc)( PVal *pval, const PVal *pval2 );		// Allocate variable memory
+	void (*Free)( PVal *pval );						// Free variable memory
 
-	int (*GetSize)( const PDAT *pdat );			// 要素が使用するメモリサイズを返す(可変長のため)
-	int (*GetUsing)( const PDAT *pdat );			// 要素が使用中であるかを返す(varuse関数用)
+	int (*GetSize)( const PDAT *pdat );			// Return the memory size used by an element
+	int (*GetUsing)( const PDAT *pdat );			// Return whether an element is in use (for varuse)
 
-	//		変数バッファ(バイナリ)のポインタとサイズを返す
-	//		(要素が可変長(str)の場合は該当する１配列バイナリのみ)
-	//		(要素が固定長(int,double)の場合は全配列バイナリ)
-	//		(サイズはメモリ確保サイズを返す)
+	//		Return the pointer and size of the variable buffer in binary form
+	//		(For variable-length elements such as str, only the matching array element binary is returned)
+	//		(For fixed-size elements such as int and double, the full array binary is returned)
+	//		(The size returned is the allocated memory size)
 	void *(*GetBlockSize)( PVal *pval, PDAT *pdat, int *size );
 
-	//		バイナリデータ用にメモリブロックを確保する
-	//		(要素が可変長(str)の場合にブロックサイズを強制的に確保する)
-	//		(固定長の場合は何もしない)
+	//		Allocate a memory block for binary data
+	//		(For variable-length elements such as str, force allocation of the block size)
+	//		(Do nothing for fixed-size elements)
 	void (*AllocBlock)( PVal *pval, PDAT *pdat, int size );
 
-	//		代入用関数(型の一致が保障されます)
+	//		Assignment functions (type match is guaranteed)
 	//
 	void (*Set)( PVal *pval, PDAT *pdat, const void *in );
 
-	//		演算用関数(型の一致が保障されます)
+	//		Operation functions (type match is guaranteed)
 	//
 	void (*AddI)( PDAT *pval, const void *val );
 	void (*SubI)( PDAT *pval, const void *val );
@@ -184,7 +184,7 @@ extern PVal *mem_pval;
 typedef struct
 {
 	short type;			// typeID
-	short myid;			// 固有ID(未使用)
+	short myid;			// Unique ID (unused)
 	short customid;		// structure ID
 	short clonetype;	// typeID for clone
 	int size;			// data size
@@ -195,10 +195,10 @@ typedef struct
 /*
 	typefunc
 
-	基本タイプ HSPVAR_FLAG_STR ～ HSPVAR_FLAG_DOUBLE
-	拡張タイプ HSPVAR_FLAG_USERDEF 以降
+	Base types: HSPVAR_FLAG_STR to HSPVAR_FLAG_DOUBLE
+	Extended types: HSPVAR_FLAG_USERDEF and later
 
-	式の評価でpval->ptを参照するため、常に配列0のポイントはpval->ptが指し示す必要がある。
+	Expression evaluation refers to pval->pt, so the pointer for array element 0 must always be stored in pval->pt.
 */
 
 
@@ -235,10 +235,10 @@ void HspVarCoreAllocPODArray( PVal *pval, const PVal *pval2, int basesize );
 #define HspVarCoreDispose( pv ) hspvarproc[(pv)->flag].Free(pv)
 #define HspVarCoreReset( pv ) ((pv)->offset=0,(pv)->arraycnt=0)
 #define HspVarCorePtr( pv ) (hspvarproc[(pv)->flag].GetPtr(pv))
-#define HspVarCoreArrayObject( pv,in ) (hspvarproc[(pv)->flag].ArrayObject(pv,in))	//	配列の要素を指定する(最初にResetを呼んでおくこと)
+#define HspVarCoreArrayObject( pv,in ) (hspvarproc[(pv)->flag].ArrayObject(pv,in))	//	Select an array element (call Reset first)
 
 #define HspVarCoreSet( pv,in ) hspvarproc[(pv)->flag].Set( pv, in )
-#define HspVarCoreCnv( in1,in2,in3 ) hspvarproc[in2].Cnv( in3,in1 )		// in1->in2の型にin3ポインタを変換する
+#define HspVarCoreCnv( in1,in2,in3 ) hspvarproc[in2].Cnv( in3,in1 )		// Convert pointer in3 from type in1 to type in2
 
 #define HspVarCoreGetBlockSize( pv,in1,out ) hspvarproc[(pv)->flag].GetBlockSize( pv,in1,out )
 #define HspVarCoreAllocBlock( pv,in1,in2 ) hspvarproc[(pv)->flag].AllocBlock( pv,in1,in2 )

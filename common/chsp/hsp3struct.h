@@ -10,12 +10,12 @@
 #include "hsp3debug.h"
 
 #if UINTPTR_MAX == 0xffffffffffffffffu
-#define PTR64BIT        //  ポインタは64bit
+#define PTR64BIT        //  Pointer is 64-bit
 #ifndef HSP64
 #warning HSP64 is not defined, but pointer is 64bit
 #endif
 #elif UINTPTR_MAX == 0xffffffff
-#define PTR32BIT        //  ポインタは32bit
+#define PTR32BIT        //  Pointer is 32-bit
 
 #ifdef HSP64
 #warning HSP64 is defined, but pointer is 32bit
@@ -24,11 +24,11 @@
 #error Unknown pointer size
 #endif
 
-//		HSPが使用する実数型
+//		Real number type used by HSP
 //
 #define HSPREAL double
 
-//		HSPが使用する64bit整数値型
+//		64-bit integer type used by HSP
 //
 #ifdef HSP64
 #define HSPLPTR long
@@ -127,19 +127,19 @@ typedef struct HSPHED
 
 } HSPHED;
 
-#define HSPHED_BOOTOPT_DEBUGWIN 1			// 起動時デバッグウインドゥ表示
-#define HSPHED_BOOTOPT_WINHIDE 2			// 起動時ウインドゥ非表示
-#define HSPHED_BOOTOPT_DIRSAVE 4			// 起動時カレントディレクトリ変更なし
-#define HSPHED_BOOTOPT_SAVER 0x100			// スクリーンセーバー
+#define HSPHED_BOOTOPT_DEBUGWIN 1			// Show the debug window at startup
+#define HSPHED_BOOTOPT_WINHIDE 2			// Hide the window at startup
+#define HSPHED_BOOTOPT_DIRSAVE 4			// Do not change the current directory at startup
+#define HSPHED_BOOTOPT_SAVER 0x100			// Screen saver
 
-#define HSPHED_BOOTOPT_RUNTIME 0x1000		// 動的ランタイムを有効にする
-#define HSPHED_BOOTOPT_NOMMTIMER 0x2000		// マルチメディアタイマーを無効にする
-#define HSPHED_BOOTOPT_NOGDIP 0x4000		// GDI+による描画を無効にする
-#define HSPHED_BOOTOPT_FLOAT32 0x8000		// 実数を32bit floatとして処理する
-#define HSPHED_BOOTOPT_ORGRND 0x10000		// 標準の乱数発生を使用する
-#define HSPHED_BOOTOPT_UTF8 0x20000			// UTF8ランタイムを使用する(コード識別用)
-#define HSPHED_BOOTOPT_HSP64 0x40000		// 64bitランタイムを使用する(コード識別用)
-#define HSPHED_BOOTOPT_IORESUME 0x80000		// ファイルI/Oエラーを無視して処理を続行する
+#define HSPHED_BOOTOPT_RUNTIME 0x1000		// Enable dynamic runtime
+#define HSPHED_BOOTOPT_NOMMTIMER 0x2000		// Disable multimedia timer
+#define HSPHED_BOOTOPT_NOGDIP 0x4000		// Disable GDI+ rendering
+#define HSPHED_BOOTOPT_FLOAT32 0x8000		// Process real numbers as 32-bit float
+#define HSPHED_BOOTOPT_ORGRND 0x10000		// Use the standard random number generator
+#define HSPHED_BOOTOPT_UTF8 0x20000			// Use the UTF-8 runtime (code identification)
+#define HSPHED_BOOTOPT_HSP64 0x40000		// Use the 64-bit runtime (code identification)
+#define HSPHED_BOOTOPT_IORESUME 0x80000		// Ignore file I/O errors and continue
 
 
 #define HPIDAT_FLAG_TYPEFUNC 0
@@ -511,7 +511,7 @@ typedef struct LOOPDAT {
 } LOOPDAT;
 
 
-// 実行モード
+// Execution mode
 enum
 {
 RUNMODE_RUN = 0,
@@ -613,11 +613,11 @@ struct HSPCTX
 #define HSPSTAT_UTF8 0x20000
 #define HSPSTAT_HSP64 0x40000
 
-#define TYPE_EX_SUBROUTINE 0x100		// gosub用のスタックタイプ
-#define TYPE_EX_CUSTOMFUNC 0x101		// deffunc呼び出し用のスタックタイプ
-#define TYPE_EX_ENDOFPARAM 0x200		// パラメーター終端(HSPtoC)
-#define TYPE_EX_ARRAY_VARS 0x201		// 配列要素付き変数用スタックタイプ(HSPtoC)
-#define TYPE_EX_LOCAL_VARS 0x202		// ローカル変数用スタックタイプ(HSPtoC)
+#define TYPE_EX_SUBROUTINE 0x100		// Stack type for gosub
+#define TYPE_EX_CUSTOMFUNC 0x101		// Stack type for deffunc calls
+#define TYPE_EX_ENDOFPARAM 0x200		// End of parameter marker (HSPtoC)
+#define TYPE_EX_ARRAY_VARS 0x201		// Stack type for variables with array elements (HSPtoC)
+#define TYPE_EX_LOCAL_VARS 0x202		// Stack type for local variables (HSPtoC)
 
 #define HSPCTX_LANGUAGE_EN 0
 #define HSPCTX_LANGUAGE_JP 1
@@ -626,27 +626,27 @@ typedef struct
 {
 	//	Subroutine Context
 	//
-	int stacklev;						// サブルーチン開始時のスタックレベル
-	unsigned short *mcsret;				// 呼び出し元PCポインタ(復帰用)
-	STRUCTDAT *param;					// 引数パラメーターリスト
-	void *oldtack;						// 以前のスタックアドレス
-	int oldlev;							// 以前のスタックレベル
+	int stacklev;						// Stack level at subroutine entry
+	unsigned short *mcsret;				// Caller PC pointer for return
+	STRUCTDAT *param;					// Argument parameter list
+	void *oldtack;						// Previous stack address
+	int oldlev;							// Previous stack level
 
 } HSPROUTINE;
 
 
 
-//		コールバックのオプション
+//		Callback options
 //
-#define HSPEVENT_ENABLE_COMMAND 1	// １ステップ実行時
-#define HSPEVENT_ENABLE_HSPIRQ 2	// HSP内での割り込み発生時
-#define HSPEVENT_ENABLE_GETKEY 4	// キーチェック時
-#define HSPEVENT_ENABLE_FILE 8		// ファイル入出力時
-#define HSPEVENT_ENABLE_MEDIA 16	// メディア入出力時
-#define HSPEVENT_ENABLE_PICLOAD 32	// picload命令実行時
+#define HSPEVENT_ENABLE_COMMAND 1	// During single-step execution
+#define HSPEVENT_ENABLE_HSPIRQ 2	// When an interrupt occurs inside HSP
+#define HSPEVENT_ENABLE_GETKEY 4	// During key checks
+#define HSPEVENT_ENABLE_FILE 8		// During file I/O
+#define HSPEVENT_ENABLE_MEDIA 16	// During media I/O
+#define HSPEVENT_ENABLE_PICLOAD 32	// During picload command execution
 
 
-//		ファンクション型
+//		Function types
 //
 typedef int (* HSP3_CMDFUNC) (int);
 typedef void *(* HSP3_REFFUNC) (int *,int);
@@ -656,29 +656,29 @@ typedef int (* HSP3_EVENTFUNC) (int,int,int,void *);
 
 
 typedef struct {
-	//	型ごとの情報
-	//	(*の項目は、親アプリケーションで設定されます)
+	//	Type-specific information
+	//	(Fields marked with * are set by the host application)
 	//
-	short type;							// *型タイプ値
-	short option;						// *オプション情報
-	HSPCTX *hspctx;						// *HSP Context構造体へのポインタ
-	HSPEXINFO *hspexinfo;				// *HSPEXINFO構造体へのポインタ
+	short type;							// *Type value
+	short option;						// *Option info
+	HSPCTX *hspctx;						// *Pointer to the HSP Context structure
+	HSPEXINFO *hspexinfo;				// *Pointer to the HSPEXINFO structure
 
-	//	ファンクション情報
+	//	Function information
 	//
-	int (* cmdfunc) (int);				// コマンド受け取りファンクション
-	void *(* reffunc) (int *,int);		// 参照受け取りファンクション
-	int (* termfunc) (int);				// 終了受け取りファンクション
+	int (* cmdfunc) (int);				// Command callback
+	void *(* reffunc) (int *,int);		// Reference callback
+	int (* termfunc) (int);				// Termination callback
 
-	// イベントコールバックファンクション
+	// Event callback functions
 	//
-	int (* msgfunc) (int,int,int);				// Windowメッセージコールバック
-	int (* eventfunc) (int,int,int,void *);		// HSPイベントコールバック
+	int (* msgfunc) (int,int,int);				// Window message callback
+	int (* eventfunc) (int,int,int,void *);		// HSP event callback
 
 } HSP3TYPEINFO;
 
 
-// HSP割り込みID
+// HSP interrupt IDs
 enum
 {
 HSPIRQ_ONEXIT = 0,
@@ -689,7 +689,7 @@ HSPIRQ_USERDEF,
 HSPIRQ_MAX
 };
 
-// HSPイベントID
+// HSP event IDs
 enum
 {
 HSPEVENT_NONE = 0,
@@ -712,7 +712,7 @@ HSPEVENT_PICLOAD,
 HSPEVENT_MAX
 };
 
-// ginfo拡張用フィーメド
+// Fields for ginfo extension
 #define GINFO_EXINFO_MAX 16
 #define GINFO_EXINFO_BASE 0x100
 #define GINFO_EXINFO_ACCEL_X (GINFO_EXINFO_BASE+0)

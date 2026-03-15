@@ -5,10 +5,10 @@
 #ifndef __hsp3debug_h
 #define __hsp3debug_h
 
-// エラーコード
+// Error codes
 typedef enum {
 
-HSPERR_NONE = 0,				// スクリプト終了時
+HSPERR_NONE = 0,				// Script terminated
 HSPERR_UNKNOWN_CODE,
 HSPERR_SYNTAX,
 HSPERR_ILLEGAL_FUNCTION,
@@ -54,8 +54,8 @@ HSPERR_INVALID_CALLBACK,
 HSPERR_FIXED_VARTYPE,
 HSPERR_FIXED_VARVALUE,
 
-HSPERR_INTJUMP,					// 割り込みジャンプ時
-HSPERR_EXITRUN,					// 外部ファイル実行
+HSPERR_INTJUMP,					// Interrupt jump
+HSPERR_EXITRUN,					// External file execution
 HSPERR_MAX
 
 } HSPERROR;
@@ -88,25 +88,25 @@ HSPDEBUG_MAX
 typedef struct HSP3DEBUG
 {
 	//	[in/out] tranfer value
-	//	(システムとの通信用)
+	//	(for communication with the host system)
 	//
 	int	flag;				// Flag ID
-	int	line;				// 行番号情報
-	char *fname;			// ファイル名情報
-	void *dbgwin;			// Debug WindowのHandle
-	char *dbgval;			// debug情報取得バッファ
+	int	line;				// Line number info
+	char *fname;			// File name info
+	void *dbgwin;			// Debug window handle
+	char *dbgval;			// Debug info buffer
 
 	//	[in] system value
-	//	(初期化後に設定されます)
+	//	(set after initialization)
 	//
 	struct HSPCTX 	*hspctx;
 	//
-	char *	(* get_value) (int);			// debug情報取得コールバック
-	char *	(* get_varinf) (char *,int);	// 変数情報取得コールバック
-	void	(* dbg_close) (char *);			// debug情報取得終了
-	void	(* dbg_curinf)( void );			// 現在行・ファイル名の取得
-	int		(* dbg_set) (int);				// debugモード設定
-	char *  (* dbg_callstack) ( void );     // コールスタックの取得
+	char *	(* get_value) (int);			// Debug info callback
+	char *	(* get_varinf) (char *,int);	// Variable info callback
+	void	(* dbg_close) (char *);			// Finish debug info retrieval
+	void	(* dbg_curinf)( void );			// Get current line and file name
+	int		(* dbg_set) (int);				// Set debug mode
+	char *  (* dbg_callstack) ( void );     // Get call stack
 
 } HSP3DEBUG;
 
