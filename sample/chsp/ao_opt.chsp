@@ -206,7 +206,7 @@ goto *MAIN
 	return
 #chsp_end
 
-; モジュール最適化で削除されないようにダミー関数を置く
+; a dummy function to prevent it from being removed during module optimization
 #deffunc dummy
 	return
 
@@ -352,7 +352,7 @@ goto *MAIN
 	loop
 	endtime = (gettime(5) * 60 + gettime(6)) * 1000 + gettime(7)
 	prev = "" + double(endtime - starttime) / 1000 + "sec"
-	goto *MAIN
+	return
 
 stop
 dummy
