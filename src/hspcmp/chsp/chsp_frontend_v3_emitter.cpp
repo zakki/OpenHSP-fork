@@ -499,6 +499,40 @@ bool HasTrailingBlockElseChild( const ChspV3AstStmt &stmt, size_t &else_index )
 
 std::string RenderStatementInline( const ChspV3AstStmt &stmt, TranslateContext &ctx, bool &ok );
 
+const char *StatementKindName( ChspV3AstStmtKind kind )
+{
+	switch ( kind ) {
+	case ChspV3AstStmtKind::Unknown:
+		return "unknown";
+	case ChspV3AstStmtKind::Return:
+		return "return";
+	case ChspV3AstStmtKind::Repeat:
+		return "repeat";
+	case ChspV3AstStmtKind::Loop:
+		return "loop";
+	case ChspV3AstStmtKind::If:
+		return "if";
+	case ChspV3AstStmtKind::Else:
+		return "else";
+	case ChspV3AstStmtKind::Assignment:
+		return "assignment";
+	case ChspV3AstStmtKind::Command:
+		return "command";
+	case ChspV3AstStmtKind::BlockMarker:
+		return "block";
+	default:
+		return "statement";
+	}
+}
+
+bool ReportUnsupportedStmt( CLogger &logger, const ChspV3AstFunction &func, const ChspV3AstStmt &stmt, const char *reason )
+{
+	logger.Mesf( "#Error:cHSP frontend v3 emitter does not support %s in function '%s' at line %d%s%s%s",
+				 StatementKindName( stmt.kind ), NormalizeScopedName( func.name ).c_str(), stmt.line, reason != nullptr ? " (" : "",
+				 reason != nullptr ? reason : "", reason != nullptr ? ")" : "" );
+	return false;
+}
+
 std::string RenderCommandCall( const ChspV3AstStmt &stmt, TranslateContext &ctx, bool &ok )
 {
 	const std::string name = NormalizeScopedName( stmt.text );
@@ -606,18 +640,18 @@ std::string RenderStatementInline( const ChspV3AstStmt &stmt, TranslateContext &
 	}
 }
 
-void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateContext &ctx, int &indent_level,
-							 bool &emitted_explicit_return )
+bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateContext &ctx, const ChspV3AstFunction &func,
+							 CLogger &logger, int &indent_level, bool &emitted_explicit_return )
 {
 	switch ( stmt.kind ) {
 	case ChspV3AstStmtKind::Unknown:
-		return;
+		return true;
 	case ChspV3AstStmtKind::BlockMarker:
 		indent_level = std::max( 1, indent_level - 1 );
 		buf.PutStr( MakeIndent( indent_level ).c_str() );
 		buf.PutStr( "}" );
 		buf.PutCR();
-		return;
+		return true;
 	case ChspV3AstStmtKind::Loop:
 		if ( !ctx.loop_stack.empty() ) {
 			ctx.loop_stack.pop_back();
@@ -625,7 +659,7 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 		indent_level = std::max( 1, indent_level - 1 );
 		buf.PutStr( MakeIndent( indent_level ).c_str() );
 		buf.PutStr( "}\n" );
-		return;
+		return true;
 	case ChspV3AstStmtKind::Repeat: {
 		bool ok = true;
 		std::string expr = "0";
@@ -633,9 +667,7 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 			expr = TranslateExpr( *stmt.rhs, ctx, ok );
 		}
 		if ( !ok ) {
-			buf.PutStr( MakeIndent( indent_level ).c_str() );
-			buf.PutStr( "// unsupported: repeat\n" );
-			return;
+			return ReportUnsupportedStmt( logger, func, stmt, "repeat count expression could not be translated" );
 		}
 		const std::string loop_var = "_cnt" + std::to_string( static_cast<int>( ctx.loop_stack.size() ) );
 		buf.PutStr( MakeIndent( indent_level ).c_str() );
@@ -652,10 +684,12 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 		++indent_level;
 		for ( const auto &child : stmt.children ) {
 			if ( child != nullptr ) {
-				WriteFunctionStmtToCpp( buf, *child, ctx, indent_level, emitted_explicit_return );
+				if ( !WriteFunctionStmtToCpp( buf, *child, ctx, func, logger, indent_level, emitted_explicit_return ) ) {
+					return false;
+				}
 			}
 		}
-		return;
+		return true;
 	}
 	case ChspV3AstStmtKind::If: {
 		bool ok = true;
@@ -683,7 +717,10 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 						break;
 					}
 					if ( stmt.children[i] != nullptr ) {
-						WriteFunctionStmtToCpp( buf, *stmt.children[i], ctx, indent_level, emitted_explicit_return );
+						if ( !WriteFunctionStmtToCpp( buf, *stmt.children[i], ctx, func, logger, indent_level,
+													  emitted_explicit_return ) ) {
+							return false;
+						}
 					}
 				}
 				indent_level = std::max( 1, indent_level - 1 );
@@ -705,7 +742,10 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 						++indent_level;
 						for ( const auto &child : else_stmt.children ) {
 							if ( child != nullptr ) {
-								WriteFunctionStmtToCpp( buf, *child, ctx, indent_level, emitted_explicit_return );
+								if ( !WriteFunctionStmtToCpp( buf, *child, ctx, func, logger, indent_level,
+															  emitted_explicit_return ) ) {
+									return false;
+								}
 							}
 						}
 						indent_level = std::max( 1, indent_level - 1 );
@@ -714,7 +754,7 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 						buf.PutCR();
 					}
 				}
-				return;
+				return true;
 			}
 		} else {
 			const auto rendered = RenderStatementInline( stmt, ctx, ok );
@@ -725,12 +765,10 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 				if ( chspv2::StartsWith( chspv2::Trim( rendered ), "return" ) ) {
 					emitted_explicit_return = true;
 				}
-				return;
+				return true;
 			}
 		}
-		buf.PutStr( MakeIndent( indent_level ).c_str() );
-		buf.PutStr( "// unsupported: if\n" );
-		return;
+		return ReportUnsupportedStmt( logger, func, stmt, "conditional structure could not be translated" );
 	}
 	case ChspV3AstStmtKind::Else: {
 		bool ok = true;
@@ -741,14 +779,16 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 			++indent_level;
 			for ( const auto &child : stmt.children ) {
 				if ( child != nullptr ) {
-					WriteFunctionStmtToCpp( buf, *child, ctx, indent_level, emitted_explicit_return );
+					if ( !WriteFunctionStmtToCpp( buf, *child, ctx, func, logger, indent_level, emitted_explicit_return ) ) {
+						return false;
+					}
 				}
 			}
 			indent_level = std::max( 1, indent_level - 1 );
 			buf.PutStr( MakeIndent( indent_level ).c_str() );
 			buf.PutStr( "}" );
 			buf.PutCR();
-			return;
+			return true;
 		}
 		const auto rendered = RenderStatementInline( stmt, ctx, ok );
 		if ( ok ) {
@@ -758,11 +798,9 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 			if ( chspv2::StartsWith( chspv2::Trim( rendered ), "else return" ) ) {
 				emitted_explicit_return = true;
 			}
-			return;
+			return true;
 		}
-		buf.PutStr( MakeIndent( indent_level ).c_str() );
-		buf.PutStr( "// unsupported: else\n" );
-		return;
+		return ReportUnsupportedStmt( logger, func, stmt, "else branch could not be translated" );
 	}
 	default:
 		break;
@@ -777,9 +815,9 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 		if ( chspv2::StartsWith( chspv2::Trim( rendered ), "return" ) ) {
 			emitted_explicit_return = true;
 		}
-		return;
+		return true;
 	}
-	buf.PutStr( "// unsupported statement\n" );
+	return ReportUnsupportedStmt( logger, func, stmt, "statement could not be translated" );
 }
 
 void WriteFunctionDeclToHsp( CMemBuf &buf, const ChspV3AstFunction &func, const std::string &cpp_name )
@@ -824,7 +862,7 @@ void WriteLocalDeclsToNative( CMemBuf &buf, const ChspV3AstFunction &func, const
 	}
 }
 
-void WriteFunctionBodyToNative( CMemBuf &buf, const ChspV3AstFunction &func, TranslateContext &ctx )
+bool WriteFunctionBodyToNative( CMemBuf &buf, const ChspV3AstFunction &func, TranslateContext &ctx, CLogger &logger )
 {
 	WriteLocalDeclsToNative( buf, func, ctx );
 	int indent_level = 1;
@@ -834,7 +872,9 @@ void WriteFunctionBodyToNative( CMemBuf &buf, const ChspV3AstFunction &func, Tra
 		if ( stmt == nullptr ) {
 			continue;
 		}
-		WriteFunctionStmtToCpp( buf, *stmt, ctx, indent_level, emitted_explicit_return );
+		if ( !WriteFunctionStmtToCpp( buf, *stmt, ctx, func, logger, indent_level, emitted_explicit_return ) ) {
+			return false;
+		}
 	}
 	const auto ret = DefaultReturnExpr( func.return_type );
 	if ( !ret.empty() && !emitted_explicit_return ) {
@@ -842,11 +882,12 @@ void WriteFunctionBodyToNative( CMemBuf &buf, const ChspV3AstFunction &func, Tra
 		buf.PutStr( ret.c_str() );
 		buf.PutStr( ";\n" );
 	}
+	return true;
 }
 
-void WriteFunctionToNative( CMemBuf &buf, const ChspV3AstFunction &func,
+bool WriteFunctionToNative( CMemBuf &buf, const ChspV3AstFunction &func,
 							const std::unordered_map<std::string, std::string> &function_cpp_names,
-							ChspNativeTarget target )
+							ChspNativeTarget target, CLogger &logger )
 {
 	const auto cpp_name_it = function_cpp_names.find( func.name );
 	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
@@ -878,8 +919,11 @@ void WriteFunctionToNative( CMemBuf &buf, const ChspV3AstFunction &func,
 	buf.PutStr( ")" );
 	buf.PutCR();
 	buf.PutStr( "{\n" );
-	WriteFunctionBodyToNative( buf, func, ctx );
+	if ( !WriteFunctionBodyToNative( buf, func, ctx, logger ) ) {
+		return false;
+	}
 	buf.PutStr( "}\n\n" );
+	return true;
 }
 
 void WriteFunctionPrototypeToNative( CMemBuf &buf, const ChspV3AstFunction &func,
@@ -928,8 +972,8 @@ void WritePluginFunctionDeclToHsp( CMemBuf &buf, const ChspV3AstFunction &func, 
 	buf.PutCR();
 }
 
-void WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
-								const std::unordered_map<std::string, std::string> &function_cpp_names )
+bool WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
+								const std::unordered_map<std::string, std::string> &function_cpp_names, CLogger &logger )
 {
 	for ( const auto &func : module.functions ) {
 		WriteFunctionPrototypeToNative( buf, func, function_cpp_names, ChspNativeTarget::Plugin );
@@ -938,7 +982,9 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
 		buf.PutCR();
 	}
 	for ( const auto &func : module.functions ) {
-		WriteFunctionToNative( buf, func, function_cpp_names, ChspNativeTarget::Plugin );
+		if ( !WriteFunctionToNative( buf, func, function_cpp_names, ChspNativeTarget::Plugin, logger ) ) {
+			return false;
+		}
 	}
 
 	buf.PutStr( "static int chsp_plugin_ref_int;\n" );
@@ -1132,6 +1178,7 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
 	buf.PutStr( "    info->reffunc = reffunc;\n" );
 	buf.PutStr( "    info->termfunc = NULL;\n" );
 	buf.PutStr( "}\n" );
+	return true;
 }
 
 std::string ModuleLibraryName( const std::string &file_stem )
@@ -1294,8 +1341,10 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 				return -1;
 			}
 			if ( native_outputs[module_index].target == ChspNativeTarget::Plugin ) {
-				WritePluginNativeDispatch( *native_outputs[module_index].output, ast_program.modules[module_index],
-										   function_cpp_names );
+				if ( !WritePluginNativeDispatch( *native_outputs[module_index].output, ast_program.modules[module_index],
+												function_cpp_names, logger ) ) {
+					return -1;
+				}
 			}
 			WriteModuleFooterToHsp( hsp_out, current_module_tag );
 			++module_index;
@@ -1329,9 +1378,11 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 				return -1;
 			}
 			if ( native_outputs[module_index].target != ChspNativeTarget::Plugin ) {
-				WriteFunctionToNative( *native_outputs[module_index].output,
-									   ast_program.modules[module_index].functions[function_index], function_cpp_names,
-									   native_outputs[module_index].target );
+				if ( !WriteFunctionToNative( *native_outputs[module_index].output,
+											 ast_program.modules[module_index].functions[function_index], function_cpp_names,
+											 native_outputs[module_index].target, logger ) ) {
+					return -1;
+				}
 			}
 			++function_index;
 			in_function = false;
