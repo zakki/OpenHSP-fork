@@ -1,7 +1,11 @@
-#include "chsp_frontend_v2_internal.h"
+//
+//      cHSP v3 AST emitter surface
+//
+#include "chsp_frontend_v3_emitter.h"
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <map>
 #include <string>
@@ -12,7 +16,7 @@
 #include "../membuf.h"
 #include "logger.h"
 
-namespace chspv2
+namespace chspv3
 {
 namespace
 {
@@ -26,6 +30,20 @@ struct TranslateContext
 	std::map<std::string, int> array_strides;
 	std::vector<std::string> loop_stack;
 };
+
+std::string NormalizeScopedName( const std::string &name )
+{
+	const auto at = name.find( '@' );
+	if ( at == std::string::npos ) {
+		return chspv2::NormalizeIdentifier( name );
+	}
+	return chspv2::NormalizeIdentifier( name.substr( 0, at ) );
+}
+
+bool IsDefCFunc( const ChspV3AstFunction &func )
+{
+	return func.return_type != "void";
+}
 
 std::string SanitizeForCppIdentifier( const std::string &name )
 {
@@ -49,30 +67,31 @@ std::string SanitizeForCppIdentifier( const std::string &name )
 	return out;
 }
 
-std::string MakeFunctionCppName( const ChspFunction &func )
+std::string MakeFunctionCppName( const ChspV3AstFunction &func )
 {
-	return "chsp_func_" + SanitizeForCppIdentifier( func.name );
+	return "chsp_func_" + SanitizeForCppIdentifier( NormalizeScopedName( func.name ) );
 }
 
-std::unordered_map<std::string, std::string> BuildFunctionCppNames( const ChspProgram &program )
+std::unordered_map<std::string, std::string> BuildFunctionCppNames( const ChspV3AstProgram &program )
 {
 	std::unordered_map<std::string, std::string> names;
 	for ( const auto &module : program.modules ) {
 		for ( const auto &function : module.functions ) {
-			names[function.name] = MakeFunctionCppName( function );
+			names[NormalizeScopedName( function.name )] = MakeFunctionCppName( function );
 		}
 	}
 	return names;
 }
 
-std::unordered_map<std::string, std::string> BuildIdentifierCppNames( const ChspFunction &func )
+std::unordered_map<std::string, std::string> BuildIdentifierCppNames( const ChspV3AstFunction &func )
 {
 	std::unordered_map<std::string, std::string> names;
 	const std::string func_key = SanitizeForCppIdentifier( func.name );
 	for ( size_t i = 0; i < func.params.size(); ++i ) {
 		const auto &param = func.params[i];
-		names[param.name] =
-			"chsp_var_" + func_key + "_" + std::to_string( i ) + "_" + SanitizeForCppIdentifier( param.name );
+		const auto normalized_name = NormalizeScopedName( param.name );
+		names[normalized_name] =
+			"chsp_var_" + func_key + "_" + std::to_string( i ) + "_" + SanitizeForCppIdentifier( normalized_name );
 	}
 	return names;
 }
@@ -86,7 +105,7 @@ std::string LookupCppIdentifier( const TranslateContext &ctx, const std::string 
 	return name;
 }
 
-std::string ToHspParamType( const ChspParam &param )
+std::string ToHspParamType( const ChspV3AstParam &param )
 {
 	if ( param.is_array ) {
 		return "var";
@@ -100,12 +119,12 @@ std::string ToHspParamType( const ChspParam &param )
 	return "var";
 }
 
-std::string PluginCommandName( const ChspFunction &func )
+std::string PluginCommandName( const ChspV3AstFunction &func )
 {
-	return func.name;
+	return NormalizeScopedName( func.name );
 }
 
-std::string ToCppType( const ChspParam &param )
+std::string ToCppType( const ChspV3AstParam &param )
 {
 	if ( param.is_array ) {
 		return param.base_type + " *";
@@ -113,7 +132,7 @@ std::string ToCppType( const ChspParam &param )
 	return param.base_type;
 }
 
-std::string ToNativeType( const ChspParam &param, ChspNativeTarget )
+std::string ToNativeType( const ChspV3AstParam &param, ChspNativeTarget )
 {
 	return ToCppType( param );
 }
@@ -219,10 +238,10 @@ std::string OperatorText( int op )
 	}
 }
 
-int ExprPrecedence( const ChspExpr &expr )
+int ExprPrecedence( const ChspV3AstExpr &expr )
 {
 	switch ( expr.kind ) {
-	case ChspExprKind::Binary:
+	case ChspV3AstExprKind::Binary:
 		switch ( expr.token_kind ) {
 		case '&':
 		case '|':
@@ -248,31 +267,36 @@ int ExprPrecedence( const ChspExpr &expr )
 		default:
 			return 5;
 		}
-	case ChspExprKind::Unary:
+	case ChspV3AstExprKind::Unary:
 		return 60;
-	case ChspExprKind::Call:
-	case ChspExprKind::Identifier:
-	case ChspExprKind::Label:
-	case ChspExprKind::IntLiteral:
-	case ChspExprKind::DoubleLiteral:
-	case ChspExprKind::StringLiteral:
-	case ChspExprKind::Group:
+	case ChspV3AstExprKind::Call:
+	case ChspV3AstExprKind::Identifier:
+	case ChspV3AstExprKind::Label:
+	case ChspV3AstExprKind::IntLiteral:
+	case ChspV3AstExprKind::DoubleLiteral:
+	case ChspV3AstExprKind::StringLiteral:
+	case ChspV3AstExprKind::Group:
 		return 70;
 	default:
 		return 0;
 	}
 }
 
-void CollectArrayStrideFromExpr( const ChspExpr &expr, const std::unordered_set<std::string> &array_names,
+int IntLiteralValue( const ChspV3AstExpr &expr )
+{
+	return std::atoi( expr.text.c_str() );
+}
+
+void CollectArrayStrideFromExpr( const ChspV3AstExpr &expr, const std::unordered_set<std::string> &array_names,
 								 std::map<std::string, int> &array_strides )
 {
-	if ( expr.kind == ChspExprKind::Call && !expr.children.empty() ) {
+	if ( expr.kind == ChspV3AstExprKind::Call && !expr.children.empty() ) {
 		const auto &callee = expr.children[0];
-		if ( callee != nullptr && callee->kind == ChspExprKind::Identifier &&
+		if ( callee != nullptr && callee->kind == ChspV3AstExprKind::Identifier &&
 			 array_names.find( callee->text ) != array_names.end() && expr.children.size() == 3 ) {
 			const auto &index_expr = expr.children[2];
-			if ( index_expr != nullptr && index_expr->kind == ChspExprKind::IntLiteral ) {
-				array_strides[callee->text] = std::max( array_strides[callee->text], index_expr->int_value + 1 );
+			if ( index_expr != nullptr && index_expr->kind == ChspV3AstExprKind::IntLiteral ) {
+				array_strides[callee->text] = std::max( array_strides[callee->text], IntLiteralValue( *index_expr ) + 1 );
 			}
 		}
 	}
@@ -283,7 +307,7 @@ void CollectArrayStrideFromExpr( const ChspExpr &expr, const std::unordered_set<
 	}
 }
 
-void CollectArrayStrideFromStmt( const ChspStmt &stmt, const std::unordered_set<std::string> &array_names,
+void CollectArrayStrideFromStmt( const ChspV3AstStmt &stmt, const std::unordered_set<std::string> &array_names,
 								 std::map<std::string, int> &array_strides )
 {
 	if ( stmt.lhs != nullptr ) {
@@ -304,7 +328,7 @@ void CollectArrayStrideFromStmt( const ChspStmt &stmt, const std::unordered_set<
 	}
 }
 
-TranslateContext BuildTranslateContext( const ChspFunction &func,
+TranslateContext BuildTranslateContext( const ChspV3AstFunction &func,
 										const std::unordered_map<std::string, std::string> &function_cpp_names,
 										ChspNativeTarget target )
 {
@@ -314,7 +338,7 @@ TranslateContext BuildTranslateContext( const ChspFunction &func,
 	ctx.identifier_cpp_names = BuildIdentifierCppNames( func );
 	for ( const auto &param : func.params ) {
 		if ( param.is_array ) {
-			ctx.array_names.insert( param.name );
+			ctx.array_names.insert( NormalizeScopedName( param.name ) );
 		}
 	}
 	for ( const auto &stmt : func.body_stmts ) {
@@ -325,8 +349,8 @@ TranslateContext BuildTranslateContext( const ChspFunction &func,
 	return ctx;
 }
 
-std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bool &ok, int parent_precedence = 0,
-						   bool paren_on_equal = false )
+std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ctx, bool &ok,
+						   int parent_precedence = 0, bool paren_on_equal = false )
 {
 	const auto wrap_if_needed = [&]( std::string text, int self_precedence ) {
 		if ( self_precedence < parent_precedence || ( paren_on_equal && self_precedence == parent_precedence ) ) {
@@ -336,30 +360,34 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 	};
 
 	switch ( expr.kind ) {
-	case ChspExprKind::IntLiteral:
-		return std::to_string( expr.int_value );
-	case ChspExprKind::DoubleLiteral:
-		if ( !expr.text.empty() ) {
-			return expr.text;
-		}
-		return std::to_string( expr.double_value );
-	case ChspExprKind::StringLiteral:
-		return "\"" + expr.text + "\"";
-	case ChspExprKind::Label:
+	case ChspV3AstExprKind::IntLiteral:
 		return expr.text;
-	case ChspExprKind::Identifier:
-		if ( expr.text == "cnt" && !ctx.loop_stack.empty() ) {
+	case ChspV3AstExprKind::DoubleLiteral:
+		return expr.text;
+	case ChspV3AstExprKind::StringLiteral:
+		return "\"" + expr.text + "\"";
+	case ChspV3AstExprKind::Label:
+		return expr.text;
+	case ChspV3AstExprKind::Identifier:
+		if ( NormalizeScopedName( expr.text ) == "cnt" && !ctx.loop_stack.empty() ) {
 			return ctx.loop_stack.back();
 		}
-		return LookupCppIdentifier( ctx, expr.text );
-	case ChspExprKind::Unary:
+		if ( ctx.array_names.find( NormalizeScopedName( expr.text ) ) == ctx.array_names.end() &&
+			 ctx.identifier_cpp_names.find( NormalizeScopedName( expr.text ) ) == ctx.identifier_cpp_names.end() ) {
+			const auto function_it = ctx.function_cpp_names.find( NormalizeScopedName( expr.text ) );
+			if ( function_it != ctx.function_cpp_names.end() ) {
+				return function_it->second + "()";
+			}
+		}
+		return LookupCppIdentifier( ctx, NormalizeScopedName( expr.text ) );
+	case ChspV3AstExprKind::Unary:
 		if ( expr.children.size() != 1 || expr.children[0] == nullptr ) {
 			ok = false;
 			return "";
 		}
 		return wrap_if_needed( "-" + TranslateExpr( *expr.children[0], ctx, ok, ExprPrecedence( expr ), true ),
 							   ExprPrecedence( expr ) );
-	case ChspExprKind::Binary:
+	case ChspV3AstExprKind::Binary:
 		if ( expr.children.size() != 2 || expr.children[0] == nullptr || expr.children[1] == nullptr ) {
 			ok = false;
 			return "";
@@ -368,22 +396,26 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 								   OperatorText( expr.token_kind ) + " " +
 								   TranslateExpr( *expr.children[1], ctx, ok, ExprPrecedence( expr ), true ),
 							   ExprPrecedence( expr ) );
-	case ChspExprKind::Group:
+	case ChspV3AstExprKind::Group:
 		if ( expr.children.size() != 1 || expr.children[0] == nullptr ) {
 			ok = false;
 			return "";
 		}
 		return "(" + TranslateExpr( *expr.children[0], ctx, ok, 0, false ) + ")";
-	case ChspExprKind::Call:
+	case ChspV3AstExprKind::Call:
 		break;
-	}
-
-	if ( expr.children.empty() || expr.children[0] == nullptr || expr.children[0]->kind != ChspExprKind::Identifier ) {
+	default:
 		ok = false;
 		return "";
 	}
 
-	const std::string name = expr.children[0]->text;
+	if ( expr.children.empty() || expr.children[0] == nullptr ||
+		 expr.children[0]->kind != ChspV3AstExprKind::Identifier ) {
+		ok = false;
+		return "";
+	}
+
+	const std::string name = NormalizeScopedName( expr.children[0]->text );
 	if ( ctx.array_names.find( name ) != ctx.array_names.end() ) {
 		const std::string cpp_name = LookupCppIdentifier( ctx, name );
 		if ( expr.children.size() == 2 ) {
@@ -394,10 +426,13 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 			const auto stride_it = ctx.array_strides.find( name );
 			if ( stride_it != ctx.array_strides.end() ) {
 				stride = stride_it->second;
-			} else if ( expr.children[2] != nullptr && expr.children[2]->kind == ChspExprKind::IntLiteral &&
-						expr.children[2]->int_value >= 0 && expr.children[2]->int_value <= 2 ) {
-				stride = 3;
-			} else {
+			} else if ( expr.children[2] != nullptr && expr.children[2]->kind == ChspV3AstExprKind::IntLiteral ) {
+				const int literal = IntLiteralValue( *expr.children[2] );
+				if ( literal >= 0 && literal <= 2 ) {
+					stride = 3;
+				}
+			}
+			if ( stride == 0 ) {
 				ok = false;
 				return "";
 			}
@@ -437,22 +472,24 @@ std::string MakeIndent( int level )
 	return std::string( level * 4, ' ' );
 }
 
-bool IsBlockOpeningStmt( const ChspStmt &stmt )
+bool IsBlockOpeningStmt( const ChspV3AstStmt &stmt )
 {
-	if ( stmt.kind == ChspStmtKind::Repeat ) {
+	if ( stmt.kind == ChspV3AstStmtKind::Repeat ) {
 		return true;
 	}
-	return ( stmt.kind == ChspStmtKind::If || stmt.kind == ChspStmtKind::Else ) && stmt.token_kind == '{';
+	if ( stmt.kind != ChspV3AstStmtKind::If && stmt.kind != ChspV3AstStmtKind::Else ) {
+		return false;
+	}
+	return stmt.children.size() > 1;
 }
 
-bool HasTrailingBlockElseChild( const ChspStmt &stmt, size_t &else_index )
+bool HasTrailingBlockElseChild( const ChspV3AstStmt &stmt, size_t &else_index )
 {
-	if ( stmt.kind != ChspStmtKind::If || stmt.token_kind != ':' ) {
+	if ( stmt.kind != ChspV3AstStmtKind::If ) {
 		return false;
 	}
 	for ( size_t i = 0; i < stmt.children.size(); ++i ) {
-		if ( stmt.children[i] != nullptr && stmt.children[i]->kind == ChspStmtKind::Else &&
-			 stmt.children[i]->token_kind == '{' ) {
+		if ( stmt.children[i] != nullptr && stmt.children[i]->kind == ChspV3AstStmtKind::Else ) {
 			else_index = i;
 			return true;
 		}
@@ -460,17 +497,18 @@ bool HasTrailingBlockElseChild( const ChspStmt &stmt, size_t &else_index )
 	return false;
 }
 
-std::string RenderStatementInline( const ChspStmt &stmt, TranslateContext &ctx, bool &ok );
+std::string RenderStatementInline( const ChspV3AstStmt &stmt, TranslateContext &ctx, bool &ok );
 
-std::string RenderCommandCall( const ChspStmt &stmt, TranslateContext &ctx, bool &ok )
+std::string RenderCommandCall( const ChspV3AstStmt &stmt, TranslateContext &ctx, bool &ok )
 {
-	std::string target = BuiltinTarget( stmt.text, stmt.exprs.size(), ctx.target );
+	const std::string name = NormalizeScopedName( stmt.text );
+	std::string target = BuiltinTarget( name, stmt.exprs.size(), ctx.target );
 	if ( target.empty() ) {
-		const auto function_it = ctx.function_cpp_names.find( stmt.text );
+		const auto function_it = ctx.function_cpp_names.find( name );
 		if ( function_it != ctx.function_cpp_names.end() ) {
 			target = function_it->second;
 		} else {
-			target = LookupCppIdentifier( ctx, stmt.text );
+			target = LookupCppIdentifier( ctx, name );
 		}
 	}
 	std::string out = target + "(";
@@ -488,15 +526,15 @@ std::string RenderCommandCall( const ChspStmt &stmt, TranslateContext &ctx, bool
 	return out;
 }
 
-std::string RenderStatementInline( const ChspStmt &stmt, TranslateContext &ctx, bool &ok )
+std::string RenderStatementInline( const ChspV3AstStmt &stmt, TranslateContext &ctx, bool &ok )
 {
 	switch ( stmt.kind ) {
-	case ChspStmtKind::Return:
+	case ChspV3AstStmtKind::Return:
 		if ( stmt.rhs == nullptr ) {
 			return "return;";
 		}
 		return "return " + TranslateExpr( *stmt.rhs, ctx, ok ) + ";";
-	case ChspStmtKind::Assignment: {
+	case ChspV3AstStmtKind::Assignment: {
 		if ( stmt.lhs == nullptr ) {
 			ok = false;
 			return "";
@@ -527,17 +565,20 @@ std::string RenderStatementInline( const ChspStmt &stmt, TranslateContext &ctx, 
 		}
 		return lhs + " " + op + " " + rhs + ";";
 	}
-	case ChspStmtKind::Command:
+	case ChspV3AstStmtKind::Command:
+		if ( NormalizeScopedName( stmt.text ) == "break" ) {
+			return "break;";
+		}
+		if ( NormalizeScopedName( stmt.text ) == "continue" ) {
+			return "continue;";
+		}
 		return RenderCommandCall( stmt, ctx, ok ) + ";";
-	case ChspStmtKind::If:
+	case ChspV3AstStmtKind::If:
 		if ( stmt.exprs.size() != 1 || stmt.exprs[0] == nullptr ) {
 			ok = false;
 			return "";
 		}
-		if ( stmt.token_kind == '{' ) {
-			return "if (" + TranslateExpr( *stmt.exprs[0], ctx, ok ) + ") {";
-		}
-		if ( stmt.token_kind != ':' || stmt.children.empty() || stmt.children[0] == nullptr ) {
+		if ( stmt.children.empty() || stmt.children[0] == nullptr ) {
 			ok = false;
 			return "";
 		}
@@ -546,18 +587,15 @@ std::string RenderStatementInline( const ChspStmt &stmt, TranslateContext &ctx, 
 				   RenderStatementInline( *stmt.children[0], ctx, ok );
 		}
 		if ( stmt.children.size() == 2 && stmt.children[1] != nullptr &&
-			 stmt.children[1]->kind == ChspStmtKind::Else ) {
+			 stmt.children[1]->kind == ChspV3AstStmtKind::Else ) {
 			return "if (" + TranslateExpr( *stmt.exprs[0], ctx, ok ) + ") " +
 				   RenderStatementInline( *stmt.children[0], ctx, ok ) + " " +
 				   RenderStatementInline( *stmt.children[1], ctx, ok );
 		}
 		ok = false;
 		return "";
-	case ChspStmtKind::Else:
-		if ( stmt.token_kind == '{' ) {
-			return "else {";
-		}
-		if ( stmt.token_kind != ':' || stmt.children.size() != 1 || stmt.children[0] == nullptr ) {
+	case ChspV3AstStmtKind::Else:
+		if ( stmt.children.size() != 1 || stmt.children[0] == nullptr ) {
 			ok = false;
 			return "";
 		}
@@ -568,19 +606,19 @@ std::string RenderStatementInline( const ChspStmt &stmt, TranslateContext &ctx, 
 	}
 }
 
-void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContext &ctx, int &indent_level,
+void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateContext &ctx, int &indent_level,
 							 bool &emitted_explicit_return )
 {
 	switch ( stmt.kind ) {
-	case ChspStmtKind::Empty:
+	case ChspV3AstStmtKind::Unknown:
 		return;
-	case ChspStmtKind::BlockMarker:
+	case ChspV3AstStmtKind::BlockMarker:
 		indent_level = std::max( 1, indent_level - 1 );
 		buf.PutStr( MakeIndent( indent_level ).c_str() );
 		buf.PutStr( "}" );
 		buf.PutCR();
 		return;
-	case ChspStmtKind::Loop:
+	case ChspV3AstStmtKind::Loop:
 		if ( !ctx.loop_stack.empty() ) {
 			ctx.loop_stack.pop_back();
 		}
@@ -588,7 +626,7 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContex
 		buf.PutStr( MakeIndent( indent_level ).c_str() );
 		buf.PutStr( "}\n" );
 		return;
-	case ChspStmtKind::Repeat: {
+	case ChspV3AstStmtKind::Repeat: {
 		bool ok = true;
 		std::string expr = "0";
 		if ( stmt.rhs != nullptr ) {
@@ -612,139 +650,115 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContex
 		buf.PutStr( ") {\n" );
 		ctx.loop_stack.push_back( loop_var );
 		++indent_level;
+		for ( const auto &child : stmt.children ) {
+			if ( child != nullptr ) {
+				WriteFunctionStmtToCpp( buf, *child, ctx, indent_level, emitted_explicit_return );
+			}
+		}
 		return;
 	}
-	case ChspStmtKind::If: {
+	case ChspV3AstStmtKind::If: {
 		bool ok = true;
 		if ( stmt.exprs.size() != 1 || stmt.exprs[0] == nullptr ) {
 			ok = false;
 		}
-		if ( stmt.token_kind == '{' ) {
-			buf.PutStr( MakeIndent( indent_level ).c_str() );
-			if ( ok ) {
-				buf.PutStr( "if (" );
-				const auto cond = TranslateExpr( *stmt.exprs[0], ctx, ok );
-				buf.PutStr( cond.c_str() );
-				buf.PutStr( ") {" );
-				buf.PutCR();
-				if ( ok ) {
-					++indent_level;
-					return;
-				}
-			}
-		} else if ( stmt.token_kind == ':' ) {
-			size_t else_index = stmt.children.size();
-			for ( size_t i = 0; i < stmt.children.size(); ++i ) {
-				if ( stmt.children[i] != nullptr && stmt.children[i]->kind == ChspStmtKind::Else ) {
-					else_index = i;
-					break;
-				}
-			}
-			if ( else_index != stmt.children.size() || stmt.children.size() > 1 ) {
-				buf.PutStr( MakeIndent( indent_level ).c_str() );
-				buf.PutStr( "if (" );
-				const auto cond = TranslateExpr( *stmt.exprs[0], ctx, ok );
-				buf.PutStr( cond.c_str() );
-				buf.PutStr( ") {" );
-				buf.PutCR();
-				if ( ok ) {
-					++indent_level;
-					for ( size_t i = 0; i < stmt.children.size(); ++i ) {
-						if ( i == else_index ) {
-							break;
-						}
-						if ( stmt.children[i] != nullptr ) {
-							WriteFunctionStmtToCpp( buf, *stmt.children[i], ctx, indent_level,
-													emitted_explicit_return );
-						}
-					}
-					indent_level = std::max( 1, indent_level - 1 );
-					buf.PutStr( MakeIndent( indent_level ).c_str() );
-					buf.PutStr( "}" );
-					buf.PutCR();
-					if ( else_index != stmt.children.size() && stmt.children[else_index] != nullptr ) {
-						const auto &else_stmt = *stmt.children[else_index];
-						if ( else_stmt.token_kind == '{' ) {
-							buf.PutStr( MakeIndent( indent_level ).c_str() );
-							buf.PutStr( "else {" );
-							buf.PutCR();
-							++indent_level;
-							for ( const auto &child : else_stmt.children ) {
-								if ( child != nullptr ) {
-									WriteFunctionStmtToCpp( buf, *child, ctx, indent_level, emitted_explicit_return );
-								}
-							}
-							indent_level = std::max( 1, indent_level - 1 );
-							buf.PutStr( MakeIndent( indent_level ).c_str() );
-							buf.PutStr( "}" );
-							buf.PutCR();
-						} else {
-							bool else_ok = true;
-							const auto rendered = RenderStatementInline( else_stmt, ctx, else_ok );
-							if ( else_ok && !rendered.empty() ) {
-								buf.PutStr( MakeIndent( indent_level ).c_str() );
-								buf.PutStr( rendered.c_str() );
-								buf.PutCR();
-							} else {
-								WriteFunctionStmtToCpp( buf, else_stmt, ctx, indent_level, emitted_explicit_return );
-							}
-						}
-					}
-					return;
-				}
-			} else {
-				const auto rendered = RenderStatementInline( stmt, ctx, ok );
-				if ( ok ) {
-					buf.PutStr( MakeIndent( indent_level ).c_str() );
-					buf.PutStr( rendered.c_str() );
-					buf.PutCR();
-					if ( StartsWith( Trim( rendered ), "return" ) ) {
-						emitted_explicit_return = true;
-					}
-					return;
-				}
+		size_t else_index = stmt.children.size();
+		for ( size_t i = 0; i < stmt.children.size(); ++i ) {
+			if ( stmt.children[i] != nullptr && stmt.children[i]->kind == ChspV3AstStmtKind::Else ) {
+				else_index = i;
+				break;
 			}
 		}
-		buf.PutStr( MakeIndent( indent_level ).c_str() );
-		buf.PutStr( "// unsupported: if\n" );
-		return;
-	}
-	case ChspStmtKind::Else: {
-		bool ok = true;
-		if ( stmt.token_kind == '{' ) {
+		if ( else_index != stmt.children.size() || stmt.children.size() > 1 ) {
 			buf.PutStr( MakeIndent( indent_level ).c_str() );
-			buf.PutStr( "else {" );
+			buf.PutStr( "if (" );
+			const auto cond = TranslateExpr( *stmt.exprs[0], ctx, ok );
+			buf.PutStr( cond.c_str() );
+			buf.PutStr( ") {" );
 			buf.PutCR();
-			++indent_level;
-			return;
-		}
-		if ( stmt.token_kind == ':' ) {
-			if ( stmt.children.size() > 1 ) {
-				buf.PutStr( MakeIndent( indent_level ).c_str() );
-				buf.PutStr( "else {" );
-				buf.PutCR();
+			if ( ok ) {
 				++indent_level;
-				for ( const auto &child : stmt.children ) {
-					if ( child != nullptr ) {
-						WriteFunctionStmtToCpp( buf, *child, ctx, indent_level, emitted_explicit_return );
+				for ( size_t i = 0; i < stmt.children.size(); ++i ) {
+					if ( i == else_index ) {
+						break;
+					}
+					if ( stmt.children[i] != nullptr ) {
+						WriteFunctionStmtToCpp( buf, *stmt.children[i], ctx, indent_level, emitted_explicit_return );
 					}
 				}
 				indent_level = std::max( 1, indent_level - 1 );
 				buf.PutStr( MakeIndent( indent_level ).c_str() );
 				buf.PutStr( "}" );
 				buf.PutCR();
+				if ( else_index != stmt.children.size() && stmt.children[else_index] != nullptr ) {
+					const auto &else_stmt = *stmt.children[else_index];
+					bool else_ok = true;
+					const auto rendered = RenderStatementInline( else_stmt, ctx, else_ok );
+					if ( else_ok && !rendered.empty() ) {
+						buf.PutStr( MakeIndent( indent_level ).c_str() );
+						buf.PutStr( rendered.c_str() );
+						buf.PutCR();
+					} else {
+						buf.PutStr( MakeIndent( indent_level ).c_str() );
+						buf.PutStr( "else {" );
+						buf.PutCR();
+						++indent_level;
+						for ( const auto &child : else_stmt.children ) {
+							if ( child != nullptr ) {
+								WriteFunctionStmtToCpp( buf, *child, ctx, indent_level, emitted_explicit_return );
+							}
+						}
+						indent_level = std::max( 1, indent_level - 1 );
+						buf.PutStr( MakeIndent( indent_level ).c_str() );
+						buf.PutStr( "}" );
+						buf.PutCR();
+					}
+				}
 				return;
 			}
+		} else {
 			const auto rendered = RenderStatementInline( stmt, ctx, ok );
 			if ( ok ) {
 				buf.PutStr( MakeIndent( indent_level ).c_str() );
 				buf.PutStr( rendered.c_str() );
 				buf.PutCR();
-				if ( StartsWith( Trim( rendered ), "else return" ) ) {
+				if ( chspv2::StartsWith( chspv2::Trim( rendered ), "return" ) ) {
 					emitted_explicit_return = true;
 				}
 				return;
 			}
+		}
+		buf.PutStr( MakeIndent( indent_level ).c_str() );
+		buf.PutStr( "// unsupported: if\n" );
+		return;
+	}
+	case ChspV3AstStmtKind::Else: {
+		bool ok = true;
+		if ( stmt.children.size() > 1 ) {
+			buf.PutStr( MakeIndent( indent_level ).c_str() );
+			buf.PutStr( "else {" );
+			buf.PutCR();
+			++indent_level;
+			for ( const auto &child : stmt.children ) {
+				if ( child != nullptr ) {
+					WriteFunctionStmtToCpp( buf, *child, ctx, indent_level, emitted_explicit_return );
+				}
+			}
+			indent_level = std::max( 1, indent_level - 1 );
+			buf.PutStr( MakeIndent( indent_level ).c_str() );
+			buf.PutStr( "}" );
+			buf.PutCR();
+			return;
+		}
+		const auto rendered = RenderStatementInline( stmt, ctx, ok );
+		if ( ok ) {
+			buf.PutStr( MakeIndent( indent_level ).c_str() );
+			buf.PutStr( rendered.c_str() );
+			buf.PutCR();
+			if ( chspv2::StartsWith( chspv2::Trim( rendered ), "else return" ) ) {
+				emitted_explicit_return = true;
+			}
+			return;
 		}
 		buf.PutStr( MakeIndent( indent_level ).c_str() );
 		buf.PutStr( "// unsupported: else\n" );
@@ -760,7 +774,7 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContex
 	if ( ok && !rendered.empty() ) {
 		buf.PutStr( rendered.c_str() );
 		buf.PutCR();
-		if ( StartsWith( Trim( rendered ), "return" ) ) {
+		if ( chspv2::StartsWith( chspv2::Trim( rendered ), "return" ) ) {
 			emitted_explicit_return = true;
 		}
 		return;
@@ -768,74 +782,10 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContex
 	buf.PutStr( "// unsupported statement\n" );
 }
 
-bool WriteInlineIfWithTrailingBlockElse( CMemBuf &buf, const ChspStmt &stmt,
-										 const std::vector<std::unique_ptr<ChspStmt>> &stmts, size_t &index,
-										 TranslateContext &ctx, int indent_level, bool &emitted_explicit_return )
+void WriteFunctionDeclToHsp( CMemBuf &buf, const ChspV3AstFunction &func, const std::string &cpp_name )
 {
-	size_t else_index = 0;
-	if ( !HasTrailingBlockElseChild( stmt, else_index ) || stmt.exprs.size() != 1 || stmt.exprs[0] == nullptr ) {
-		return false;
-	}
-
-	bool ok = true;
-	const auto cond = TranslateExpr( *stmt.exprs[0], ctx, ok );
-	if ( !ok ) {
-		return false;
-	}
-
-	buf.PutStr( MakeIndent( indent_level ).c_str() );
-	buf.PutStr( "if (" );
-	buf.PutStr( cond.c_str() );
-	buf.PutStr( ") {" );
-	buf.PutCR();
-
-	int if_indent = indent_level + 1;
-	for ( size_t i = 0; i < else_index; ++i ) {
-		if ( stmt.children[i] != nullptr ) {
-			WriteFunctionStmtToCpp( buf, *stmt.children[i], ctx, if_indent, emitted_explicit_return );
-		}
-	}
-
-	buf.PutStr( MakeIndent( indent_level ).c_str() );
-	buf.PutStr( "} else {" );
-	buf.PutCR();
-
-	int else_indent = indent_level + 1;
-	int depth = 1;
-	size_t cursor = index + 1;
-	for ( ; cursor < stmts.size(); ++cursor ) {
-		if ( stmts[cursor] == nullptr ) {
-			continue;
-		}
-		const auto &next = *stmts[cursor];
-		if ( next.kind == ChspStmtKind::Loop || next.kind == ChspStmtKind::BlockMarker ) {
-			--depth;
-			if ( depth == 0 ) {
-				break;
-			}
-			WriteFunctionStmtToCpp( buf, next, ctx, else_indent, emitted_explicit_return );
-			continue;
-		}
-		WriteFunctionStmtToCpp( buf, next, ctx, else_indent, emitted_explicit_return );
-		if ( IsBlockOpeningStmt( next ) ) {
-			++depth;
-		}
-	}
-	if ( depth != 0 ) {
-		return false;
-	}
-
-	buf.PutStr( MakeIndent( indent_level ).c_str() );
-	buf.PutStr( "}" );
-	buf.PutCR();
-	index = cursor;
-	return true;
-}
-
-void WriteFunctionDeclToHsp( CMemBuf &buf, const ChspFunction &func, const std::string &cpp_name )
-{
-	buf.PutStr( func.kind == ChspFuncKind::DefCFunc ? "#cfunc " : "#func " );
-	buf.PutStr( func.name.c_str() );
+	buf.PutStr( IsDefCFunc( func ) ? "#cfunc " : "#func " );
+	buf.PutStr( NormalizeScopedName( func.name ).c_str() );
 	buf.PutStr( " \"" );
 	buf.PutStr( cpp_name.c_str() );
 	buf.PutStr( "\"" );
@@ -851,7 +801,7 @@ void WriteFunctionDeclToHsp( CMemBuf &buf, const ChspFunction &func, const std::
 	buf.PutCR();
 }
 
-void WriteLocalDeclsToNative( CMemBuf &buf, const ChspFunction &func, const TranslateContext &ctx )
+void WriteLocalDeclsToNative( CMemBuf &buf, const ChspV3AstFunction &func, const TranslateContext &ctx )
 {
 	for ( const auto &param : func.params ) {
 		if ( !param.is_local ) {
@@ -874,7 +824,7 @@ void WriteLocalDeclsToNative( CMemBuf &buf, const ChspFunction &func, const Tran
 	}
 }
 
-void WriteFunctionBodyToNative( CMemBuf &buf, const ChspFunction &func, TranslateContext &ctx )
+void WriteFunctionBodyToNative( CMemBuf &buf, const ChspV3AstFunction &func, TranslateContext &ctx )
 {
 	WriteLocalDeclsToNative( buf, func, ctx );
 	int indent_level = 1;
@@ -882,39 +832,6 @@ void WriteFunctionBodyToNative( CMemBuf &buf, const ChspFunction &func, Translat
 	for ( size_t i = 0; i < func.body_stmts.size(); ++i ) {
 		const auto &stmt = func.body_stmts[i];
 		if ( stmt == nullptr ) {
-			continue;
-		}
-		if ( WriteInlineIfWithTrailingBlockElse( buf, *stmt, func.body_stmts, i, ctx, indent_level,
-												 emitted_explicit_return ) ) {
-			continue;
-		}
-		if ( stmt->kind == ChspStmtKind::BlockMarker && i + 1 < func.body_stmts.size() &&
-			 func.body_stmts[i + 1] != nullptr && func.body_stmts[i + 1]->kind == ChspStmtKind::Else ) {
-			const auto &else_stmt = *func.body_stmts[i + 1];
-			const bool is_else_if = else_stmt.token_kind == ':' && else_stmt.children.size() == 1 &&
-									else_stmt.children[0] != nullptr && else_stmt.children[0]->kind == ChspStmtKind::If;
-			int line_indent = indent_level;
-			if ( !is_else_if ) {
-				line_indent = std::max( 1, indent_level - 1 );
-			}
-			bool ok = true;
-			const auto rendered = RenderStatementInline( else_stmt, ctx, ok );
-			buf.PutStr( MakeIndent( line_indent ).c_str() );
-			if ( ok && !rendered.empty() ) {
-				buf.PutStr( "} " );
-				buf.PutStr( rendered.c_str() );
-				buf.PutCR();
-				indent_level = line_indent;
-				if ( !rendered.empty() && rendered.back() == '{' ) {
-					++indent_level;
-				}
-			} else {
-				buf.PutStr( "}" );
-				buf.PutCR();
-				indent_level = line_indent;
-				WriteFunctionStmtToCpp( buf, else_stmt, ctx, indent_level, emitted_explicit_return );
-			}
-			++i;
 			continue;
 		}
 		WriteFunctionStmtToCpp( buf, *stmt, ctx, indent_level, emitted_explicit_return );
@@ -927,7 +844,7 @@ void WriteFunctionBodyToNative( CMemBuf &buf, const ChspFunction &func, Translat
 	}
 }
 
-void WriteFunctionToNative( CMemBuf &buf, const ChspFunction &func,
+void WriteFunctionToNative( CMemBuf &buf, const ChspV3AstFunction &func,
 							const std::unordered_map<std::string, std::string> &function_cpp_names,
 							ChspNativeTarget target )
 {
@@ -965,7 +882,41 @@ void WriteFunctionToNative( CMemBuf &buf, const ChspFunction &func,
 	buf.PutStr( "}\n\n" );
 }
 
-void WritePluginFunctionDeclToHsp( CMemBuf &buf, const ChspFunction &func, int command_id )
+void WriteFunctionPrototypeToNative( CMemBuf &buf, const ChspV3AstFunction &func,
+									 const std::unordered_map<std::string, std::string> &function_cpp_names,
+									 ChspNativeTarget target )
+{
+	const auto cpp_name_it = function_cpp_names.find( func.name );
+	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
+	auto ctx = BuildTranslateContext( func, function_cpp_names, target );
+	if ( target == ChspNativeTarget::Plugin ) {
+		buf.PutStr( "static " );
+	} else if ( target == ChspNativeTarget::C ) {
+		buf.PutStr( "CHSP_EXPORT " );
+	} else {
+		buf.PutStr( "extern \"C\" CHSP_EXPORT " );
+	}
+	buf.PutStr( func.return_type.c_str() );
+	buf.PutStr( " " );
+	buf.PutStr( cpp_name.c_str() );
+	buf.PutStr( "(" );
+	bool first = true;
+	for ( const auto &param : func.params ) {
+		if ( param.is_local ) {
+			continue;
+		}
+		if ( !first ) {
+			buf.PutStr( ", " );
+		}
+		first = false;
+		buf.PutStr( ToNativeType( param, target ).c_str() );
+		buf.PutStr( " " );
+		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
+	}
+	buf.PutStr( ");\n" );
+}
+
+void WritePluginFunctionDeclToHsp( CMemBuf &buf, const ChspV3AstFunction &func, int command_id )
 {
 	const std::string command_name = PluginCommandName( func );
 	char idbuf[16];
@@ -977,9 +928,15 @@ void WritePluginFunctionDeclToHsp( CMemBuf &buf, const ChspFunction &func, int c
 	buf.PutCR();
 }
 
-void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
+void WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
 								const std::unordered_map<std::string, std::string> &function_cpp_names )
 {
+	for ( const auto &func : module.functions ) {
+		WriteFunctionPrototypeToNative( buf, func, function_cpp_names, ChspNativeTarget::Plugin );
+	}
+	if ( !module.functions.empty() ) {
+		buf.PutCR();
+	}
 	for ( const auto &func : module.functions ) {
 		WriteFunctionToNative( buf, func, function_cpp_names, ChspNativeTarget::Plugin );
 	}
@@ -1032,7 +989,7 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
 			}
 		}
 		buf.PutStr( "        " );
-		if ( func.kind == ChspFuncKind::DefCFunc ) {
+		if ( IsDefCFunc( func ) ) {
 			buf.PutStr( func.return_type.c_str() );
 			buf.PutStr( " result = " );
 		}
@@ -1051,7 +1008,7 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
 			buf.PutStr( var_name.c_str() );
 		}
 		buf.PutStr( ");\n" );
-		if ( func.kind == ChspFuncKind::DefCFunc ) {
+		if ( IsDefCFunc( func ) ) {
 			if ( func.return_type == "double" ) {
 				buf.PutStr( "        ctx->refdval = result;\n" );
 			} else {
@@ -1074,7 +1031,7 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
 	buf.PutStr( "    switch( cmd ) {\n" );
 	for ( size_t i = 0; i < module.functions.size(); ++i ) {
 		const auto &func = module.functions[i];
-		if ( func.kind != ChspFuncKind::DefCFunc ) {
+		if ( !IsDefCFunc( func ) ) {
 			continue;
 		}
 		const auto cpp_name_it = function_cpp_names.find( func.name );
@@ -1150,7 +1107,7 @@ void WritePluginNativeDispatch( CMemBuf &buf, const ChspModule &module,
 	buf.PutStr( "    switch( cmd ) {\n" );
 	for ( size_t i = 0; i < module.functions.size(); ++i ) {
 		const auto &func = module.functions[i];
-		if ( func.kind != ChspFuncKind::DefCFunc ) {
+		if ( !IsDefCFunc( func ) ) {
 			continue;
 		}
 		buf.PutStr( "    case " );
@@ -1200,7 +1157,7 @@ std::string DefaultModuleFileStem( const char *source_name, size_t module_index 
 	return base + "_" + std::to_string( module_index + 1 );
 }
 
-std::string ModuleFileStem( const ChspModule &module, const char *source_name, size_t module_index )
+std::string ModuleFileStem( const ChspV3AstModule &module, const char *source_name, size_t module_index )
 {
 	if ( !module.name.empty() ) {
 		return module.name;
@@ -1208,7 +1165,8 @@ std::string ModuleFileStem( const ChspModule &module, const char *source_name, s
 	return DefaultModuleFileStem( source_name, module_index );
 }
 
-void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const std::string &file_stem, ChspNativeTarget target )
+void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const std::string &file_stem,
+							 ChspNativeTarget target )
 {
 	buf.PutStr( "#module " );
 	buf.PutStr( module_tag.c_str() );
@@ -1261,7 +1219,8 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 		native_out.PutStr( "    val = exinfo->npval;\n" );
 		native_out.PutStr( "}\n\n" );
 		native_out.PutStr( "static int *chsp_plugin_int_ptr( PVal *pval, APTR aptr ) { return ((int *)pval->pt) + aptr; }\n" );
-		native_out.PutStr( "static double *chsp_plugin_double_ptr( PVal *pval, APTR aptr ) { return ((double *)pval->pt) + aptr; }\n\n" );
+		native_out.PutStr(
+			"static double *chsp_plugin_double_ptr( PVal *pval, APTR aptr ) { return ((double *)pval->pt) + aptr; }\n\n" );
 		return;
 	}
 	native_out.PutStr( "#include \"common/chsp/chsp_runtime.h\"\n\n" );
@@ -1274,14 +1233,13 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 
 } // namespace
 
-int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspProgram &program, CLogger &logger,
-						   CMemBuf &hsp_out, std::vector<ChspNativeArtifact> &native_outputs,
-						   const char *source_name )
+int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger, CMemBuf &hsp_out,
+						   std::vector<ChspNativeArtifact> &native_outputs, const char *source_name )
 {
 	native_outputs.clear();
-	native_outputs.reserve( program.modules.size() );
-	for ( size_t i = 0; i < program.modules.size(); ++i ) {
-		const auto &module = program.modules[i];
+	native_outputs.reserve( ast_program.modules.size() );
+	for ( size_t i = 0; i < ast_program.modules.size(); ++i ) {
+		const auto &module = ast_program.modules[i];
 		ChspNativeArtifact artifact;
 		artifact.module_name = module.name;
 		artifact.file_stem = ModuleFileStem( module, source_name, i );
@@ -1291,24 +1249,24 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 		native_outputs.push_back( std::move( artifact ) );
 	}
 
-	const auto function_cpp_names = BuildFunctionCppNames( program );
+	const auto function_cpp_names = BuildFunctionCppNames( ast_program );
 
 	size_t module_index = 0;
 	size_t function_index = 0;
 	bool in_function = false;
 	std::string current_module_tag;
 
-	for ( const auto &line : lines ) {
-		const auto trimmed = Trim( line.text );
+	for ( const auto &line : ast_program.source_lines ) {
+		const auto trimmed = chspv2::Trim( line.text );
 		switch ( line.directive ) {
-		case ChspDirectiveKind::None:
+		case ChspV3SourceDirectiveKind::None:
 			if ( in_function ) {
 				continue;
 			}
-			if ( StartsWith( trimmed, "##chsp_" ) ) {
+			if ( chspv2::StartsWith( trimmed, "##chsp_" ) ) {
 				continue;
 			}
-			if ( StartsWith( trimmed, "#define " ) ) {
+			if ( chspv2::StartsWith( trimmed, "#define " ) ) {
 				for ( auto &artifact : native_outputs ) {
 					artifact.output->PutStr( line.text.c_str() );
 					artifact.output->PutCR();
@@ -1317,58 +1275,63 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 			hsp_out.PutStr( line.text.c_str() );
 			hsp_out.PutCR();
 			break;
-		case ChspDirectiveKind::Module:
-			if ( module_index >= program.modules.size() ) {
+		case ChspV3SourceDirectiveKind::Module:
+			if ( module_index >= ast_program.modules.size() ) {
 				logger.Mesf( "#Error:Internal cHSP module index mismatch [%s]",
 							 source_name != nullptr ? source_name : "<buffer>" );
 				return -1;
 			}
-			current_module_tag = "m" + std::to_string( module_index );
+			current_module_tag = "chsp_mod_" + std::to_string( module_index );
 			WriteModuleHeaderToHsp( hsp_out, current_module_tag, native_outputs[module_index].file_stem,
-								 program.modules[module_index].target );
+									native_outputs[module_index].target );
+			in_function = false;
 			function_index = 0;
-			++module_index;
 			break;
-		case ChspDirectiveKind::ModuleEnd:
+		case ChspV3SourceDirectiveKind::ModuleEnd:
+			if ( module_index >= native_outputs.size() ) {
+				logger.Mesf( "#Error:Internal cHSP module output mismatch [%s]",
+							 source_name != nullptr ? source_name : "<buffer>" );
+				return -1;
+			}
+			if ( native_outputs[module_index].target == ChspNativeTarget::Plugin ) {
+				WritePluginNativeDispatch( *native_outputs[module_index].output, ast_program.modules[module_index],
+										   function_cpp_names );
+			}
 			WriteModuleFooterToHsp( hsp_out, current_module_tag );
-			current_module_tag.clear();
+			++module_index;
+			in_function = false;
 			break;
-		case ChspDirectiveKind::DefFunc:
-		case ChspDirectiveKind::DefCFunc:
+		case ChspV3SourceDirectiveKind::DefFunc:
+		case ChspV3SourceDirectiveKind::DefCFunc:
 			in_function = true;
-			break;
-		case ChspDirectiveKind::End:
-			if ( !in_function ) {
-				logger.Mesf( "#Error:Unexpected #chsp_end in line %d [%s]", line.line,
+			if ( module_index >= ast_program.modules.size() ||
+				 function_index >= ast_program.modules[module_index].functions.size() ) {
+				logger.Mesf( "#Error:Internal cHSP function index mismatch [%s]",
 							 source_name != nullptr ? source_name : "<buffer>" );
 				return -1;
 			}
-			if ( module_index == 0 || module_index > program.modules.size() ) {
-				logger.Mesf( "#Error:Internal cHSP function module mismatch [%s]",
-							 source_name != nullptr ? source_name : "<buffer>" );
-				return -1;
-			}
-			{
-				const auto &module = program.modules[module_index - 1];
-				auto &native_out = *native_outputs[module_index - 1].output;
-				if ( function_index >= module.functions.size() ) {
-					logger.Mesf( "#Error:Internal cHSP function index mismatch [%s]",
-								 source_name != nullptr ? source_name : "<buffer>" );
-					return -1;
-				}
-				const auto &function = module.functions[function_index];
-				const auto cpp_name_it = function_cpp_names.find( function.name );
+			if ( native_outputs[module_index].target == ChspNativeTarget::Plugin ) {
+				WritePluginFunctionDeclToHsp( hsp_out, ast_program.modules[module_index].functions[function_index],
+											  static_cast<int>( function_index ) );
+			} else {
+				const auto &func = ast_program.modules[module_index].functions[function_index];
+				const auto cpp_name_it = function_cpp_names.find( func.name );
 				const std::string cpp_name =
-					cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : function.name;
-				if ( module.target == ChspNativeTarget::Plugin ) {
-					WritePluginFunctionDeclToHsp( hsp_out, function, static_cast<int>( function_index ) );
-					if ( function_index + 1 == module.functions.size() ) {
-						WritePluginNativeDispatch( native_out, module, function_cpp_names );
-					}
-				} else {
-					WriteFunctionDeclToHsp( hsp_out, function, cpp_name );
-					WriteFunctionToNative( native_out, function, function_cpp_names, module.target );
-				}
+					cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
+				WriteFunctionDeclToHsp( hsp_out, func, cpp_name );
+			}
+			break;
+		case ChspV3SourceDirectiveKind::End:
+			if ( module_index >= ast_program.modules.size() ||
+				 function_index >= ast_program.modules[module_index].functions.size() ) {
+				logger.Mesf( "#Error:Internal cHSP end index mismatch [%s]",
+							 source_name != nullptr ? source_name : "<buffer>" );
+				return -1;
+			}
+			if ( native_outputs[module_index].target != ChspNativeTarget::Plugin ) {
+				WriteFunctionToNative( *native_outputs[module_index].output,
+									   ast_program.modules[module_index].functions[function_index], function_cpp_names,
+									   native_outputs[module_index].target );
 			}
 			++function_index;
 			in_function = false;
@@ -1376,11 +1339,7 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 		}
 	}
 
-	if ( in_function ) {
-		logger.Mesf( "#Error:Missing #chsp_end [%s]", source_name != nullptr ? source_name : "<buffer>" );
-		return -1;
-	}
 	return 0;
 }
 
-} // namespace chspv2
+} // namespace chspv3

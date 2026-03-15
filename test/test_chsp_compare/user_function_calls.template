@@ -1,0 +1,124 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc store_values array out, int seed, local mixed
+	mixed = cascade(seed) + plus_one(seed)
+	out(0) = plus_one(seed)
+	out(1) = triple(seed)
+	out(2) = cascade(seed)
+	out(3) = mixed
+	forward_fill out, seed
+	return
+
+#deffunc forward_fill array out, int seed
+	out(4) = cascade(seed + 2)
+	return
+
+#defcfunc plus_one int v
+	return v + 1
+
+#defcfunc triple int v
+	return v * 3
+
+#defcfunc cascade int v
+	return triple(plus_one(v))
+
+#deffunc dummy_00
+	return
+
+#global
+
+@@ chsp_c_module
+#chsp_module "user_function_calls_chsp_c" target=c
+
+#chsp_deffunc store_values array[int] out, int seed, local[int] mixed
+	mixed = cascade(seed) + plus_one(seed)
+	out(0) = plus_one(seed)
+	out(1) = triple(seed)
+	out(2) = cascade(seed)
+	out(3) = mixed
+	forward_fill out, seed
+	return
+#chsp_end
+
+#chsp_deffunc forward_fill array[int] out, int seed
+	out(4) = cascade(seed + 2)
+	return
+#chsp_end
+
+#chsp_defcfunc int plus_one int v
+	return v + 1
+#chsp_end
+
+#chsp_defcfunc int triple int v
+	return v * 3
+#chsp_end
+
+#chsp_defcfunc int cascade int v
+	return triple(plus_one(v))
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "user_function_calls_chsp_p"
+
+#chsp_deffunc store_values array[int] out, int seed, local[int] mixed
+	mixed = cascade(seed) + plus_one(seed)
+	out(0) = plus_one(seed)
+	out(1) = triple(seed)
+	out(2) = cascade(seed)
+	out(3) = mixed
+	forward_fill out, seed
+	return
+#chsp_end
+
+#chsp_deffunc forward_fill array[int] out, int seed
+	out(4) = cascade(seed + 2)
+	return
+#chsp_end
+
+#chsp_defcfunc int plus_one int v
+	return v + 1
+#chsp_end
+
+#chsp_defcfunc int triple int v
+	return v * 3
+#chsp_end
+
+#chsp_defcfunc int cascade int v
+	return triple(plus_one(v))
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+
+	dim out, 5
+	store_values out, 4
+
+	mes "USER_FUNCTION_CALLS"
+	repeat 5
+		mes "" + out(cnt)
+	loop
+	end
+
+dummy_00
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

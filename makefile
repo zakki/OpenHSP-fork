@@ -63,8 +63,8 @@ OBJS_CMP = \
 	src/hspcmp/chsp/codegen_lexer.o \
 	src/hspcmp/chsp/chsp_libtcc_shared.o \
 	src/hspcmp/chsp/chsp_frontend_v2.o \
-	src/hspcmp/chsp/chsp_frontend_v2_parser.o \
-	src/hspcmp/chsp/chsp_frontend_v2_emitter.o \
+	src/hspcmp/chsp/chsp_frontend_v3_parser.o \
+	src/hspcmp/chsp/chsp_frontend_v3_emitter.o \
 	src/hspcmp/comutil.o \
 	src/hspcmp/errormsg.o \
 	src/hspcmp/hsc3.o \

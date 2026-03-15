@@ -271,12 +271,19 @@ def compile_with_hspcmp(
     run(args, cwd=source.parent, quiet_success=quiet_success)
 
 
-def compile_shared_library(c_path: Path, output_path: Path) -> None:
+def shared_library_cflags_for_variant(variant: str) -> list[str]:
+    flags = shlex.split(C_NATIVE_CFLAGS)
+    if variant == "chsp_p":
+        flags.extend(["-DHSPLINUX", "-DHSP64"])
+    return flags
+
+
+def compile_shared_library(c_path: Path, output_path: Path, variant: str) -> None:
     rel_c_path = os.path.relpath(c_path, TEST_DIR)
     rel_output_path = os.path.relpath(output_path, TEST_DIR)
     args = [
         *shlex.split(C_NATIVE_CC),
-        *shlex.split(C_NATIVE_CFLAGS),
+        *shared_library_cflags_for_variant(variant),
         *shlex.split(C_NATIVE_SOFLAGS),
         rel_c_path,
         "-o",
@@ -290,6 +297,21 @@ def compiled_artifact_paths(source: Path, variant: str) -> tuple[Path, Path]:
     return source.with_suffix(".c"), source.with_suffix(".so")
 
 
+def emitted_artifact_paths(source: Path, variant: str) -> tuple[Path, Path]:
+    c_path, so_path = compiled_artifact_paths(source, variant)
+    if variant != "chsp_p":
+        return c_path, so_path
+    if c_path.exists() or so_path.exists():
+        return c_path, so_path
+
+    source_text = source.read_text(encoding="utf-8")
+    match = re.search(r'^\s*#chsp_module\s+"([^"]+)"', source_text, flags=re.MULTILINE | re.IGNORECASE)
+    if match is None:
+        return c_path, so_path
+    stem = match.group(1)
+    return source.with_name(f"{stem}.c"), source.with_name(f"{stem}.so")
+
+
 def run_ax(ax_path: Path, lib_dir: Path | None) -> str:
     env = shared_library_env(lib_dir)
     stdout = run([str(HSP3CL), ax_path.name], cwd=ax_path.parent, env=env, capture=True)
@@ -298,9 +320,9 @@ def run_ax(ax_path: Path, lib_dir: Path | None) -> str:
 
 def build_variant_output(source: Path, variant: str, mode: str) -> Path:
     compile_with_hspcmp(source, mode, quiet_success=True)
-    if variant == "chsp_c" and mode == "emit-c":
-        c_path, so_path = compiled_artifact_paths(source, variant)
-        compile_shared_library(c_path, so_path)
+    if variant in {"chsp_c", "chsp_p"} and mode == "emit-c":
+        c_path, so_path = emitted_artifact_paths(source, variant)
+        compile_shared_library(c_path, so_path, variant)
         lib_dir: Path | None = source.parent
     else:
         lib_dir = None

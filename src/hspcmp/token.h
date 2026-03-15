@@ -197,6 +197,8 @@ private:
 	ppresult_t PP_Global( void );
 	ppresult_t PP_Deffunc( int mode );
 	ppresult_t PP_Defcfunc( int mode );
+	ppresult_t PP_ChspDeffunc( void );
+	ppresult_t PP_ChspDefcfunc( void );
 	ppresult_t PP_Struct( void );
 	ppresult_t PP_Func( char *name );
 	ppresult_t PP_Cmd( char *name );

@@ -2814,6 +2814,42 @@ ppresult_t CToken::PP_Defcfunc( int mode )
 }
 
 
+ppresult_t CToken::PP_ChspDefcfunc( void )
+{
+	int id;
+	char *word;
+	char fixname[128];
+	char rettype[128];
+
+	word = (char *)s3;
+	if ( GetToken() != TK_OBJ ) {
+		SetError( "invalid result type" );
+		return PPRESULT_ERROR;
+	}
+	strcpy2( rettype, word, sizeof( rettype ) );
+	if ( GetToken() != TK_OBJ ) {
+		SetError( "invalid func name" );
+		return PPRESULT_ERROR;
+	}
+	strcase2( word, fixname );
+	id = lb->Search( fixname );
+	if ( id != -1 ) {
+		SetErrorSymbolOverdefined( fixname, id );
+		return PPRESULT_ERROR;
+	}
+	id = lb->Regist( fixname, LAB_TYPE_PPMODFUNC, 1, pp_orgfilefull, pp_orgline );
+	lb->SetEternal( id );
+	wrtbuf->Put( '#' );
+	wrtbuf->PutStrf( "chsp_defcfunc %s %s", rettype, fixname );
+	if ( wp != NULL ) {
+		wrtbuf->Put( ' ' );
+		wrtbuf->PutStr( (char *)wp );
+	}
+	wrtbuf->PutCR();
+	return PPRESULT_WROTE_LINE;
+}
+
+
 ppresult_t CToken::PP_Deffunc( int mode )
 {
 	//		#deffunc解析
@@ -2924,6 +2960,36 @@ ppresult_t CToken::PP_Deffunc( int mode )
 	//wrtbuf->PutStr( linebuf );
 	wrtbuf->PutCR();
 	//
+	return PPRESULT_WROTE_LINE;
+}
+
+
+ppresult_t CToken::PP_ChspDeffunc( void )
+{
+	int id;
+	char *word;
+	char fixname[128];
+
+	word = (char *)s3;
+	if ( GetToken() != TK_OBJ ) {
+		SetError( "invalid func name" );
+		return PPRESULT_ERROR;
+	}
+	strcase2( word, fixname );
+	id = lb->Search( fixname );
+	if ( id != -1 ) {
+		SetErrorSymbolOverdefined( fixname, id );
+		return PPRESULT_ERROR;
+	}
+	id = lb->Regist( fixname, LAB_TYPE_PPMODFUNC, 0, pp_orgfilefull, pp_orgline );
+	lb->SetEternal( id );
+	wrtbuf->Put( '#' );
+	wrtbuf->PutStrf( "chsp_deffunc %s", fixname );
+	if ( wp != NULL ) {
+		wrtbuf->Put( ' ' );
+		wrtbuf->PutStr( (char *)wp );
+	}
+	wrtbuf->PutCR();
 	return PPRESULT_WROTE_LINE;
 }
 
@@ -3630,6 +3696,14 @@ ppresult_t CToken::Preprocess( char *str )
 		}
 		if (tstrcmp(word, "defcfunc")) {		// module function (1)
 			res = PP_Defcfunc(0);
+			return res;
+		}
+		if (tstrcmp(word, "chsp_deffunc")) {
+			res = PP_ChspDeffunc();
+			return res;
+		}
+		if (tstrcmp(word, "chsp_defcfunc")) {
+			res = PP_ChspDefcfunc();
 			return res;
 		}
 		if (tstrcmp(word, "modfunc")) {		// module function (2)
@@ -4617,4 +4691,3 @@ int CToken::GetLabelListLineCaseFlag(void)
 	if (labbuf == NULL) return 0;
 	return cg_labout_caseflag;
 }
-

@@ -5,10 +5,6 @@
 //
 
 #include <stdio.h>
-#include <filesystem>
-#include <memory>
-#include <string>
-#include <vector>
 #include <windows.h>
 #include <direct.h>
 
@@ -18,8 +14,6 @@
 #include "../../hsp3/hsp3struct.h"			// hsp3 core define
 #include "../../hsp3/hspwnd.h"				// hsp3 windows define
 
-#include "../chsp/chsp_frontend_v2.h"
-#include "../chsp/chsp_libtcc_shared.h"
 #include "../membuf.h"
 #include "../supio.h"
 #include "../hsc3.h"
@@ -119,13 +113,6 @@ static int GetFilePath( char *bname )
 	}
 	if (b<0) return 1;
 	bname[b+1]=0;
-	return 0;
-}
-
-static int contains_chsp_directive( char *text )
-{
-	if ( text == NULL ) return 0;
-	if ( strstr( text, "#chsp_" ) != NULL ) return 1;
 	return 0;
 }
 
@@ -381,48 +368,15 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	}
 
 	{
-		char *preprocessed = hsc3->outbuf != NULL ? hsc3->outbuf->GetBuffer() : NULL;
-		int has_chsp = contains_chsp_directive( preprocessed );
-		if ( has_chsp ) {
-			std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
-			CChspFrontendV2 frontend( frontend_errbuf );
-			CMemBuf transformed_out;
-			std::vector<ChspNativeArtifact> native_outputs;
-			st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out,
-											  &native_outputs );
-			if ( st == 0 ) {
-				const std::filesystem::path source_path( fname_cpp );
-				const std::filesystem::path native_dir =
-					source_path.has_parent_path() ? source_path.parent_path() : std::filesystem::path( "." );
-				std::vector<std::string> native_files;
-				native_files.reserve( native_outputs.size() );
-				for ( const auto &artifact : native_outputs ) {
-					const std::filesystem::path native_path = native_dir / ( artifact.file_stem + ".c" );
-					native_files.push_back( native_path.string() );
-					char native_path_buf[_MAX_PATH];
-					strncpy( native_path_buf, native_files.back().c_str(), _MAX_PATH - 1 );
-					native_path_buf[_MAX_PATH - 1] = 0;
-					if ( artifact.output == nullptr || artifact.output->SaveFile( native_path_buf ) < 0 ) {
-						hsc3->Print( (char *)"#Can't write generated cHSP native file." );
-						st = -1;
-						break;
-					}
-				}
-				if (( st == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
-					st = chsp_compile_library_with_libtcc( hsc3, native_files, compath, native_outputs );
-				}
-			}
-			if ( st != 0 ) {
-				hsc3->PreProcessEnd();
-				return st;
-			}
-			CMemBuf *next_outbuf = new CMemBuf( transformed_out.GetSize() + 1 );
-			if ( transformed_out.GetSize() > 0 ) {
-				next_outbuf->PutData( transformed_out.GetBuffer(), transformed_out.GetSize() );
-			}
-			next_outbuf->Put( (char)0 );
-			delete hsc3->outbuf;
-			hsc3->outbuf = next_outbuf;
+		int has_chsp = 0;
+		int chsp_mode = 0;
+		if ( chsp_compile_mode == ChspNativeCompileMode::Libtcc ) {
+			chsp_mode |= HSC3_CHSP_MODE_LIBTCC;
+		}
+		st = hsc3->ProcessChsp( fname, fname_cpp, chsp_mode, compath, &has_chsp );
+		if ( st != 0 ) {
+			hsc3->PreProcessEnd();
+			return st;
 		}
 	}
 

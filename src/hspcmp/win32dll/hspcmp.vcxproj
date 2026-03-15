@@ -116,8 +116,7 @@
     <ClCompile Include="..\token.cpp" />
     <ClCompile Include="..\chsp\codegen_lexer.cpp" />
     <ClCompile Include="..\chsp\chsp_frontend_v2.cpp" />
-    <ClCompile Include="..\chsp\chsp_frontend_v2_parser.cpp" />
-    <ClCompile Include="..\chsp\chsp_frontend_v2_emitter.cpp" />
+    <ClCompile Include="..\chsp\chsp_frontend_v3_emitter.cpp" />
     <ClCompile Include="..\chsp\lexer_util.cpp" />
     <ClCompile Include="..\chsp\logger.cpp" />
     <ClCompile Include="dpm.cpp" />

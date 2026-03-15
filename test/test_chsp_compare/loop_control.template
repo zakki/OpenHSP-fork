@@ -1,0 +1,158 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc fill_loop_control array vals, local sum, local outer
+	sum = 0
+	repeat 6
+		if cnt = 3 : break
+		sum += cnt
+	loop
+	vals(0) = sum
+
+	sum = 0
+	repeat 6
+		if (cnt \ 2) = 0 : continue
+		sum += cnt
+	loop
+	vals(1) = sum
+
+	sum = 0
+	repeat 3
+		outer = cnt
+		repeat 5
+			if cnt = 2 : break
+			sum += outer * 10 + cnt
+		loop
+	loop
+	vals(2) = sum
+
+	sum = 0
+	repeat 2
+		outer = cnt
+		repeat 5
+			if cnt = outer : continue
+			sum += outer * 10 + cnt
+		loop
+	loop
+	vals(3) = sum
+	return
+
+#deffunc dummy_00
+	return
+
+#global
+
+@@ chsp_c_module
+#chsp_module "loop_control_chsp_c" target=c
+
+#chsp_deffunc fill_loop_control array[int] vals, local[int] sum, local[int] outer
+	sum = 0
+	repeat 6
+		if cnt = 3 : break
+		sum += cnt
+	loop
+	vals(0) = sum
+
+	sum = 0
+	repeat 6
+		if (cnt \ 2) = 0 : continue
+		sum += cnt
+	loop
+	vals(1) = sum
+
+	sum = 0
+	repeat 3
+		outer = cnt
+		repeat 5
+			if cnt = 2 : break
+			sum += outer * 10 + cnt
+		loop
+	loop
+	vals(2) = sum
+
+	sum = 0
+	repeat 2
+		outer = cnt
+		repeat 5
+			if cnt = outer : continue
+			sum += outer * 10 + cnt
+		loop
+	loop
+	vals(3) = sum
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "loop_control_chsp_p"
+
+#chsp_deffunc fill_loop_control array[int] vals, local[int] sum, local[int] outer
+	sum = 0
+	repeat 6
+		if cnt = 3 : break
+		sum += cnt
+	loop
+	vals(0) = sum
+
+	sum = 0
+	repeat 6
+		if (cnt \ 2) = 0 : continue
+		sum += cnt
+	loop
+	vals(1) = sum
+
+	sum = 0
+	repeat 3
+		outer = cnt
+		repeat 5
+			if cnt = 2 : break
+			sum += outer * 10 + cnt
+		loop
+	loop
+	vals(2) = sum
+
+	sum = 0
+	repeat 2
+		outer = cnt
+		repeat 5
+			if cnt = outer : continue
+			sum += outer * 10 + cnt
+		loop
+	loop
+	vals(3) = sum
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+
+	dim vals, 4
+	fill_loop_control vals
+
+	mes "LOOP_CONTROL"
+	repeat 4
+		mes "" + vals(cnt)
+	loop
+	end
+
+dummy_00
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

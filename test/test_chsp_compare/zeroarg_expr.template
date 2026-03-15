@@ -1,0 +1,61 @@
+@@ meta
+compare_default = chsp_p
+compare_emit_c = chsp_p
+compare_libtcc = chsp_p
+
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#defcfunc sample
+	return 7
+
+#deffunc fill_vals array out, local v
+	v = 1 + sample()
+	out(0) = v
+	out(1) = sample() * 2
+	return
+
+#deffunc dummy_00
+	return
+
+#global
+
+@@ chsp_p_module
+#chsp_module "zeroarg_expr_chsp_p"
+
+#chsp_defcfunc int sample
+	return 7
+#chsp_end
+
+#chsp_deffunc fill_vals array[int] out, local[int] v
+	v = 1 + sample()
+	out(0) = v
+	out(1) = sample() * 2
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+
+	dim out, 2
+	fill_vals out
+
+	mes "ZEROARG_EXPR"
+	mes "" + out(0)
+	mes "" + out(1)
+	end
+
+dummy_00
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}
