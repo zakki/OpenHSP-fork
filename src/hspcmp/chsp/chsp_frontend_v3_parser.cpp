@@ -1408,10 +1408,11 @@ void CChspParser::GenerateCodePP_usecom()
 	//CG: writer->SetLIBIID( cg_libindex, clsname );
 	cg_libmode = CG_LIBMODE_COM;
 
-	/*CG
+	/*CG:
 	writer->PutStructStart();
 	prmid = writer->PutStructEndDll( "*", cg_libindex, STRUCTPRM_SUBID_COMOBJ, -1 );
 	*/
+	prmid = 0xff; //CG:
 	int id =
 		symtab->lb->Regist( libname, TYPE_DLLCTRL, prmid | TYPE_OFFSET_COMOBJ, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 	//CG: GenerateLabelListAndTag( id, LABBUF_FLAG_EXCMD );
@@ -1763,21 +1764,25 @@ void CChspParser::GenerateCodePP_deffunc0( int is_command )
 				throw CGERROR_PP_BAD_STRUCT;
 			}
 			//CG: prm = (STRUCTPRM *)writer->mi_buf->GetBuffer();
-			subid = prm[symtab->lb->GetOpt( i )].subid;
+			//CG: subid = prm[symtab->lb->GetOpt( i )].subid;
 			// logger->Mesf( "%s:struct%d", token.cg_str,subid );
 			if ( t == MPTYPE_IMODULEVAR ) {
+				/*CG:
 				if ( prm[symtab->lb->GetOpt( i )].offset != -1 ) {
 					throw CGERROR_PP_MODINIT_USED;
 				}
-				//CG: prm[symtab->lb->GetOpt( i )].offset = GET_FI_SIZE();
+				CG: prm[symtab->lb->GetOpt( i )].offset = GET_FI_SIZE();
+				*/
 				regflag = 0;
 			}
 			if ( t == MPTYPE_TMODULEVAR ) {
-				//CG: st = (HED_STRUCTDAT *)writer->fi_buf->GetBuffer();
+				/*CG:
+				st = (HED_STRUCTDAT *)writer->fi_buf->GetBuffer();
 				if ( st[subid].otindex != 0 ) {
 					throw CGERROR_PP_MODTERM_USED;
 				}
-				//CG: st[subid].otindex = GET_FI_SIZE();
+				st[subid].otindex = GET_FI_SIZE();
+				*/
 				regflag = 0;
 			}
 			//CG: prmid = writer->PutStructParam( t, subid );
@@ -1785,6 +1790,7 @@ void CChspParser::GenerateCodePP_deffunc0( int is_command )
 
 		} else {
 			//CG: prmid = writer->PutStructParam( t, STRUCTPRM_SUBID_STACK );
+			prmid = 0xff; //CG
 			// logger->Mesf( "%d:type%d",prmid,t );
 
 			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
@@ -2116,6 +2122,7 @@ void CChspParser::GenerateCodePP_struct()
 
 	//CG: writer->PutStructStart();
 	//CG: prmid = writer->PutStructParamTag(); // modinit用のTAG
+	prmid = 0xff; //CG:
 	symtab->lb->Regist( funcname, TYPE_STRUCT, prmid, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 	// logger->Mesf( "%d:%s",prmid, funcname );
 

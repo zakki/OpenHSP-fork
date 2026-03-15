@@ -288,7 +288,7 @@ EXPORT BOOL WINAPI hsc_compath ( BMSCR *bm, char *p1, int p2, int p3 )
 
 static int hsc_comp_sub(int p1, int p2, int p3, int p4)
 {
-
+	return 0;
 }
 
 

@@ -38,7 +38,7 @@
 #define CG_IFCHECK_SCOPE 0
 #define CG_IFCHECK_LINE 1
 
-#define CG_LIBMODE_NONE -1
+#define CG_LIBMODE_NONE (-1)
 #define CG_LIBMODE_DLL 0
 #define CG_LIBMODE_DLLNEW 1
 #define CG_LIBMODE_COM 2
