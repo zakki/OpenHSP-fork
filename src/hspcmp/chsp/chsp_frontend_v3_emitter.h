@@ -15,7 +15,6 @@ namespace chspv3
 {
 
 int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger, CMemBuf &hsp_out,
-						   std::vector<ChspNativeArtifact> &native_outputs,
-						   const char *source_name );
+						   std::vector<ChspNativeArtifact> &native_outputs, const char *source_name );
 
 } // namespace chspv3

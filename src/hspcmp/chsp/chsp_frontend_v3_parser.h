@@ -8,13 +8,13 @@
 #include <string>
 #include <vector>
 
+#include "../token_def.h"
+#include "chsp_frontend_v3_ast.h"
 #include "lexer_util.h"
 #include "logger.h"
-#include "chsp_frontend_v3_ast.h"
-#include "../token_def.h"
 
 #include "codegen_lexer.h"
-//CG: #include "codegen_writer.h"
+// CG: #include "codegen_writer.h"
 
 
 class CMemBuf;
@@ -30,7 +30,7 @@ public:
 	void ResetCompiler( void );
 	void SetLabelListBuffer( CMemBuf *buf, int mode, char *match, int line = 0, char *filename = nullptr );
 
-	void SetLabelInfo( CLabel* lbinfo )
+	void SetLabelInfo( CLabel *lbinfo )
 	{
 		symtab->SetLabelInfo( lbinfo );
 	}
@@ -54,7 +54,7 @@ private:
 	std::shared_ptr<CLogger> logger;
 	CCgLexer lexer;
 	CCgToken token;
-	//CG: std::unique_ptr<CCodeWriter> writer;
+	// CG: std::unique_ptr<CCodeWriter> writer;
 	std::shared_ptr<CSymbolTable> symtab;
 
 	//		For Code Generate

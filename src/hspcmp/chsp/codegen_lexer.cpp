@@ -269,7 +269,7 @@ std::pair<const char *, CCgToken> CCgLexer::GetTokenCG( const char *str, int opt
 	if ( a1 == 0x22 ) { // "～"
 		vs++;
 		token.ttype = TK_STRING;
-		const char *p = PickStringCG( reinterpret_cast<const char *>( vs ), 0x22, token.cg_str );
+		const char *p = PickStringCG( vs, 0x22, token.cg_str );
 		return std::make_pair( p, token );
 	}
 
@@ -283,14 +283,14 @@ std::pair<const char *, CCgToken> CCgLexer::GetTokenCG( const char *str, int opt
 				}
 			}
 			token.ttype = TK_STRING;
-			const char *p = PickLongStringCG( reinterpret_cast<const char *>( vs ), token.cg_str );
+			const char *p = PickLongStringCG( vs, token.cg_str );
 			return std::make_pair( p, token );
 		}
 	}
 
 	if ( a1 == 0x27 ) { // '～'
 		vs++;
-		const char *p = PickStringCG( reinterpret_cast<const char *>( vs ), 0x27, token.cg_str );
+		const char *p = PickStringCG( vs, 0x27, token.cg_str );
 		token.ttype = TK_NUM;
 		token.val = to_uchar( token.cg_str[0] );
 		return std::make_pair( p, token );

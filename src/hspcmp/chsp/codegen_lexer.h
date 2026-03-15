@@ -46,16 +46,16 @@
 
 struct CCgToken
 {
-	int line {};
-	int val {};
-	int ttype {}; // last token type
+	int line{};
+	int val{};
+	int ttype{}; // last token type
 	// char *lasttoken  {}; // last token point
 	// float val_f  {};
-	double val_d {};
+	double val_d{};
 	// double fpbit  {};
 	// unsigned char *s3  {};
 
-	std::string cg_str {};
+	std::string cg_str{};
 };
 
 class CCgLexer : public CSourceTextUtil

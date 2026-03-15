@@ -134,7 +134,8 @@ std::vector<std::string> ArrayDimensionExprsForName( const TranslateContext &ctx
 	return it->second;
 }
 
-bool AppendArrayArgumentMetadata( const ChspV3AstExpr &arg_expr, const TranslateContext &ctx, bool &ok, std::string &out )
+bool AppendArrayArgumentMetadata( const ChspV3AstExpr &arg_expr, const TranslateContext &ctx, bool &ok,
+								  std::string &out )
 {
 	if ( arg_expr.kind != ChspV3AstExprKind::Identifier ) {
 		ok = false;
@@ -152,8 +153,8 @@ bool AppendArrayArgumentMetadata( const ChspV3AstExpr &arg_expr, const Translate
 	return true;
 }
 
-std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ctx, bool &ok,
-						   int parent_precedence, bool paren_on_equal );
+std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ctx, bool &ok, int parent_precedence,
+						   bool paren_on_equal );
 
 bool ExprUsesArrayMetadata( const ChspV3AstExpr &expr, const std::unordered_set<std::string> &array_names )
 {
@@ -241,7 +242,8 @@ bool ExprForwardsArrayMetadata( const ChspV3AstExpr &expr, const std::unordered_
 		}
 	}
 	for ( const auto &child : expr.children ) {
-		if ( child != nullptr && ExprForwardsArrayMetadata( *child, array_names, function_defs, function_array_metadata_needs ) ) {
+		if ( child != nullptr &&
+			 ExprForwardsArrayMetadata( *child, array_names, function_defs, function_array_metadata_needs ) ) {
 			return true;
 		}
 	}
@@ -333,7 +335,8 @@ bool FunctionNeedsArrayMetadata( const std::unordered_map<std::string, bool> &fu
 
 std::string TranslateArrayAccess( const ChspV3AstExpr &expr, const TranslateContext &ctx, bool &ok )
 {
-	if ( expr.children.empty() || expr.children[0] == nullptr || expr.children[0]->kind != ChspV3AstExprKind::Identifier ) {
+	if ( expr.children.empty() || expr.children[0] == nullptr ||
+		 expr.children[0]->kind != ChspV3AstExprKind::Identifier ) {
 		ok = false;
 		return "";
 	}
@@ -347,7 +350,8 @@ std::string TranslateArrayAccess( const ChspV3AstExpr &expr, const TranslateCont
 	std::string offset = TranslateExpr( *expr.children[1], ctx, ok, 0, false );
 	std::string stride = dimensions[0];
 	for ( size_t i = 2; i < expr.children.size(); ++i ) {
-		offset = "(" + offset + ") + (" + TranslateExpr( *expr.children[i], ctx, ok, 0, false ) + ") * (" + stride + ")";
+		offset =
+			"(" + offset + ") + (" + TranslateExpr( *expr.children[i], ctx, ok, 0, false ) + ") * (" + stride + ")";
 		if ( i - 1 < dimensions.size() ) {
 			stride = "(" + stride + ") * (" + dimensions[i - 1] + ")";
 		}
@@ -546,7 +550,8 @@ void CollectArrayStrideFromExpr( const ChspV3AstExpr &expr, const std::unordered
 			 array_names.find( callee->text ) != array_names.end() && expr.children.size() == 3 ) {
 			const auto &index_expr = expr.children[2];
 			if ( index_expr != nullptr && index_expr->kind == ChspV3AstExprKind::IntLiteral ) {
-				array_strides[callee->text] = std::max( array_strides[callee->text], IntLiteralValue( *index_expr ) + 1 );
+				array_strides[callee->text] =
+					std::max( array_strides[callee->text], IntLiteralValue( *index_expr ) + 1 );
 			}
 		}
 	}
@@ -622,8 +627,8 @@ TranslateContext BuildTranslateContext( const ChspV3AstFunction &func,
 	return ctx;
 }
 
-std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ctx, bool &ok,
-						   int parent_precedence = 0, bool paren_on_equal = false )
+std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ctx, bool &ok, int parent_precedence = 0,
+						   bool paren_on_equal = false )
 {
 	const auto wrap_if_needed = [&]( std::string text, int self_precedence ) {
 		if ( self_precedence < parent_precedence || ( paren_on_equal && self_precedence == parent_precedence ) ) {
@@ -696,7 +701,8 @@ std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ct
 	}
 
 	if ( name == "length" || name == "length2" || name == "length3" || name == "length4" ) {
-		if ( expr.children.size() != 2 || expr.children[1] == nullptr || expr.children[1]->kind != ChspV3AstExprKind::Identifier ) {
+		if ( expr.children.size() != 2 || expr.children[1] == nullptr ||
+			 expr.children[1]->kind != ChspV3AstExprKind::Identifier ) {
 			ok = false;
 			return "";
 		}
@@ -706,9 +712,12 @@ std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ct
 			return "";
 		}
 		const auto dimensions = ArrayDimensionExprsForName( ctx, array_name );
-		if ( name == "length" ) return dimensions[0];
-		if ( name == "length2" ) return dimensions[1];
-		if ( name == "length3" ) return dimensions[2];
+		if ( name == "length" )
+			return dimensions[0];
+		if ( name == "length2" )
+			return dimensions[1];
+		if ( name == "length3" )
+			return dimensions[2];
 		return dimensions[3];
 	}
 
@@ -732,8 +741,7 @@ std::string TranslateExpr( const ChspV3AstExpr &expr, const TranslateContext &ct
 		}
 		out += TranslateExpr( *expr.children[i], ctx, ok, 0, false );
 		if ( callee != nullptr && FunctionNeedsArrayMetadata( ctx.function_array_metadata_needs, *callee ) &&
-			 ( i - 1 ) < callee->params.size() &&
-			 callee->params[i - 1].is_array ) {
+			 ( i - 1 ) < callee->params.size() && callee->params[i - 1].is_array ) {
 			if ( !AppendArrayArgumentMetadata( *expr.children[i], ctx, ok, out ) ) {
 				return "";
 			}
@@ -801,11 +809,12 @@ const char *StatementKindName( ChspV3AstStmtKind kind )
 	}
 }
 
-bool ReportUnsupportedStmt( CLogger &logger, const ChspV3AstFunction &func, const ChspV3AstStmt &stmt, const char *reason )
+bool ReportUnsupportedStmt( CLogger &logger, const ChspV3AstFunction &func, const ChspV3AstStmt &stmt,
+							const char *reason )
 {
 	logger.Mesf( "#Error:cHSP frontend v3 emitter does not support %s in function '%s' at line %d%s%s%s",
-				 StatementKindName( stmt.kind ), NormalizeScopedName( func.name ).c_str(), stmt.line, reason != nullptr ? " (" : "",
-				 reason != nullptr ? reason : "", reason != nullptr ? ")" : "" );
+				 StatementKindName( stmt.kind ), NormalizeScopedName( func.name ).c_str(), stmt.line,
+				 reason != nullptr ? " (" : "", reason != nullptr ? reason : "", reason != nullptr ? ")" : "" );
 	return false;
 }
 
@@ -834,8 +843,7 @@ std::string RenderCommandCall( const ChspV3AstStmt &stmt, TranslateContext &ctx,
 		}
 		out += TranslateExpr( *stmt.exprs[i], ctx, ok );
 		if ( callee != nullptr && FunctionNeedsArrayMetadata( ctx.function_array_metadata_needs, *callee ) &&
-			 i < callee->params.size() &&
-			 callee->params[i].is_array ) {
+			 i < callee->params.size() && callee->params[i].is_array ) {
 			if ( !AppendArrayArgumentMetadata( *stmt.exprs[i], ctx, ok, out ) ) {
 				return "";
 			}
@@ -929,8 +937,9 @@ std::string RenderStatementInline( const ChspV3AstStmt &stmt, TranslateContext &
 	}
 }
 
-bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateContext &ctx, const ChspV3AstFunction &func,
-							 CLogger &logger, int &indent_level, bool &emitted_explicit_return )
+bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateContext &ctx,
+							 const ChspV3AstFunction &func, CLogger &logger, int &indent_level,
+							 bool &emitted_explicit_return )
 {
 	switch ( stmt.kind ) {
 	case ChspV3AstStmtKind::Unknown:
@@ -973,7 +982,8 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 		++indent_level;
 		for ( const auto &child : stmt.children ) {
 			if ( child != nullptr ) {
-				if ( !WriteFunctionStmtToCpp( buf, *child, ctx, func, logger, indent_level, emitted_explicit_return ) ) {
+				if ( !WriteFunctionStmtToCpp( buf, *child, ctx, func, logger, indent_level,
+											  emitted_explicit_return ) ) {
 					return false;
 				}
 			}
@@ -1068,7 +1078,8 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspV3AstStmt &stmt, TranslateC
 			++indent_level;
 			for ( const auto &child : stmt.children ) {
 				if ( child != nullptr ) {
-					if ( !WriteFunctionStmtToCpp( buf, *child, ctx, func, logger, indent_level, emitted_explicit_return ) ) {
+					if ( !WriteFunctionStmtToCpp( buf, *child, ctx, func, logger, indent_level,
+												  emitted_explicit_return ) ) {
 						return false;
 					}
 				}
@@ -1391,11 +1402,12 @@ void WritePluginFunctionDeclToHsp( CMemBuf &buf, const ChspV3AstFunction &func, 
 bool WritePluginNativeDispatch( CMemBuf &buf, const ChspV3AstModule &module,
 								const std::unordered_map<std::string, std::string> &function_cpp_names,
 								const std::unordered_map<std::string, const ChspV3AstFunction *> &function_defs,
-								const std::unordered_map<std::string, bool> &function_array_metadata_needs, CLogger &logger )
+								const std::unordered_map<std::string, bool> &function_array_metadata_needs,
+								CLogger &logger )
 {
 	for ( const auto &func : module.functions ) {
 		WriteFunctionPrototypeToNative( buf, func, function_cpp_names, function_defs, function_array_metadata_needs,
-									   ChspNativeTarget::Plugin );
+										ChspNativeTarget::Plugin );
 	}
 	if ( !module.functions.empty() ) {
 		buf.PutCR();
@@ -1729,9 +1741,10 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 		native_out.PutStr( "    type = exinfo->nptype;\n" );
 		native_out.PutStr( "    val = exinfo->npval;\n" );
 		native_out.PutStr( "}\n\n" );
-		native_out.PutStr( "static int *chsp_plugin_int_ptr( PVal *pval, APTR aptr ) { return ((int *)pval->pt) + aptr; }\n" );
 		native_out.PutStr(
-			"static double *chsp_plugin_double_ptr( PVal *pval, APTR aptr ) { return ((double *)pval->pt) + aptr; }\n\n" );
+			"static int *chsp_plugin_int_ptr( PVal *pval, APTR aptr ) { return ((int *)pval->pt) + aptr; }\n" );
+		native_out.PutStr( "static double *chsp_plugin_double_ptr( PVal *pval, APTR aptr ) { return ((double "
+						   "*)pval->pt) + aptr; }\n\n" );
 		return;
 	}
 	native_out.PutStr( "#include \"common/chsp/chsp_runtime.h\"\n\n" );
@@ -1807,8 +1820,9 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 				return -1;
 			}
 			if ( native_outputs[module_index].target == ChspNativeTarget::Plugin ) {
-				if ( !WritePluginNativeDispatch( *native_outputs[module_index].output, ast_program.modules[module_index],
-												function_cpp_names, function_defs, function_array_metadata_needs, logger ) ) {
+				if ( !WritePluginNativeDispatch( *native_outputs[module_index].output,
+												 ast_program.modules[module_index], function_cpp_names, function_defs,
+												 function_array_metadata_needs, logger ) ) {
 					return -1;
 				}
 			}
@@ -1831,12 +1845,11 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 			} else {
 				const auto &func = ast_program.modules[module_index].functions[function_index];
 				const auto cpp_name_it = function_cpp_names.find( func.name );
-				const std::string cpp_name =
-					cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
+				const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
 				if ( FunctionNeedsArrayMetadata( function_array_metadata_needs, func ) ) {
 					const auto internal_name = HspInternalFunctionDeclName( func );
 					WriteFunctionDeclToHspInternal( hsp_out, func, internal_name, cpp_name,
-												   function_array_metadata_needs );
+													function_array_metadata_needs );
 					WriteFunctionWrapperToHsp( hsp_out, func, internal_name, function_array_metadata_needs );
 				} else {
 					WriteFunctionDeclToHsp( hsp_out, func, cpp_name );
@@ -1852,8 +1865,8 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 			}
 			if ( native_outputs[module_index].target != ChspNativeTarget::Plugin ) {
 				if ( !WriteFunctionToNative( *native_outputs[module_index].output,
-											 ast_program.modules[module_index].functions[function_index], function_cpp_names,
-											 function_defs, function_array_metadata_needs,
+											 ast_program.modules[module_index].functions[function_index],
+											 function_cpp_names, function_defs, function_array_metadata_needs,
 											 native_outputs[module_index].target, logger ) ) {
 					return -1;
 				}

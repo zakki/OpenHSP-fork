@@ -152,12 +152,12 @@ public:
 	~CSymbolTable();
 
 	std::unique_ptr<CLabel> GetLabelInfo( void );
-	void SetLabelInfo( CLabel* lbinfo );
+	void SetLabelInfo( CLabel *lbinfo );
 
 	int LabelRegist( char **list, int mode );
 	int LabelRegist2( char **list );
 	int LabelRegist3( char **list );
 
-	std::unique_ptr<CLabel> lb;		// label object
-	CLabel* tmp_lb; // label object (preprocessor reference)
+	std::unique_ptr<CLabel> lb; // label object
+	CLabel *tmp_lb;				// label object (preprocessor reference)
 };

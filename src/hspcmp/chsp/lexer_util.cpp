@@ -379,7 +379,7 @@ std::unique_ptr<CLabel> CSymbolTable::GetLabelInfo()
 }
 
 
-void CSymbolTable::SetLabelInfo( CLabel* lbinfo )
+void CSymbolTable::SetLabelInfo( CLabel *lbinfo )
 {
 	//		ラベル情報設定
 	//

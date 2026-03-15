@@ -43,7 +43,8 @@ int CChspFrontendV2::GenerateFromBuffer( const char *source_name, const char *in
 	auto opts = std::make_shared<CompileOptions>();
 	auto parser_errbuf = std::make_shared<CMemBuf>();
 	CChspParser parser( opts, logger );
-	if ( lb_info != NULL ) parser.SetLabelInfo( lb_info );
+	if ( lb_info != NULL )
+		parser.SetLabelInfo( lb_info );
 	parser.LabelRegist( hsp_prestr, 1 );
 
 	CMemBuf srcbuf;

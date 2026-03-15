@@ -205,7 +205,7 @@ void CChspParser::CalcCG_regmark( int mark )
 {
 	//		演算子を登録する
 	//
-	//CG: writer->PutCSMark( mark, texflag );
+	// CG: writer->PutCSMark( mark, texflag );
 	if ( current_stmt != nullptr ) {
 		auto expr = std::make_unique<chspv3::ChspV3AstExpr>();
 		expr->kind = chspv3::ChspV3AstExprKind::Binary;
@@ -233,7 +233,7 @@ void CChspParser::CalcCG_factor()
 	cs_lasttype = token.ttype;
 	switch ( token.ttype ) {
 	case TK_NUM:
-		//CG: writer->PutCSInteger( token.val, texflag );
+		// CG: writer->PutCSInteger( token.val, texflag );
 		if ( current_stmt != nullptr ) {
 			auto expr = std::make_unique<chspv3::ChspV3AstExpr>();
 			expr->kind = chspv3::ChspV3AstExprKind::IntLiteral;
@@ -247,7 +247,7 @@ void CChspParser::CalcCG_factor()
 		calccount++;
 		return;
 	case TK_DNUM:
-		//CG: writer->PutCSDouble( token.val_d, texflag );
+		// CG: writer->PutCSDouble( token.val_d, texflag );
 		if ( current_stmt != nullptr ) {
 			auto expr = std::make_unique<chspv3::ChspV3AstExpr>();
 			expr->kind = chspv3::ChspV3AstExprKind::DoubleLiteral;
@@ -261,7 +261,7 @@ void CChspParser::CalcCG_factor()
 		calccount++;
 		return;
 	case TK_STRING:
-		//CG: writer->PutCSString( token.cg_str.c_str(), texflag );
+		// CG: writer->PutCSString( token.cg_str.c_str(), texflag );
 		if ( current_stmt != nullptr ) {
 			auto expr = std::make_unique<chspv3::ChspV3AstExpr>();
 			expr->kind = chspv3::ChspV3AstExprKind::StringLiteral;
@@ -373,7 +373,7 @@ void CChspParser::CalcCG_unary()
 		}
 		CalcCG_unary();
 		texflag = 0;
-		//CG: writer->PutCS( TYPE_INUM, -1, texflag );
+		// CG: writer->PutCS( TYPE_INUM, -1, texflag );
 		if ( current_stmt != nullptr && !expression_stack.empty() ) {
 			auto expr = std::make_unique<chspv3::ChspV3AstExpr>();
 			expr->kind = chspv3::ChspV3AstExprKind::Unary;
@@ -490,7 +490,7 @@ void CChspParser::CalcCG( int ex )
 	//		(結果は逆ポーランドでコードを出力する)
 	//
 	texflag = ex;
-	//CG: cs_lastptr = writer->cs_buf->GetSize();
+	// CG: cs_lastptr = writer->cs_buf->GetSize();
 	calccount = 0;
 
 	CalcCG_token_exprbeg_redo();
@@ -515,7 +515,7 @@ void CChspParser::GenerateCodePRM()
 		if ( token.ttype == TK_NONE ) {
 			if ( token.val == ',' ) { // 先頭が','の場合は省略
 				if ( ( ex & EXFLG_2 ) != 0 ) {
-					//CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
+					// CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 				}
 				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				ex |= EXFLG_2;
@@ -556,8 +556,8 @@ void CChspParser::GenerateCodePRM()
 				case TK_DNUM:
 				case TK_STRING: {
 					unsigned short *cstmp;
-					//CG: cstmp = (unsigned short *)( writer->cs_buf->GetBuffer() + cs_lastptr );
-					//CG: *cstmp |= EXFLG_0; // 単一項目フラグを立てる
+					// CG: cstmp = (unsigned short *)( writer->cs_buf->GetBuffer() + cs_lastptr );
+					// CG: *cstmp |= EXFLG_0; // 単一項目フラグを立てる
 					break;
 				}
 				default:
@@ -576,7 +576,7 @@ void CChspParser::GenerateCodePRM()
 		ex |= EXFLG_2;
 
 		if ( token.ttype >= TK_SEPARATE ) {
-			//CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
+			// CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 			break;
 		}
 	}
@@ -595,13 +595,13 @@ int CChspParser::GenerateCodePRMF( std::vector<std::unique_ptr<chspv3::ChspV3Ast
 		if ( token.ttype == TK_NONE ) {
 			if ( token.val == ')' ) { // ')'の場合は終了
 				if ( ex != 0 ) {
-					//CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
+					// CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 				}
 				return ex;
 			}
 			if ( token.val == ',' ) { // 先頭が','の場合は省略
 				if ( ( ex & EXFLG_2 ) != 0 ) {
-					//CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
+					// CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 				}
 				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				ex |= EXFLG_2;
@@ -666,7 +666,7 @@ void CChspParser::GenerateCodePRMF2( std::vector<std::unique_ptr<chspv3::ChspV3A
 			token = lexer.GetTokenCG( GETTOKEN_NOFLOAT );
 			break;
 		case TK_NUM:
-			//CG: writer->PutCS( TYPE_INUM, token.val, ex );
+			// CG: writer->PutCS( TYPE_INUM, token.val, ex );
 			if ( ast_args != nullptr ) {
 				ast_args->push_back( make_int_literal_expr( lexer.cg_orgline, token.val ) );
 			}
@@ -694,13 +694,13 @@ void CChspParser::GenerateCodePRMF2( std::vector<std::unique_ptr<chspv3::ChspV3A
 			if ( token.ttype == TK_NONE ) {
 				if ( token.val == '(' ) { // '(' 配列指定
 					token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
-					//CG: writer->PutCS( TYPE_MARK, '(', 0 );
+					// CG: writer->PutCS( TYPE_MARK, '(', 0 );
 					std::vector<std::unique_ptr<chspv3::ChspV3AstExpr>> nested_args;
 					GenerateCodePRMF( expr != nullptr ? &nested_args : nullptr );
 					if ( expr != nullptr ) {
 						wrap_ast_target_as_call( &expr, '(', nested_args );
 					}
-					//CG: writer->PutCS( TYPE_MARK, ')', 0 );
+					// CG: writer->PutCS( TYPE_MARK, ')', 0 );
 					token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				}
 			}
@@ -764,26 +764,26 @@ int CChspParser::GenerateCodePRMF4( int t, std::unique_ptr<chspv3::ChspV3AstExpr
 	if ( token.ttype == TK_NONE ) {
 		if ( token.val == '.' ) {
 			token = lexer.GetTokenCG( GETTOKEN_NOFLOAT );
-			//CG: writer->PutCS( TYPE_MARK, '(', 0 ); // '.' 配列指定
+			// CG: writer->PutCS( TYPE_MARK, '(', 0 ); // '.' 配列指定
 			std::vector<std::unique_ptr<chspv3::ChspV3AstExpr>> args;
 			GenerateCodePRMF2( ast_target != nullptr ? &args : nullptr );
 			wrap_ast_target_as_call( ast_target, '.', args );
-			//CG: writer->PutCS( TYPE_MARK, ')', 0 );
+			// CG: writer->PutCS( TYPE_MARK, ')', 0 );
 			return 1;
 		}
 		if ( token.val == '(' ) { // '(' 配列指定
 			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
-			//CG: writer->PutCS( TYPE_MARK, '(', 0 );
+			// CG: writer->PutCS( TYPE_MARK, '(', 0 );
 			std::vector<std::unique_ptr<chspv3::ChspV3AstExpr>> args;
 			GenerateCodePRMF( ast_target != nullptr ? &args : nullptr );
 			wrap_ast_target_as_call( ast_target, '(', args );
-			//CG: writer->PutCS( TYPE_MARK, ')', 0 );
+			// CG: writer->PutCS( TYPE_MARK, ')', 0 );
 			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 			return 1;
 		}
 		if ( t == TYPE_STRUCT ) {
 			if ( token.val == '[' ) { // '[' ソース指定
-				//CG: writer->PutCS( TYPE_MARK, '[', 0 );
+				// CG: writer->PutCS( TYPE_MARK, '[', 0 );
 				GenerateCodePRMF3();
 				return 0;
 			}
@@ -806,11 +806,11 @@ void CChspParser::GenerateCodeMethod()
 	}
 	switch ( token.ttype ) {
 	case TK_NUM:
-		//CG: writer->PutCS( TYPE_INUM, token.val, ex );
+		// CG: writer->PutCS( TYPE_INUM, token.val, ex );
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		break;
 	case TK_STRING:
-		//CG: writer->PutCS( TYPE_STRING, writer->PutDS( token.cg_str.c_str() ), ex );
+		// CG: writer->PutCS( TYPE_STRING, writer->PutDS( token.cg_str.c_str() ), ex );
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		break;
 	case TK_OBJ:
@@ -827,7 +827,7 @@ void CChspParser::GenerateCodeMethod()
 		if ( token.ttype == TK_NONE ) {
 			if ( token.val == ',' ) { // 先頭が','の場合は省略
 				if ( ( ex & EXFLG_2 ) != 0 ) {
-					//CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
+					// CG: writer->PutCS( TYPE_MARK, '?', EXFLG_2 );
 				}
 				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 				ex |= EXFLG_2;
@@ -914,8 +914,8 @@ void CChspParser::CheckCMDIF_Set( int mode )
 	}
 
 	iftype[iflev] = mode;
-	//CG: ifptr[iflev] = writer->ReserveCSAddress();
-	//CG: ifmode[iflev] = writer->GetCS();
+	// CG: ifptr[iflev] = writer->ReserveCSAddress();
+	// CG: ifmode[iflev] = writer->GetCS();
 	ifscope[iflev] = CG_IFCHECK_LINE;
 	ifterm[iflev] = 0;
 	iflev++;
@@ -936,14 +936,14 @@ void CChspParser::CheckCMDIF_Fin( int mode )
 	}
 finag:
 	iflev--;
-	//CG: a = writer->GetCS() - ifmode[iflev];
+	// CG: a = writer->GetCS() - ifmode[iflev];
 	if ( mode != 0 ) { // when 'else'
 		a++;
 	}
 
 	if ( ifterm[iflev] == 0 ) {
 		ifterm[iflev] = 1;
-		//CG: writer->PatchCSAddress( ifptr[iflev], a );
+		// CG: writer->PatchCSAddress( ifptr[iflev], a );
 	}
 
 	// sprintf(tmp,"#IF FINISH [L=%d(%d)] [skip%d]\n",cline,iflev,a);
@@ -1000,7 +1000,7 @@ void CChspParser::CheckInternalListenerCMD( int opt )
 		return; // not either gosub or goto
 	}
 	if ( o == 0x001 ) { // gosub
-		//CG: writer->PutCS( t, o & 0xffff, 0 );
+						// CG: writer->PutCS( t, o & 0xffff, 0 );
 	}
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 }
@@ -1023,10 +1023,10 @@ int CChspParser::CheckInternalProgCMD( int opt, int orgcs )
 		}
 		i = repend[replev];
 		if ( i == -1 ) {
-			//CG: i = writer->PutOT( -1 );
+			// CG: i = writer->PutOT( -1 );
 			repend[replev] = i;
 		}
-		//CG: writer->PutCS( TK_LABEL, i, 0 );
+		// CG: writer->PutCS( TK_LABEL, i, 0 );
 		break;
 	case 0x04: // repeat start
 	case 0x0b: // (foreach)
@@ -1036,13 +1036,13 @@ int CChspParser::CheckInternalProgCMD( int opt, int orgcs )
 		replev++;
 		i = repend[replev];
 		if ( i == -1 ) {
-			//CG: i = writer->PutOT( -1 );
+			// CG: i = writer->PutOT( -1 );
 			repend[replev] = i;
 		}
-		//CG: writer->PutCS( TK_LABEL, i, 0 );
+		// CG: writer->PutCS( TK_LABEL, i, 0 );
 		if ( opt == 0x0b ) {
-			//CG: writer->PutCS( TYPE_PROGCMD, 0x0c, EXFLG_1 );
-			//CG: writer->PutCS( TK_LABEL, i, 0 );
+			// CG: writer->PutCS( TYPE_PROGCMD, 0x0c, EXFLG_1 );
+			// CG: writer->PutCS( TK_LABEL, i, 0 );
 		}
 		break;
 	case 0x05: // repeat end
@@ -1051,15 +1051,15 @@ int CChspParser::CheckInternalProgCMD( int opt, int orgcs )
 		}
 		i = repend[replev];
 		if ( i != -1 ) {
-			//CG: writer->SetOT( i, writer->GetCS() );
+			// CG: writer->SetOT( i, writer->GetCS() );
 			repend[replev] = -1;
 		}
 		replev--;
 		break;
 	case 0x11: // stop
-		//CG: i = writer->PutOT( orgcs );
-		//CG: writer->PutCS( TYPE_PROGCMD, 0, EXFLG_1 );
-		//CG: writer->PutCS( TYPE_LABEL, i, 0 );
+		// CG: i = writer->PutOT( orgcs );
+		// CG: writer->PutCS( TYPE_PROGCMD, 0, EXFLG_1 );
+		// CG: writer->PutCS( TYPE_LABEL, i, 0 );
 		break;
 	case 0x19: // on
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
@@ -1076,7 +1076,7 @@ int CChspParser::CheckInternalProgCMD( int opt, int orgcs )
 			int labelOpt = symtab->lb->GetOpt( i );
 			if ( ( labelType == TYPE_PROGCMD ) && ( labelOpt == 0 || labelOpt == 1 ) ) {
 				// goto or gosub
-				//CG: writer->PutCS( labelType, labelOpt, EXFLG_2 );
+				// CG: writer->PutCS( labelType, labelOpt, EXFLG_2 );
 			} else {
 				throw CGERROR_SYNTAX;
 			}
@@ -1102,8 +1102,8 @@ int CChspParser::CheckInternalProgCMD( int opt, int orgcs )
 		}
 		i = SetVarsFixed( firstSymbolName, cg_defvarfix );
 		//	変数の初期化フラグをセットする
-		//CG: symtab->lb->SetInitFlag( i, LAB_INIT_DONE );
-		//CG* GenerateLabelListAndTag( i, LABBUF_FLAG_VAR );
+		// CG: symtab->lb->SetInitFlag( i, LAB_INIT_DONE );
+		// CG* GenerateLabelListAndTag( i, LABBUF_FLAG_VAR );
 		symtab->lb->SetSkipLabList( i ); // 次回のラベル参照リスト生成をスキップする
 		// logger->Mesf( "#initflag set [%s]", token.cg_str );
 		return 1;
@@ -1131,8 +1131,8 @@ void CChspParser::GenerateCodeCMD( int id )
 	t = symtab->lb->GetType( id );
 	opt = symtab->lb->GetOpt( id );
 	BeginAstStatement( CG_LASTCMD_CMD, t, symtab->lb->GetName( id ) );
-	//CG: orgcs = writer->GetCS();
-	//CG: writer->PutCSSymbol( id, EXFLG_1 );
+	// CG: orgcs = writer->GetCS();
+	// CG: writer->PutCSSymbol( id, EXFLG_1 );
 
 	int labtype = LABBUF_FLAG_CMD;
 	switch ( t ) {
@@ -1167,7 +1167,7 @@ void CChspParser::GenerateCodeCMD( int id )
 	cg_lasttype = t;
 	cg_lastval = opt;
 
-	//CG: GenerateLabelListAndTagRef( id, labtype );
+	// CG: GenerateLabelListAndTagRef( id, labtype );
 }
 
 
@@ -1194,23 +1194,23 @@ void CChspParser::GenerateCodeLET( int id, bool first )
 	}
 
 	if ( first ) {
-		//CG: GenerateLabelListAndTag( id, LABBUF_FLAG_VAR );
+		// CG: GenerateLabelListAndTag( id, LABBUF_FLAG_VAR );
 	} else {
-		//CG: GenerateLabelListAndTagRef( id, LABBUF_FLAG_VAR );
+		// CG: GenerateLabelListAndTagRef( id, LABBUF_FLAG_VAR );
 	}
 
 	//
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 	if ( ( token.ttype == TK_NONE ) && ( token.val == 0x65 ) ) { // ->が続いているか?
-		//CG: writer->PutCS( TYPE_PROGCMD, 0x1a, EXFLG_1 );			 // 'mcall'コマンドに置き換える
-		//CG: writer->PutCS( t, symtab->lb->GetOpt( id ), 0 );		 // 変数パラメーター
+		// CG: writer->PutCS( TYPE_PROGCMD, 0x1a, EXFLG_1 );			 // 'mcall'コマンドに置き換える
+		// CG: writer->PutCS( t, symtab->lb->GetOpt( id ), 0 );		 // 変数パラメーター
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		GenerateCodeMethod(); // パラメーター展開
 		return;
 	}
 
-	//CG: writer->PutCS( t, symtab->lb->GetOpt( id ), EXFLG_1 ); // 通常の変数代入
+	// CG: writer->PutCS( t, symtab->lb->GetOpt( id ), EXFLG_1 ); // 通常の変数代入
 	GenerateCodePRMF4( t, current_stmt != nullptr ? &current_stmt->lhs : nullptr ); // 構造体/配列のチェック
 
 	if ( token.ttype != TK_NONE ) {
@@ -1298,11 +1298,11 @@ void CChspParser::GenerateCodePP_regcmd()
 			cg_varhpi += token.val;
 		}
 
-		//CG: writer->PutHPI( HPIDAT_FLAG_TYPEFUNC, 0, cmd2, cmd );
+		// CG: writer->PutHPI( HPIDAT_FLAG_TYPEFUNC, 0, cmd2, cmd );
 		cg_typecnt++;
 		break;
 	case TK_NUM:
-		//CG: writer->PutHPI( HPIDAT_FLAG_SELFFUNC, 0, "", "" );
+		// CG: writer->PutHPI( HPIDAT_FLAG_SELFFUNC, 0, "", "" );
 		cg_pptype = token.val;
 		break;
 	case TK_NONE:
@@ -1343,8 +1343,8 @@ void CChspParser::GenerateCodePP_cmd()
 	id = token.val;
 
 	id = symtab->lb->Regist( cmd, cg_pptype, id, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
-	//CG: GenerateLabelListAndTag( id, LABBUF_FLAG_EXCMD );
-	// logger->Mesf( "#%x:%d [%s]",cg_pptype, id, cmd );
+	// CG: GenerateLabelListAndTag( id, LABBUF_FLAG_EXCMD );
+	//  logger->Mesf( "#%x:%d [%s]",cg_pptype, id, cmd );
 }
 
 
@@ -1400,22 +1400,22 @@ void CChspParser::GenerateCodePP_usecom()
 		strncpy( clsname, token.cg_str.c_str(), 127 );
 	}
 
-	//CG: cg_libindex = writer->PutLIB( LIBDAT_FLAG_COMOBJ, iidname );
+	// CG: cg_libindex = writer->PutLIB( LIBDAT_FLAG_COMOBJ, iidname );
 	if ( cg_libindex < 0 ) {
 		throw CGERROR_PP_BAD_IMPORT_IID;
 	}
 
-	//CG: writer->SetLIBIID( cg_libindex, clsname );
+	// CG: writer->SetLIBIID( cg_libindex, clsname );
 	cg_libmode = CG_LIBMODE_COM;
 
 	/*CG:
 	writer->PutStructStart();
 	prmid = writer->PutStructEndDll( "*", cg_libindex, STRUCTPRM_SUBID_COMOBJ, -1 );
 	*/
-	prmid = 0xff; //CG:
-	int id =
-		symtab->lb->Regist( libname, TYPE_DLLCTRL, prmid | TYPE_OFFSET_COMOBJ, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
-	//CG: GenerateLabelListAndTag( id, LABBUF_FLAG_EXCMD );
+	prmid = 0xff; // CG:
+	int id = symtab->lb->Regist( libname, TYPE_DLLCTRL, prmid | TYPE_OFFSET_COMOBJ, lexer.cg_orgfilefull.c_str(),
+								 lexer.cg_orgline );
+	// CG: GenerateLabelListAndTag( id, LABBUF_FLAG_EXCMD );
 
 	// logger->Mesf( "#usecom %s [%s][%s]",libname,clsname,iidname );
 }
@@ -1471,12 +1471,12 @@ void CChspParser::GenerateCodePP_func( int deftype )
 			logger->Mesf( "#Delete func %s", fbase );
 #endif
 		}
-		//CG: GenerateLabelListAndTag( fbase, LABBUF_FLAG_EXCMD );
+		// CG: GenerateLabelListAndTag( fbase, LABBUF_FLAG_EXCMD );
 		return;
 	}
 
 	if ( cg_libmode == CG_LIBMODE_DLLNEW ) { // 初回はDLL名を登録する
-		//CG: cg_libindex = writer->PutLIB( LIBDAT_FLAG_DLL, cg_libname );
+		// CG: cg_libindex = writer->PutLIB( LIBDAT_FLAG_DLL, cg_libname );
 		cg_libmode = CG_LIBMODE_DLL;
 	}
 	if ( cg_libmode != CG_LIBMODE_DLL ) {
@@ -1501,7 +1501,7 @@ void CChspParser::GenerateCodePP_func( int deftype )
 	}
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-	//CG: writer->PutStructStart();
+	// CG: writer->PutStructStart();
 	if ( token.ttype == TK_NUM ) {
 		int p1;
 		int p2;
@@ -1549,10 +1549,10 @@ void CChspParser::GenerateCodePP_func( int deftype )
 
 		//		logger->Mesf("#oldfunc %d,%d,%d,%d",p1,p2,p3,p4);
 
-		//CG: writer->PutStructParam( p1, STRUCTPRM_SUBID_STID );
-		//CG: writer->PutStructParam( p2, STRUCTPRM_SUBID_STID );
-		//CG: writer->PutStructParam( p3, STRUCTPRM_SUBID_STID );
-		//CG: writer->PutStructParam( p4, STRUCTPRM_SUBID_STID );
+		// CG: writer->PutStructParam( p1, STRUCTPRM_SUBID_STID );
+		// CG: writer->PutStructParam( p2, STRUCTPRM_SUBID_STID );
+		// CG: writer->PutStructParam( p3, STRUCTPRM_SUBID_STID );
+		// CG: writer->PutStructParam( p4, STRUCTPRM_SUBID_STID );
 
 	} else {
 		while ( true ) {
@@ -1566,7 +1566,7 @@ void CChspParser::GenerateCodePP_func( int deftype )
 			if ( t == MPTYPE_NONE ) {
 				throw CGERROR_PP_WRONG_PARAM_NAME;
 			}
-			//CG: writer->PutStructParam( t, STRUCTPRM_SUBID_STID );
+			// CG: writer->PutStructParam( t, STRUCTPRM_SUBID_STID );
 			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 			if ( token.ttype >= TK_EOL ) {
@@ -1592,7 +1592,7 @@ void CChspParser::GenerateCodePP_func( int deftype )
 		subid = STRUCTPRM_SUBID_OLDDLL;
 		// logger->Mesf( "Warning:Old func expression [%s]", fbase );
 	}
-	//CG: i = writer->PutStructEndDll( fname, cg_libindex, subid, otflag );
+	// CG: i = writer->PutStructEndDll( fname, cg_libindex, subid, otflag );
 	int id = symtab->lb->Regist( fbase, TYPE_DLLFUNC, i, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 	// CG GenerateLabelListAndTag( id, LABBUF_FLAG_EXCMD );
 
@@ -1628,8 +1628,8 @@ void CChspParser::GenerateCodePP_comfunc()
 
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
-	//CG: writer->PutStructStart();
-	//CG: writer->PutStructParam( MPTYPE_IOBJECTVAR, STRUCTPRM_SUBID_STID );
+	// CG: writer->PutStructStart();
+	// CG: writer->PutStructParam( MPTYPE_IOBJECTVAR, STRUCTPRM_SUBID_STID );
 
 	while ( true ) {
 		if ( token.ttype >= TK_EOL ) {
@@ -1642,7 +1642,7 @@ void CChspParser::GenerateCodePP_comfunc()
 		if ( t == MPTYPE_NONE ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
-		//CG: writer->PutStructParam( t, STRUCTPRM_SUBID_STID );
+		// CG: writer->PutStructParam( t, STRUCTPRM_SUBID_STID );
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 		if ( token.ttype >= TK_EOL ) {
@@ -1663,9 +1663,10 @@ void CChspParser::GenerateCodePP_comfunc()
 		throw CGERROR_PP_ALREADY_USE_TAGNAME;
 	}
 	subid = STRUCTPRM_SUBID_COMOBJ;
-	//CG: i = writer->PutStructEndDll( "*", cg_libindex, subid, imp_index );
-	int id = symtab->lb->Regist( fbase, TYPE_DLLCTRL, i | TYPE_OFFSET_COMOBJ, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
-	//CG: GenerateLabelListAndTag( id, LABBUF_FLAG_EXCMD );
+	// CG: i = writer->PutStructEndDll( "*", cg_libindex, subid, imp_index );
+	int id = symtab->lb->Regist( fbase, TYPE_DLLCTRL, i | TYPE_OFFSET_COMOBJ, lexer.cg_orgfilefull.c_str(),
+								 lexer.cg_orgline );
+	// CG: GenerateLabelListAndTag( id, LABBUF_FLAG_EXCMD );
 
 	// logger->Mesf( "#comfunc [%s][%d][%d]",fbase, imp_index, i );
 }
@@ -1731,7 +1732,7 @@ void CChspParser::GenerateCodePP_deffunc0( int is_command )
 		*/
 	}
 
-	//CG: writer->PutStructStart();
+	// CG: writer->PutStructStart();
 	while ( true ) {
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		if ( token.ttype >= TK_EOL ) {
@@ -1763,9 +1764,9 @@ void CChspParser::GenerateCodePP_deffunc0( int is_command )
 			if ( symtab->lb->GetType( i ) != TYPE_STRUCT ) {
 				throw CGERROR_PP_BAD_STRUCT;
 			}
-			//CG: prm = (STRUCTPRM *)writer->mi_buf->GetBuffer();
-			//CG: subid = prm[symtab->lb->GetOpt( i )].subid;
-			// logger->Mesf( "%s:struct%d", token.cg_str,subid );
+			// CG: prm = (STRUCTPRM *)writer->mi_buf->GetBuffer();
+			// CG: subid = prm[symtab->lb->GetOpt( i )].subid;
+			//  logger->Mesf( "%s:struct%d", token.cg_str,subid );
 			if ( t == MPTYPE_IMODULEVAR ) {
 				/*CG:
 				if ( prm[symtab->lb->GetOpt( i )].offset != -1 ) {
@@ -1785,12 +1786,12 @@ void CChspParser::GenerateCodePP_deffunc0( int is_command )
 				*/
 				regflag = 0;
 			}
-			//CG: prmid = writer->PutStructParam( t, subid );
+			// CG: prmid = writer->PutStructParam( t, subid );
 			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 		} else {
-			//CG: prmid = writer->PutStructParam( t, STRUCTPRM_SUBID_STACK );
-			prmid = 0xff; //CG
+			// CG: prmid = writer->PutStructParam( t, STRUCTPRM_SUBID_STACK );
+			prmid = 0xff; // CG
 			// logger->Mesf( "%d:type%d",prmid,t );
 
 			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
@@ -1801,7 +1802,8 @@ void CChspParser::GenerateCodePP_deffunc0( int is_command )
 					CG_MesLabelDefinition( i );
 					throw CGERROR_PP_ALREADY_USE_PARAM;
 				}
-				i = symtab->lb->Regist( token.cg_str.data(), TYPE_STRUCT, prmid, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
+				i = symtab->lb->Regist( token.cg_str.c_str(), TYPE_STRUCT, prmid, lexer.cg_orgfilefull.c_str(),
+										lexer.cg_orgline );
 				cg_localstruct[cg_localcur++] = i;
 				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 			}
@@ -1818,10 +1820,10 @@ void CChspParser::GenerateCodePP_deffunc0( int is_command )
 		}
 	}
 
-	//CG: ot = writer->PutOT( writer->GetCS() );
+	// CG: ot = writer->PutOT( writer->GetCS() );
 	if ( index == -1 ) {
-		//CG: index = GET_FI_SIZE();
-		//CG: writer->fi_buf->PreparePtr( sizeof( HED_STRUCTDAT ) );
+		// CG: index = GET_FI_SIZE();
+		// CG: writer->fi_buf->PreparePtr( sizeof( HED_STRUCTDAT ) );
 		if ( regflag != 0 ) {
 			symtab->lb->Regist( funcname, TYPE_MODCMD, index, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 		}
@@ -1830,7 +1832,7 @@ void CChspParser::GenerateCodePP_deffunc0( int is_command )
 		symtab->lb->SetOpt( label_id, index );
 	}
 	int dat_index = is_command != 0 ? STRUCTDAT_INDEX_FUNC : STRUCTDAT_INDEX_CFUNC;
-	//CG: writer->PutStructEnd( index, funcname, dat_index, ot, funcflag );
+	// CG: writer->PutStructEnd( index, funcname, dat_index, ot, funcflag );
 }
 
 
@@ -1862,8 +1864,7 @@ void CChspParser::RegisterLocalStructAlias( const std::string &name )
 		CG_MesLabelDefinition( id );
 		throw CGERROR_PP_ALREADY_USE_PARAM;
 	}
-	id = symtab->lb->Regist( const_cast<char *>( name.c_str() ), TYPE_STRUCT, 0, lexer.cg_orgfilefull.c_str(),
-							 lexer.cg_orgline );
+	id = symtab->lb->Regist( name.c_str(), TYPE_STRUCT, 0, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 	cg_localstruct[cg_localcur++] = id;
 }
 
@@ -1885,7 +1886,7 @@ void CChspParser::ParseChspSignatureType( bool allow_extended_type, chspv3::Chsp
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 
 	if ( type_name == "array" || type_name == "local" ) {
-		if ( ! ( token.ttype == TK_NONE && token.val == '[' ) ) {
+		if ( !( token.ttype == TK_NONE && token.val == '[' ) ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
@@ -1911,12 +1912,12 @@ void CChspParser::ParseChspSignatureType( bool allow_extended_type, chspv3::Chsp
 				param_ast->is_array = true;
 			}
 			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
-			if ( ! ( token.ttype == TK_NONE && token.val == ']' ) ) {
+			if ( !( token.ttype == TK_NONE && token.val == ']' ) ) {
 				throw CGERROR_PP_WRONG_PARAM_NAME;
 			}
 			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		}
-		if ( ! ( token.ttype == TK_NONE && token.val == ']' ) ) {
+		if ( !( token.ttype == TK_NONE && token.val == ']' ) ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 		if ( param_ast != nullptr ) {
@@ -1966,8 +1967,8 @@ void CChspParser::GenerateCodePP_chsp_deffunc0( int is_command )
 		throw CGERROR_PP_ALREADY_USE_FUNC;
 	}
 	if ( label_id < 0 ) {
-		label_id = symtab->lb->Regist( const_cast<char *>( funcname.c_str() ), TYPE_MODCMD, 0,
-									   lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
+		label_id =
+			symtab->lb->Regist( funcname.c_str(), TYPE_MODCMD, 0, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 	}
 
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
@@ -2120,9 +2121,9 @@ void CChspParser::GenerateCodePP_struct()
 		throw CGERROR_PP_ALREADY_USE_PARAM;
 	}
 
-	//CG: writer->PutStructStart();
-	//CG: prmid = writer->PutStructParamTag(); // modinit用のTAG
-	prmid = 0xff; //CG:
+	// CG: writer->PutStructStart();
+	// CG: prmid = writer->PutStructParamTag(); // modinit用のTAG
+	prmid = 0xff; // CG:
 	symtab->lb->Regist( funcname, TYPE_STRUCT, prmid, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 	// logger->Mesf( "%d:%s",prmid, funcname );
 
@@ -2138,8 +2139,8 @@ void CChspParser::GenerateCodePP_struct()
 		if ( t == MPTYPE_NONE ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
-		//CG: prmid = writer->PutStructParam( t, STRUCTPRM_SUBID_STID );
-		// logger->Mesf( "%d:type%d",prmid,t );
+		// CG: prmid = writer->PutStructParam( t, STRUCTPRM_SUBID_STID );
+		//  logger->Mesf( "%d:type%d",prmid,t );
 
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		if ( token.ttype != TK_OBJ ) {
@@ -2151,7 +2152,7 @@ void CChspParser::GenerateCodePP_struct()
 			CG_MesLabelDefinition( i );
 			throw CGERROR_PP_ALREADY_USE_PARAM;
 		}
-		symtab->lb->Regist( token.cg_str.data(), TYPE_STRUCT, prmid, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
+		symtab->lb->Regist( token.cg_str.c_str(), TYPE_STRUCT, prmid, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		if ( token.ttype >= TK_EOL ) {
@@ -2164,7 +2165,7 @@ void CChspParser::GenerateCodePP_struct()
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 	}
-	//CG: writer->PutStructEnd( funcname, STRUCTDAT_INDEX_STRUCT, 0, 0 );
+	// CG: writer->PutStructEnd( funcname, STRUCTDAT_INDEX_STRUCT, 0, 0 );
 }
 
 
@@ -2193,7 +2194,7 @@ void CChspParser::GenerateCodePP_defvars( int fixedvalue )
 			throw CGERROR_WRONG_VARIABLE;
 		}
 		symtab->lb->SetInitFlag( id, LAB_INIT_DONE );
-		//CG: GenerateLabelListAndTag( id, LABBUF_FLAG_VAR );
+		// CG: GenerateLabelListAndTag( id, LABBUF_FLAG_VAR );
 		prms++;
 		// logger->Mesf( "name:%s(%d) fixed:%d", token.cg_str, id, fixedvalue );
 
@@ -2220,9 +2221,9 @@ int CChspParser::SetVarsFixed( const std::string &varname, int fixedvalue )
 	//		変数の固定型を設定する
 	//
 	int id;
-	id = symtab->lb->Search( (char*)varname.c_str() );
+	id = symtab->lb->Search( (char *)varname.c_str() );
 	if ( id < 0 ) {
-		id = symtab->lb->Regist( (char*)varname.c_str(), TYPE_VAR, cg_valcnt, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
+		id = symtab->lb->Regist( varname.c_str(), TYPE_VAR, cg_valcnt, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 		cg_valcnt++;
 	}
 	if ( fixedvalue != LAB_TYPEFIX_NONE ) {
@@ -2265,12 +2266,12 @@ void CChspParser::GenerateCodePP( const char *buf )
 			getpath( lexer.cg_orgfilefull.data(), temp_orgfile, 8 );
 			lexer.cg_orgfile = temp_orgfile;
 			if ( compopt->cg_debug() ) {
-				//CG: i = writer->PutDSBuf( token.cg_str.c_str() );
-				//CG: writer->PutDI( 254, i, lexer.cg_orgline ); // ファイル名をデバッグ情報として登録
+				// CG: i = writer->PutDSBuf( token.cg_str.c_str() );
+				// CG: writer->PutDI( 254, i, lexer.cg_orgline ); // ファイル名をデバッグ情報として登録
 			}
 		} else {
 			if ( compopt->cg_debug() ) {
-				//CG: writer->PutDI( 254, 0, lexer.cg_orgline ); // ラインだけをデバッグ情報として登録
+				// CG: writer->PutDI( 254, 0, lexer.cg_orgline ); // ラインだけをデバッグ情報として登録
 			}
 		}
 		// logger->Mesf( "#%d [%s]",lexer.cg_orgline, token.cg_str );
@@ -2396,7 +2397,7 @@ int CChspParser::GenerateCodeSub()
 		return TK_EOF;
 	}
 
-	RecordSourceLine( reinterpret_cast<const char *>( lexer.cg_ptr ) );
+	RecordSourceLine( lexer.cg_ptr );
 
 	if ( *lexer.cg_ptr == '#' ) {
 		GenerateCodePP( lexer.cg_ptr );
@@ -2419,7 +2420,7 @@ int CChspParser::GenerateCodeSub()
 		if ( i < 0 ) {
 			// logger->Mesf( "[%s][%d]", token.cg_str, cg_valcnt );
 			i = SetVarsFixed( token.cg_str, cg_defvarfix );
-			//CG: symtab->lb->SetInitFlag( i, LAB_INIT_DONE ); //	変数の初期化フラグをセットする
+			// CG: symtab->lb->SetInitFlag( i, LAB_INIT_DONE ); //	変数の初期化フラグをセットする
 			GenerateCodeLET( i, true );
 		} else {
 			int t = symtab->lb->GetType( i );
@@ -2456,17 +2457,17 @@ int CChspParser::GenerateCodeSub()
 				throw CGERROR_LABELEXIST;
 			}
 			symtab->lb->SetDefinition( i, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
-			//CG: GenerateLabelListAndTag( i, LABBUF_FLAG_LABEL );
-			//CG: writer->SetOT( symtab->lb->GetOpt( i ), writer->GetCS() );
+			// CG: GenerateLabelListAndTag( i, LABBUF_FLAG_LABEL );
+			// CG: writer->SetOT( symtab->lb->GetOpt( i ), writer->GetCS() );
 			lab->type = TYPE_LABEL;
 		} else {
 			/*CG
 			i = symtab->lb->Regist( token.cg_str, TYPE_LABEL, writer->ot_buf->GetSize() / sizeof( int ),
 									lexer.cg_orgfilefull, lexer.cg_orgline );
 			*/
-			i = symtab->lb->Regist( token.cg_str.data(), TYPE_LABEL, 1 );
-			//CG: GenerateLabelListAndTag( i, LABBUF_FLAG_LABEL );
-			//CG: writer->PutOT( writer->GetCS() );
+			i = symtab->lb->Regist( token.cg_str.c_str(), TYPE_LABEL, 1 );
+			// CG: GenerateLabelListAndTag( i, LABBUF_FLAG_LABEL );
+			// CG: writer->PutOT( writer->GetCS() );
 		}
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		break;
@@ -2504,7 +2505,7 @@ int CChspParser::GenerateCodeBlock()
 			}
 		}
 		if ( compopt->cg_debug() ) {
-			//CG: writer->PutDI();
+			// CG: writer->PutDI();
 		}
 	}
 	if ( res == TK_SEPARATE ) {
@@ -2575,7 +2576,7 @@ void CChspParser::RegisterFuncLabels()
 			}
 			LABOBJ *lab = symtab->tmp_lb->GetLabel( i );
 			int id = symtab->lb->Regist( name, TYPE_MODCMD, -1, lab->def_file, lab->def_line );
-			//CG: GenerateLabelListAndTag( id, LABBUF_FLAG_FUNC );
+			// CG: GenerateLabelListAndTag( id, LABBUF_FLAG_FUNC );
 			symtab->lb->SetData2( id, (char *)&i, sizeof i );
 		}
 	}
@@ -2615,7 +2616,7 @@ int CChspParser::GenerateCodeMain( CMemBuf *buf )
 {
 	//		ソースをHSP3Codeに展開する
 	//
-	ResetGenerator( reinterpret_cast<const char *>( buf->GetBuffer() ) );
+	ResetGenerator( const_cast<const char *>( buf->GetBuffer() ) );
 	int a;
 
 	try {
@@ -2688,7 +2689,7 @@ int CChspParser::GenerateCodeMainSkipError( CMemBuf *buf )
 {
 	//		ソースをHSP3Codeに展開する(エラースキップ)
 	//
-	ResetGenerator( reinterpret_cast<const char *>( buf->GetBuffer() ) );
+	ResetGenerator( const_cast<const char *>( buf->GetBuffer() ) );
 
 	try {
 		RegisterFuncLabels();
@@ -2713,7 +2714,7 @@ int CChspParser::GenerateCodeMainSkipError( CMemBuf *buf )
 int CChspParser::GenerateCode( const std::string &fname, const std::string &oname, int mode )
 {
 	CMemBuf srcbuf;
-	if ( srcbuf.PutFile( (char*)fname.c_str() ) < 0 ) {
+	if ( srcbuf.PutFile( (char *)fname.c_str() ) < 0 ) {
 		logger->Mes( "#No file." );
 		return -1;
 	}
@@ -2730,7 +2731,7 @@ int CChspParser::GenerateCode( CMemBuf *srcbuf, const std::string &oname, int mo
 	int res;
 	CMemBuf bakbuf; // プリプロセッサソース保存用バッファ
 
-	//CG: writer = std::make_unique<CCodeWriter>( compopt, logger, symtab );
+	// CG: writer = std::make_unique<CCodeWriter>( compopt, logger, symtab );
 
 	bakbuf.PutStr( srcbuf->GetBuffer() ); // プリプロセッサソースを保存する
 
@@ -2743,7 +2744,7 @@ int CChspParser::GenerateCode( CMemBuf *srcbuf, const std::string &oname, int mo
 		logger->Mes( "#output string map." );
 	}
 
-	//CG: writer->ds_buf->AddIndexBuffer();
+	// CG: writer->ds_buf->AddIndexBuffer();
 
 	cg_putvars = compopt->hed_cmpmode & CMPMODE_PUTVARS;
 
@@ -2771,10 +2772,10 @@ int CChspParser::GenerateCode( CMemBuf *srcbuf, const std::string &oname, int mo
 			logger->Mesf( "--> %s", tmp );
 		}
 	} else {
-		//CG: res = writer->Write( oname.c_str(), mode, cg_valcnt, cg_varhpi, cg_putvars );
+		// CG: res = writer->Write( oname.c_str(), mode, cg_valcnt, cg_varhpi, cg_putvars );
 	}
 
-	//CG: writer = nullptr;
+	// CG: writer = nullptr;
 
 	return res;
 }
