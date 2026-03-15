@@ -574,12 +574,16 @@ std::string RenderStatementInline( const ChspV3AstStmt &stmt, TranslateContext &
 			return "";
 		}
 		const auto lhs = TranslateExpr( *stmt.lhs, ctx, ok );
-		if ( stmt.text == "++" || stmt.text == "--" ) {
-			return lhs + stmt.text + ";";
-		}
 		if ( stmt.rhs == nullptr ) {
-			ok = false;
-			return "";
+			switch ( stmt.token_kind ) {
+			case '+':
+				return lhs + " += 1;";
+			case '-':
+				return lhs + " -= 1;";
+			default:
+				ok = false;
+				return "";
+			}
 		}
 		const auto rhs = TranslateExpr( *stmt.rhs, ctx, ok );
 		std::string op = "=";
