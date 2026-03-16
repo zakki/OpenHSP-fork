@@ -1671,9 +1671,6 @@ std::string ModuleFileStem( const ChspV3AstModule &module, const char *source_na
 void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const std::string &file_stem,
 							 ChspNativeTarget target )
 {
-	buf.PutStr( "#module " );
-	buf.PutStr( module_tag.c_str() );
-	buf.PutCR();
 	buf.PutStr( "goto@hsp *_" );
 	buf.PutStr( module_tag.c_str() );
 	buf.PutStr( "_exit" );
@@ -1701,8 +1698,6 @@ void WriteModuleFooterToHsp( CMemBuf &buf, const std::string &module_tag )
 	buf.PutStr( "*_" );
 	buf.PutStr( module_tag.c_str() );
 	buf.PutStr( "_exit" );
-	buf.PutCR();
-	buf.PutStr( "#global" );
 	buf.PutCR();
 }
 
