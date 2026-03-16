@@ -1451,6 +1451,7 @@ void CToken::GenerateCodePP_regcmd( void )
 	//
 	char cmd[1024];
 	char cmd2[1024];
+	cg_pptype = cg_typecnt;
 	cmd[0] = 0;
 
 	GetTokenCG( GETTOKEN_DEFAULT );
@@ -1473,11 +1474,10 @@ void CToken::GenerateCodePP_regcmd( void )
 		}
 
 		PutHPI( HPIDAT_FLAG_TYPEFUNC, 0, cmd2, cmd );
-		cg_pptype = cg_typecnt;
 		cg_typecnt++;
 		break;
 	case TK_NUM:
-		// PutHPI( HPIDAT_FLAG_SELFFUNC, 0, "", "" );
+		PutHPI( HPIDAT_FLAG_SELFFUNC, 0, "", "" );
 		cg_pptype = val;
 		break;
 	case TK_NONE:
@@ -2407,7 +2407,7 @@ void CToken::ResetGenerator(unsigned char *ptr)
 	line = 0;
 	cg_flag = CG_FLAG_ENABLE;
 	cg_valcnt = 0;
-	cg_typecnt = HSP3_TYPE_PLUGIN;
+	cg_typecnt = HSP3_TYPE_USER;
 	cg_pptype = -1;
 	cg_iflev = 0;
 	cg_wp = ptr;
