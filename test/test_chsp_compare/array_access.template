@@ -219,35 +219,10 @@
 @@ main
 
 dim a, 32
-dim check, 24
 write_values a
 
-check(0) = 0
-check(1) = 2
-check(2) = 3
-check(3) = 4
-check(4) = 5
-check(5) = 7
-check(6) = 1
-check(7) = 6
-check(8) = 8
-check(9) = 9
-check(10) = 10
-check(11) = 11
-check(12) = 12
-check(13) = 13
-check(14) = 14
-check(15) = 15
-check(16) = 16
-check(17) = 17
-check(18) = 18
-check(19) = 19
-check(20) = 20
-check(21) = 21
-check(22) = 22
-check(23) = 23
 repeat 24
-	mes "" + a(check(cnt))
+	mes "" + a(cnt)
 loop
 
 end
