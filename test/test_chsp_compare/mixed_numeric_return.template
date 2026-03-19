@@ -1,0 +1,79 @@
+@@ meta
+compare_default = chsp_p
+compare_emit_c = chsp_p
+compare_libtcc = chsp_p
+
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#defcfunc int_plus_double_to_int int a, double b
+	return a + b
+
+#defcfunc double_plus_int_to_int double a, int b
+	return a + b
+
+#defcfunc int_plus_double_to_double int a, double b
+	return a + b
+
+#defcfunc double_plus_int_to_double double a, int b
+	return a + b
+
+#deffunc fill_mixed array ints, array dvals, int a, double b
+	ints(0) = a + b
+	ints(1) = int(b + a)
+	dvals(0) = double(a + b)
+	dvals(1) = b + a
+	return
+
+#global
+@@ chsp_p_module
+#chsp_module "mixed_numeric_return"
+
+#chsp_defcfunc int int_plus_double_to_int int a, double b
+	return a + b
+#chsp_end
+
+#chsp_defcfunc int double_plus_int_to_int double a, int b
+	return a + b
+#chsp_end
+
+#chsp_defcfunc double int_plus_double_to_double int a, double b
+	return a + b
+#chsp_end
+
+#chsp_defcfunc double double_plus_int_to_double double a, int b
+	return a + b
+#chsp_end
+
+#chsp_deffunc fill_mixed array[int] ints, array[double] dvals, int a, double b
+	ints(0) = a + b
+	ints(1) = b + a
+	dvals(0) = a + b
+	dvals(1) = b + a
+	return
+#chsp_end
+
+#chsp_module_end
+@@ main
+
+	dim ints, 2
+	ddim dvals, 2
+	fill_mixed ints, dvals, 1, 2.5
+
+	mes "MIXED_NUMERIC_RETURN"
+	mes "" + int_plus_double_to_int(1, 2.5)
+	mes strf("%.3f", double_plus_int_to_int(2.5, 1))
+	mes strf("%.3f", int_plus_double_to_double(1, 2.5))
+	mes strf("%.3f", double_plus_int_to_double(2.5, 1))
+	mes "" + ints(0)
+	mes "" + ints(1)
+	mes strf("%.3f", dvals(0))
+	mes strf("%.3f", dvals(1))
+	end
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

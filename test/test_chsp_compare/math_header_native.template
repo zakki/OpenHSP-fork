@@ -1,0 +1,90 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#defcfunc native_wave_builtin double angle
+	return sin(angle) + cos(angle)
+
+#defcfunc native_root_builtin double value
+	return sqrt(value + 5.0)
+
+#deffunc fill_math_header_native array vals
+	vals(0) = native_wave_builtin(0.5)
+	vals(1) = native_root_builtin(4.0)
+	vals(2) = native_wave_builtin(1.0) + native_root_builtin(11.0)
+	return
+
+#global
+
+@@ chsp_c_module
+#chsp_module "math_header_native_chsp_c" target=c
+
+#chsp_c {"
+#include <math.h>
+
+static double native_wave(double angle) {
+    return sin(angle) + cos(angle);
+}
+
+static double native_root(double value) {
+    return sqrt(value + 5.0);
+}
+"}
+#chsp_cdecl native_wave
+#chsp_cdecl native_root
+
+#chsp_deffunc fill_math_header_native array[double] vals
+	vals(0) = native_wave(0.5)
+	vals(1) = native_root(4.0)
+	vals(2) = native_wave(1.0) + native_root(11.0)
+	return
+#chsp_end
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "math_header_native_chsp_p"
+
+#chsp_c {"
+#include <math.h>
+
+static double native_wave(double angle) {
+    return sin(angle) + cos(angle);
+}
+
+static double native_root(double value) {
+    return sqrt(value + 5.0);
+}
+"}
+#chsp_cdecl native_wave
+#chsp_cdecl native_root
+
+#chsp_deffunc fill_math_header_native array[double] vals
+	vals(0) = native_wave(0.5)
+	vals(1) = native_root(4.0)
+	vals(2) = native_wave(1.0) + native_root(11.0)
+	return
+#chsp_end
+
+#chsp_module_end
+
+@@ main
+	ddim vals, 3
+	fill_math_header_native vals
+
+	mes "MATH_HEADER_NATIVE"
+	repeat 3
+		mes strf("%.6f", vals(cnt))
+	loop
+	end
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

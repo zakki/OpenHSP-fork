@@ -63,6 +63,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <AdditionalOptions>/source-charset:utf-8 /execution-charset:shift_jis %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libtcc.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -81,6 +82,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/source-charset:utf-8 /execution-charset:shift_jis %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libtcc.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -102,6 +104,7 @@
     <ClCompile Include="..\..\hsp3\win32gui\supio_win.cpp" />
     <ClCompile Include="..\ahtmodel.cpp" />
     <ClCompile Include="..\ahtobj.cpp" />
+    <ClCompile Include="..\chsp\chsp_frontend_v3_parser.cpp" />
     <ClCompile Include="..\codegen.cpp" />
     <ClCompile Include="..\comutil.cpp" />
     <ClCompile Include="..\chsp\chsp_libtcc_shared.cpp" />
@@ -116,9 +119,9 @@
     <ClCompile Include="..\tagstack.cpp" />
     <ClCompile Include="..\token.cpp" />
     <ClCompile Include="..\chsp\codegen_lexer.cpp" />
+    <ClCompile Include="..\chsp\chsp_builtin_map.cpp" />
     <ClCompile Include="..\chsp\chsp_frontend_v2.cpp" />
-    <ClCompile Include="..\chsp\chsp_frontend_v2_parser.cpp" />
-    <ClCompile Include="..\chsp\chsp_frontend_v2_emitter.cpp" />
+    <ClCompile Include="..\chsp\chsp_frontend_v3_emitter.cpp" />
     <ClCompile Include="..\chsp\lexer_util.cpp" />
     <ClCompile Include="..\chsp\logger.cpp" />
   </ItemGroup>
@@ -144,7 +147,8 @@
     <ClInclude Include="..\tagstack.h" />
     <ClInclude Include="..\token.h" />
     <ClInclude Include="..\chsp\chsp_frontend_v2.h" />
-    <ClInclude Include="..\chsp\chsp_frontend_v2_internal.h" />
+    <ClInclude Include="..\chsp\chsp_builtin_map.h" />
+    <ClInclude Include="..\chsp\chsp_util.h" />
     <ClInclude Include="..\chsp\codegen_lexer.h" />
     <ClInclude Include="..\chsp\lexer_util.h" />
     <ClInclude Include="..\chsp\logger.h" />

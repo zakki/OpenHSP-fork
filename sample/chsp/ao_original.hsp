@@ -354,6 +354,5 @@ goto *MAIN
 	loop
 	endtime = (gettime(5) * 60 + gettime(6)) * 1000 + gettime(7)
 	prev = "" + double(endtime - starttime) / 1000 + "sec"
-	goto *MAIN
 	// stop
-	// return
+	return

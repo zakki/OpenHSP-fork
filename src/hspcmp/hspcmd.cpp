@@ -328,6 +328,8 @@ char 	*hsp_prepp[] =
 	"$000 0 #const",
 	"$000 0 #deffunc",
 	"$000 0 #defcfunc",
+	"$000 0 #chsp_deffunc",
+	"$000 0 #chsp_defcfunc",
 	"$000 0 #define",
 	"$000 0 #else",
 	"$000 0 #endif",
@@ -368,4 +370,3 @@ char 	*hsp_prepp[] =
 
 	"*"
 };
-

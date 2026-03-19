@@ -38,7 +38,7 @@
 #define CG_IFCHECK_SCOPE 0
 #define CG_IFCHECK_LINE 1
 
-#define CG_LIBMODE_NONE -1
+#define CG_LIBMODE_NONE (-1)
 #define CG_LIBMODE_DLL 0
 #define CG_LIBMODE_DLLNEW 1
 #define CG_LIBMODE_COM 2
@@ -197,6 +197,8 @@ private:
 	ppresult_t PP_Global( void );
 	ppresult_t PP_Deffunc( int mode );
 	ppresult_t PP_Defcfunc( int mode );
+	ppresult_t PP_ChspDeffunc( void );
+	ppresult_t PP_ChspDefcfunc( void );
 	ppresult_t PP_Struct( void );
 	ppresult_t PP_Func( char *name );
 	ppresult_t PP_Cmd( char *name );

@@ -46,16 +46,16 @@
 
 struct CCgToken
 {
-	int line;
-	int val;
-	int ttype; // last token type
-	// char *lasttoken; // last token point
-	// float val_f;
-	double val_d;
-	// double fpbit;
-	// unsigned char *s3;
+	int line{};
+	int val{};
+	int ttype{}; // last token type
+	// char *lasttoken  {}; // last token point
+	// float val_f  {};
+	double val_d{};
+	// double fpbit  {};
+	// unsigned char *s3  {};
 
-	std::string cg_str;
+	std::string cg_str{};
 };
 
 class CCgLexer : public CSourceTextUtil
@@ -69,28 +69,33 @@ public:
 	int GetParameterFuncTypeCG( const std::string &name ) const;
 	int GetParameterResTypeCG( const std::string &name ) const;
 
-	std::pair<char *, CCgToken> GetTokenCG( const char *str, int option );
+	std::pair<const char *, CCgToken> GetTokenCG( const char *str, int option );
 	CCgToken GetTokenCG( int option );
-	std::string GetSymbolCG( char *str );
+	std::string GetSymbolCG( const char *str );
 	int PickNextCodeCG( void );
+	const std::string &CurrentLineText() const
+	{
+		return current_line_buffer;
+	}
 
-	char *NextLine();
+	const char *NextLine();
 
 private:
-	char *GetLineCG( void );
-	char *PickStringCG( char *str, int sep );
-	char *PickStringCG2( char *str, char **strsrc );
-	char *PickLongStringCG( char *str );
+	const char *GetLineCG( void );
+	const char *PickStringCG( const char *str, int sep, std::string &out );
+	const char *PickStringCG2( std::string &out, const char **strsrc );
+	const char *PickLongStringCG( const char *str, std::string &out );
 
 	//		Data
 	//
 	std::shared_ptr<CLogger> logger;
+	std::string current_line_buffer;
 
 public:
 	int line;
-	char *cg_ptr;
-	char *cg_ptr_bak;
-	unsigned char *cg_wp;
+	const char *cg_ptr;
+	const char *cg_ptr_bak;
+	const char *cg_wp;
 
 
 	//		for Error

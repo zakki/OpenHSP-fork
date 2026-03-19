@@ -1,0 +1,61 @@
+@@ meta
+compare_default = chsp_p, chsp_c
+compare_emit_c = chsp_p, chsp_c
+compare_libtcc = chsp_p, chsp_c
+
+@@ header
+#include "hsp3cl.as"
+
+@@ chsp_c_module
+#chsp_module "forward_decl_sample_chsp_c" target=c
+
+#chsp_defcfunc int measure_forward_decl int v
+	return int(call_half_then_shift(v))
+#chsp_end
+
+#chsp_defcfunc double call_half_then_shift int v
+	return half_core(v) + 1.0
+#chsp_end
+
+#chsp_defcfunc double half_core int v
+	return v * 0.5
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "forward_decl_sample_chsp_p"
+
+#chsp_defcfunc int measure_forward_decl int v
+	return int(call_half_then_shift(v))
+#chsp_end
+
+#chsp_defcfunc double call_half_then_shift int v
+	return half_core(v) + 1.0
+#chsp_end
+
+#chsp_defcfunc double half_core int v
+	return v * 0.5
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+
+	mes "FORWARD_DECL_SAMPLE"
+	mes "" + measure_forward_decl(4)
+	end
+
+dummy_00
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

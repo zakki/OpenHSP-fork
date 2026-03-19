@@ -1,6 +1,7 @@
 *.gpo
 *.do
 *.o
+*.d
 __hsptmp.*
 .hspres
 hsptmp

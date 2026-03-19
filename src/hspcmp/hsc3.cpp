@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "../hsp3/hsp3config.h"
 #include "../hsp3/hsp3debug.h"
@@ -20,10 +24,22 @@
 #include "token.h"
 #include "localinfo.h"
 
+#include "chsp/chsp_frontend_v2.h"
+#include "chsp/chsp_libtcc_shared.h"
+#include "chsp/chsp_frontend_v3_parser.h"
+
+
 extern char *hsp_prestr[];
 extern char *hsp_prepp[];
 
 #define ERRBUF_SIZE 0x10000
+
+static int contains_chsp_directive( const char *text )
+{
+	if ( text == NULL ) return 0;
+	if ( strstr( text, "#chsp_" ) != NULL ) return 1;
+	return 0;
+}
 
 //-------------------------------------------------------------
 //		Routines
@@ -336,6 +352,75 @@ void CHsc3::PreProcessEnd( void )
 }
 
 
+int CHsc3::ProcessChsp( char *fname, char *outname, int mode, char *compath, int *has_chsp )
+{
+	int res;
+	char *preprocessed;
+	std::shared_ptr<CMemBuf> frontend_errbuf( errbuf, []( CMemBuf * ) {} );
+	CChspFrontendV2 frontend( frontend_errbuf );
+	CMemBuf transformed_out;
+	std::vector<ChspNativeArtifact> native_outputs;
+
+	if ( has_chsp != NULL ) *has_chsp = 0;
+
+	preprocessed = outbuf != NULL ? outbuf->GetBuffer() : NULL;
+	if ( contains_chsp_directive( preprocessed ) == 0 ) return 0;
+	if ( has_chsp != NULL ) *has_chsp = 1;
+
+	res = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", lb_info, &transformed_out,
+									   &native_outputs, compath );
+	if ( res != 0 ) return res;
+	if ( lb_info != NULL ) {
+		for ( int i = 0; i < lb_info->GetCount(); ++i ) {
+			if ( lb_info->GetType( i ) == LAB_TYPE_PPMODFUNC ) {
+				// cHSP declarations are rewritten into #cmd/#func/#cfunc before the normal
+				// HSP compile pass, so the original preprocessor-side placeholders must not
+				// be registered as unresolved TYPE_MODCMD entries.
+				lb_info->SetFlag( i, -1 );
+			}
+		}
+	}
+
+	{
+		const std::filesystem::path source_path( outname != NULL ? outname : "" );
+		const std::filesystem::path native_dir =
+			source_path.has_parent_path() ? source_path.parent_path() : std::filesystem::path( "." );
+		std::vector<std::string> native_files;
+		native_files.reserve( native_outputs.size() );
+		for ( const auto &artifact : native_outputs ) {
+			const std::filesystem::path native_path = native_dir / ( artifact.file_stem + ".c" );
+			native_files.push_back( native_path.string() );
+			char native_path_buf[HSP_MAX_PATH];
+			strncpy( native_path_buf, native_files.back().c_str(), HSP_MAX_PATH - 1 );
+			native_path_buf[HSP_MAX_PATH - 1] = 0;
+			if ( artifact.output == NULL || artifact.output->SaveFile( native_path_buf ) < 0 ) {
+				Print( (char *)"#Can't write generated cHSP native file." );
+				return -1;
+			}
+		}
+
+		if ( mode & HSC3_CHSP_MODE_LIBTCC ) {
+#ifdef CHSP_HAS_LIBTCC
+			res = chsp_compile_library_with_libtcc( this, native_files, compath, native_outputs );
+			if ( res != 0 ) return res;
+#endif
+		}
+	}
+
+	{
+		CMemBuf *next_outbuf = new CMemBuf( transformed_out.GetSize() + 1 );
+		if ( transformed_out.GetSize() > 0 ) {
+			next_outbuf->PutData( transformed_out.GetBuffer(), transformed_out.GetSize() );
+		}
+		next_outbuf->Put( (char)0 );
+		delete outbuf;
+		outbuf = next_outbuf;
+	}
+
+	return 0;
+}
+
+
 int CHsc3::Compile( char *fname, char *outname, int mode )
 {
 	//		Compile
@@ -535,5 +620,3 @@ void CHsc3::Print(char* mes)
 	errbuf->PutStr(mes);
 	errbuf->PutStr("\r\n");
 }
-
-

@@ -1,0 +1,101 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc compute_vals array vals, local x, local y, local shift_mix, local unary_mix, local branch
+	x = -8
+	y = 3
+	shift_mix = (x + 20) >> 2
+	unary_mix = -(-5) + -(2)
+
+	if x < -4 {
+		branch = 11
+	} else : if x = -4 {
+		branch = 22
+	} else {
+		branch = 33
+	}
+
+	vals(0) = shift_mix
+	vals(1) = unary_mix
+	vals(2) = branch + y
+	return
+
+#deffunc dummy_00
+	return
+
+#global
+@@ chsp_c_module
+#chsp_module "branches_chsp_c" target=c
+
+#chsp_deffunc compute_vals array[int] vals, local[int] x, local[int] y, local[int] shift_mix, local[int] unary_mix, local[int] branch
+	x = -8
+	y = 3
+	shift_mix = (x + 20) >> 2
+	unary_mix = -(-5) + -(2)
+
+	if x < -4 {
+		branch = 11
+	} else : if x = -4 {
+		branch = 22
+	} else {
+		branch = 33
+	}
+
+	vals(0) = shift_mix
+	vals(1) = unary_mix
+	vals(2) = branch + y
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ chsp_p_module
+#chsp_module "branches_chsp_p"
+
+#chsp_deffunc compute_vals array[int] vals, local[int] x, local[int] y, local[int] shift_mix, local[int] unary_mix, local[int] branch
+	x = -8
+	y = 3
+	shift_mix = (x + 20) >> 2
+	unary_mix = -(-5) + -(2)
+
+	if x < -4 {
+		branch = 11
+	} else : if x = -4 {
+		branch = 22
+	} else {
+		branch = 33
+	}
+
+	vals(0) = shift_mix
+	vals(1) = unary_mix
+	vals(2) = branch + y
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ main
+
+	dim vals, 3
+	compute_vals vals
+
+	mes "BRANCHES"
+	repeat 3
+		mes "" + vals(cnt)
+	loop
+	end
+
+dummy_00
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

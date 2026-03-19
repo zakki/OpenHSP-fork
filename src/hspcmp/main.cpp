@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory>
 
 #if defined(HSPLINUX)
 #include <unistd.h>
@@ -28,8 +27,6 @@
 #include "supio.h"
 
 #include "membuf.h"
-#include "chsp/chsp_libtcc_shared.h"
-#include "chsp/chsp_frontend_v2.h"
 #include "hsc3.h"
 #include "token.h"
 #include "hsmanager.h"
@@ -69,7 +66,6 @@ static 	char *p[] = {
 	"       ---------------------------------",
 	"       --syspath=??? set system folder for execute",
 	"       --compath=??? set common path to ???",
-	"       --chsp-target=c|cpp set cHSP native output target (default: c)",
 	"       --chsp-compile=libtcc|none set cHSP native compile mode (default: libtcc)",
 	NULL };
 	int i;
@@ -82,13 +78,6 @@ static int has_extension( char *path, const char *ext )
 	char *dot = strrchr( path, '.' );
 	if ( dot == NULL ) return 0;
 	if ( strcmp( dot, ext ) == 0 ) return 1;
-	return 0;
-}
-
-static int contains_chsp_directive( char *text )
-{
-	if ( text == NULL ) return 0;
-	if ( strstr( text, "#chsp_" ) != NULL ) return 1;
 	return 0;
 }
 
@@ -110,7 +99,6 @@ int main( int argc, char *argv[] )
 	char compath[HSP_MAX_PATH];
 	char syspath[HSP_MAX_PATH];
 	char helpkey[256];
-	ChspNativeTarget chsp_target;
 	ChspNativeCompileMode chsp_compile_mode;
 	CHsc3 *hsc3=NULL;
 
@@ -127,7 +115,6 @@ int main( int argc, char *argv[] )
 	oname[0]=0;
 	syspath[0]=0;
 	helpkey[0] = 0;
-	chsp_target = ChspNativeTarget::C;
 	chsp_compile_mode = ChspNativeCompileMode::Libtcc;
 
 #ifdef HSPLINUX
@@ -155,17 +142,7 @@ int main( int argc, char *argv[] )
 				continue;
 			}
 			if (strncmp(argv[b], "--chsp-target=", 14) == 0) {
-				const char *value = argv[b] + 14;
-				if ( strcmp( value, "c" ) == 0 ) {
-					chsp_target = ChspNativeTarget::C;
-					continue;
-				}
-				if ( strcmp( value, "cpp" ) == 0 ) {
-					chsp_target = ChspNativeTarget::Cpp;
-					chsp_compile_mode = ChspNativeCompileMode::None;
-					continue;
-				}
-				printf( "Invalid cHSP target selected.\n" );
+				printf( "--chsp-target is no longer supported. Specify target=plugin or target=c on #chsp_module.\n" );
 				return 1;
 			}
 			if (strncmp(argv[b], "--chsp-compile=", 15) == 0) {
@@ -280,11 +257,6 @@ int main( int argc, char *argv[] )
 		delete hsc3;
 		return 1;
 	}
-	if ( chsp_compile_mode != ChspNativeCompileMode::None && chsp_target != ChspNativeTarget::C ) {
-		printf("cHSP native compilation currently requires --chsp-target=c.\n");
-		delete hsc3;
-		return 1;
-	}
 #if !defined(HSPLINUX) && !defined(HSPWIN)
 	if ( chsp_compile_mode == ChspNativeCompileMode::Libtcc ) {
 		printf("libtcc native compilation is currently supported only on Linux and Win32.\n");
@@ -304,7 +276,9 @@ int main( int argc, char *argv[] )
 	}
 	strcpy( fname2, fname ); cutext( fname2 ); addext( fname2,"i" );
 	strcpy( fname_chi, fname ); cutext( fname_chi ); addext( fname_chi,"chi" );
-	strcpy( fname_cpp, fname ); cutext( fname_cpp ); addext( fname_cpp, chsp_target == ChspNativeTarget::C ? "c" : "cpp" );
+	strcpy( fname_cpp, fname );
+	cutext( fname_cpp );
+	addext( fname_cpp, "c" );
 	if (( has_extension( fname, ".chsp" ) == 0 )&&( has_extension( fname, ".hsp" ) == 0 )) {
 		addext( fname,"hsp" );			// 拡張子がなければ追加する
 	}
@@ -381,42 +355,22 @@ int main( int argc, char *argv[] )
 
 	} else {
 		//		通常のコンパイル
+		int has_chsp = 0;
+		int chsp_mode = 0;
 		st = hsc3->PreProcess( fname, fname2, ppopt, fname );
 		if (( pponly == 0 )&&( st == 0 )) {
-			std::shared_ptr<CMemBuf> frontend_errbuf( hsc3->errbuf, []( CMemBuf * ) {} );
-			CChspFrontendV2 frontend( frontend_errbuf );
-			CMemBuf transformed_out;
-			CMemBuf cpp_out;
-			char *preprocessed = hsc3->outbuf != NULL ? hsc3->outbuf->GetBuffer() : NULL;
-				int has_chsp = contains_chsp_directive( preprocessed );
-				st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out, chsp_target );
-				if (( st == 0 )&&( has_chsp || ( chsp_transform_only != 0 ) )) {
-					if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
-						hsc3->Print( (char *)"#Can't write generated cHSP native file." );
-						st = -1;
-					}
-				}
-				if (( st == 0 )&&( has_chsp )&&( chsp_transform_only == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
-#ifdef CHSP_HAS_LIBTCC
-					st = chsp_compile_library_with_libtcc( hsc3, fname_cpp, compath, transformed_out );
-#endif
-				}
-			if (( st == 0 )&&( chsp_transform_only != 0 )) {
-				if ( transformed_out.SaveFile( fname_chi ) < 0 ) {
+			if (( chsp_transform_only == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
+				chsp_mode |= HSC3_CHSP_MODE_LIBTCC;
+			}
+			st = hsc3->ProcessChsp( fname, fname_cpp, chsp_mode, compath, &has_chsp );
+			if (( st == 0 )&&( chsp_transform_only != 0 )&&( has_chsp != 0 )) {
+				if ( hsc3->SaveOutbuf( fname_chi ) < 0 ) {
 					hsc3->Print( (char *)"#Can't write generated cHSP transform file." );
 					st = -1;
 				}
-			} else if ( st == 0 ) {
-				CMemBuf *next_outbuf = new CMemBuf( transformed_out.GetSize() + 1 );
-				if ( transformed_out.GetSize() > 0 ) {
-					next_outbuf->PutData( transformed_out.GetBuffer(), transformed_out.GetSize() );
-				}
-				next_outbuf->Put( (char)0 );
-				delete hsc3->outbuf;
-				hsc3->outbuf = next_outbuf;
 			}
 		}
-		if (( pponly == 0 )&&( chsp_transform_only == 0 )&&( st == 0 )) {
+		if (( pponly == 0 )&&( ( chsp_transform_only == 0 ) || ( has_chsp == 0 ) )&&( st == 0 )) {
 			st = hsc3->Compile( fname2, oname, cmpopt );
 		}
 		puts( hsc3->GetError() );

@@ -71,9 +71,10 @@ OBJS_CMP = \
 	src/hspcmp/codegen.o \
 	src/hspcmp/chsp/codegen_lexer.o \
 	src/hspcmp/chsp/chsp_libtcc_shared.o \
+	src/hspcmp/chsp/chsp_builtin_map.o \
 	src/hspcmp/chsp/chsp_frontend_v2.o \
-	src/hspcmp/chsp/chsp_frontend_v2_parser.o \
-	src/hspcmp/chsp/chsp_frontend_v2_emitter.o \
+	src/hspcmp/chsp/chsp_frontend_v3_parser.o \
+	src/hspcmp/chsp/chsp_frontend_v3_emitter.o \
 	src/hspcmp/comutil.o \
 	src/hspcmp/errormsg.o \
 	src/hspcmp/hsc3.o \
@@ -466,37 +467,50 @@ LIBS_GP = \
 	libBulletDynamics.a \
 	libBulletCollision.a \
 	libLinearMath.a
+DEPFLAGS = -MMD -MP -MF $@.d
+
+DEPFILES = \
+	$(OBJS:%=%.d) \
+	$(OBJS_CMP:%=%.d) \
+	$(OBJS_CL:%=%.d) \
+	$(OBJS_GP:%=%.d) \
+	$(OBJS_GAMEPLAY:%=%.d) \
+	$(OBJS_BULLET_COLLISION:%=%.d) \
+	$(OBJS_BULLET_DYNAMICS:%=%.d) \
+	$(OBJS_LINEAR_MATH:%=%.d)
 
 all: $(TARGETS)
+
+-include $(DEPFILES)
 
 .SUFFIXES: .cpp
 hsp3dish: $(OBJS)
 	$(CXX) $(CFLAGS_DISH) $(OBJS) $(STRIPFLAGS) -o $@ $(LIBS1)
 %.do: %.c
-	$(CC) $(CFLAGS_DISH) -c $< -o $*.do
+	$(CC) $(CFLAGS_DISH) $(DEPFLAGS) -c $< -o $*.do
 %.do: %.cpp
-	$(CXX) $(CFLAGS_DISH) -c $< -o $*.do
+	$(CXX) $(CFLAGS_DISH) $(DEPFLAGS) -c $< -o $*.do
 
 hsp3gp: $(OBJS_GP) $(LIBS_GP)
 	$(CXX) $(CFLAGS_GP) $(OBJS_GP) $(STRIPFLAGS) -o $@ $(LIBS2) $(LIBS_GP)
 %.gpo: %.c
-	$(CC) $(CFLAGS_GP) -c $< -o $*.gpo
+	$(CC) $(CFLAGS_GP) $(DEPFLAGS) -c $< -o $*.gpo
 %.gpo: %.cpp
-	$(CXX) $(CFLAGS_GP) -c $< -o $*.gpo
+	$(CXX) $(CFLAGS_GP) $(DEPFLAGS) -c $< -o $*.gpo
 
 hspcmp: $(OBJS_CMP)
 	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) $(STRIPFLAGS) -ltcc -o $@
 %.o: %.c
-	$(CC) $(CFLAGS_CMP) -c $< -o $*.o
+	$(CC) $(CFLAGS_CMP) $(DEPFLAGS) -c $< -o $*.o
 %.o: %.cpp
-	$(CXX) $(CFLAGS_CMP) -c $< -o $*.o
+	$(CXX) $(CFLAGS_CMP) $(DEPFLAGS) -c $< -o $*.o
 
 hsp3cl: $(OBJS_CL)
 	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -lcurl -lgpiod -lpthread -lffi -o $@
 %.o: %.c
-	$(CC) $(CFLAGS_CL) -c $< -o $*.o
+	$(CC) $(CFLAGS_CL) $(DEPFLAGS) -c $< -o $*.o
 %.o: %.cpp
-	$(CXX) $(CFLAGS_CL) -c $< -o $*.o
+	$(CXX) $(CFLAGS_CL) $(DEPFLAGS) -c $< -o $*.o
 
 hsed: src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp
 	$(CXX) -O2 -Wno-write-strings -o hsed src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp `$(PKG_CONFIG) --cflags --libs gtk+-2.0`
@@ -518,4 +532,4 @@ libLinearMath.a: $(OBJS_LINEAR_MATH)
 	$(AR) rcs $@ $(OBJS_LINEAR_MATH)
 
 clean:
-	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP) $(OBJS_CCMP)
+	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP) $(OBJS_CCMP) $(DEPFILES)

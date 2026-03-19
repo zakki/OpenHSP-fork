@@ -69,65 +69,22 @@ static bool resolve_libtcc_runtime_dir( std::filesystem::path &out_dir )
 #endif
 }
 
-static std::vector<std::string> collect_chsp_library_names( CMemBuf &hsp_out, int max_names )
+static std::string shared_library_name_for_artifact( const ChspNativeArtifact &artifact )
 {
-	std::vector<std::string> names;
-	if ( max_names <= 0 ) {
-		return names;
-	}
-	const char *buf = hsp_out.GetBuffer();
-	if ( buf == nullptr ) {
-		return names;
-	}
-	const std::string text( buf );
-	std::string::size_type cursor = 0;
-	while ( names.size() < static_cast<size_t>( max_names ) ) {
-		cursor = text.find( "#uselib \"", cursor );
-		if ( cursor == std::string::npos ) {
-			break;
-		}
-		cursor += 9;
-		const std::string::size_type end = text.find( '"', cursor );
-		if ( end == std::string::npos ) {
-			break;
-		}
-		if ( end > cursor ) {
-			const std::string candidate = text.substr( cursor, end - cursor );
-			bool exists = false;
-			for ( const std::string &name : names ) {
-				if ( name == candidate ) {
-					exists = true;
-					break;
-				}
-			}
-			if ( !exists ) {
-				names.push_back( candidate );
-			}
-		}
-		cursor = end + 1;
-	}
-	return names;
+#if defined( HSPWIN )
+	return artifact.file_stem + ".dll";
+#elif defined( HSPMAC )
+	return artifact.file_stem + ".dylib";
+#else
+	return artifact.file_stem + ".so";
+#endif
 }
 
-int chsp_compile_library_with_libtcc( CHsc3 *hsc3, const char *native_file, const char *compath, CMemBuf &hsp_out )
+static int compile_one_library_with_libtcc( CHsc3 *hsc3, const std::filesystem::path &native_path,
+											const std::filesystem::path &repo_root,
+											const std::filesystem::path &output_path,
+											const ChspNativeArtifact &artifact )
 {
-	const std::vector<std::string> library_names = collect_chsp_library_names( hsp_out, 32 );
-	if ( library_names.empty() ) {
-		hsc3->Print( (char *)"#No cHSP library names found for libtcc compilation." );
-		return -1;
-	}
-
-	const std::filesystem::path native_path( native_file );
-	const std::filesystem::path native_dir =
-		native_path.has_parent_path() ? native_path.parent_path() : std::filesystem::path( "." );
-	std::filesystem::path repo_root;
-	if ( !derive_repo_root_from_compath( compath, repo_root ) ) {
-		hsc3->Print( (char *)"#Failed to resolve repository root for libtcc include path." );
-		return -1;
-	}
-
-	const std::filesystem::path primary_output = native_dir / library_names.front();
-
 	TCCState *tcc = tcc_new();
 	if ( tcc == nullptr ) {
 		hsc3->Print( (char *)"#libtcc initialization failed." );
@@ -159,25 +116,49 @@ int chsp_compile_library_with_libtcc( CHsc3 *hsc3, const char *native_file, cons
 		return -1;
 	}
 #endif
-	if ( tcc_add_file( tcc, native_file ) < 0 ) {
+	for ( const auto &lib : artifact.linked_libraries ) {
+		if ( tcc_add_library( tcc, lib.c_str() ) < 0 ) {
+			tcc_delete( tcc );
+			hsc3->Print( (char *)"#libtcc failed to link requested cHSP library." );
+			return -1;
+		}
+	}
+	const std::string native_path_str = native_path.string();
+	if ( tcc_add_file( tcc, native_path_str.c_str() ) < 0 ) {
 		tcc_delete( tcc );
 		hsc3->Print( (char *)"#libtcc failed to compile generated cHSP C source." );
 		return -1;
 	}
-	const std::string primary_output_str = primary_output.string();
-	if ( tcc_output_file( tcc, primary_output_str.c_str() ) < 0 ) {
+	const std::string output_path_str = output_path.string();
+	if ( tcc_output_file( tcc, output_path_str.c_str() ) < 0 ) {
 		tcc_delete( tcc );
 		hsc3->Print( (char *)"#libtcc failed to write cHSP shared library." );
 		return -1;
 	}
 	tcc_delete( tcc );
+	return 0;
+}
 
-	for ( size_t i = 1; i < library_names.size(); ++i ) {
-		std::error_code ec;
-		const std::filesystem::path out_path = native_dir / library_names[i];
-		std::filesystem::copy_file( primary_output, out_path, std::filesystem::copy_options::overwrite_existing, ec );
-		if ( ec ) {
-			hsc3->Print( (char *)"#Failed to duplicate cHSP shared library for additional module." );
+int chsp_compile_library_with_libtcc( CHsc3 *hsc3, const std::vector<std::string> &native_files, const char *compath,
+									  const std::vector<ChspNativeArtifact> &native_artifacts )
+{
+	if ( native_files.empty() || native_files.size() != native_artifacts.size() ) {
+		hsc3->Print( (char *)"#Invalid cHSP native output list for libtcc compilation." );
+		return -1;
+	}
+
+	std::filesystem::path repo_root;
+	if ( !derive_repo_root_from_compath( compath, repo_root ) ) {
+		hsc3->Print( (char *)"#Failed to resolve repository root for libtcc include path." );
+		return -1;
+	}
+
+	for ( size_t i = 0; i < native_files.size(); ++i ) {
+		const std::filesystem::path native_path( native_files[i] );
+		const std::filesystem::path native_dir =
+			native_path.has_parent_path() ? native_path.parent_path() : std::filesystem::path( "." );
+		const std::filesystem::path output_path = native_dir / shared_library_name_for_artifact( native_artifacts[i] );
+		if ( compile_one_library_with_libtcc( hsc3, native_path, repo_root, output_path, native_artifacts[i] ) != 0 ) {
 			return -1;
 		}
 	}

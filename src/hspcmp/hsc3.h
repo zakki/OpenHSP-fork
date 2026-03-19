@@ -23,6 +23,8 @@
 #define HSC3_MODE_STRMAP 8		// strmapを出力
 #define HSC3_MODE_LABOUT 16		// キーワードを出力
 
+#define HSC3_CHSP_MODE_LIBTCC 1
+
 class CMemBuf;
 class CToken;
 
@@ -48,6 +50,7 @@ public:
 	int PreProcess( char *fname, char *outname, int option, char *rname, void *ahtoption=NULL );
 	int PreProcessAht( char *fname, void *ahtoption, int mode=0 );
 	void PreProcessEnd( void );
+	int ProcessChsp( char *fname, char *outname, int mode, char *compath=NULL, int *has_chsp=NULL );
 	int Compile(char* fname, char* outname, int mode);
 	int CompileStrMap(char* fname, char* outname, int mode);
 	int CompileLabelOut(char* fname, int mode);
