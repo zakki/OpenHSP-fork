@@ -31,7 +31,21 @@ using namespace std;
 
 static HSP3TYPEINFO *hsp3tinfo;	// HSP3 type info structure (strbuf)
 static int tinfo_cur;			// Current type info ID
-#define GetTypeInfoPtr( type ) (&hsp3tinfo[type])
+
+#define PLUGIN_REMAP_MAX 256
+static int plugin_remap[PLUGIN_REMAP_MAX];
+static int plugin_remap_size;
+
+static inline int code_map_type( int type )
+{
+	unsigned int idx = (unsigned int)(type - HSP3_TYPE_USER);
+	if ( idx < (unsigned int)plugin_remap_size ) {
+		int rt = plugin_remap[idx];
+		if ( rt != 0 ) return rt;
+	}
+	return type;
+}
+#define GetTypeInfoPtr( type ) (&hsp3tinfo[code_map_type(type)])
 
 static HSPCTX *hspctx;			// Current Context
 static unsigned short *mcs;		// Current PC ptr
@@ -2578,12 +2592,26 @@ HSP3TYPEINFO *code_gettypeinfo( int type )
 	}
 
 	if ( id >= tinfo_cur ) {
+		int old_cur = tinfo_cur;
 		tinfo_cur = id + 1;
 		hsp3tinfo = (HSP3TYPEINFO *)sbExpand( (char *)hsp3tinfo, sizeof(HSP3TYPEINFO) * tinfo_cur );
-		hsp3typeinit_default( id );
+		for ( int i = old_cur; i < tinfo_cur; i++ ) {
+			hsp3typeinit_default( i );
+		}
 	}
 	info = GetTypeInfoPtr( id );
 	return info;
+}
+
+
+void code_set_plugin_remap( int compile_type, int runtime_type )
+{
+	//		コンパイル時タイプID → ランタイムタイプID の変換テーブルを登録
+	int idx = compile_type - HSP3_TYPE_USER;
+	if ( idx >= 0 && idx < PLUGIN_REMAP_MAX ) {
+		plugin_remap[idx] = runtime_type;
+		if ( idx + 1 > plugin_remap_size ) plugin_remap_size = idx + 1;
+	}
 }
 
 
@@ -3035,7 +3063,9 @@ void code_init( void )
 
 	//		プラグイン追加の準備
 	//
-	tinfo_cur = HSP3_TYPE_USER;
+	memset( plugin_remap, 0, sizeof(plugin_remap) );
+	plugin_remap_size = 0;
+	// tinfo_cur はビルトイン拡張が使用した値のまま残す (リセットしない)
 
 #ifdef HSPDEBUG
 	//		デバッグ情報の初期化

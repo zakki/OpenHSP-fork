@@ -223,6 +223,7 @@ static int Hsp3ExtAddPlugin( void )
 	//		プラグインの登録
 	//
 	int i;
+	int typefunc_count = 0;
 	HSPHED *hed;
 	char *ptr;
 	char *libname;
@@ -293,6 +294,15 @@ static int Hsp3ExtAddPlugin( void )
 			}
 			func( info );
 			code_enable_typeinfo( info );
+			{
+				int compile_type = hpi->option;
+				if ( compile_type == 0 ) {
+					// legacy .ax (fix 前にコンパイルされたもの): 位置ベースで推定
+					compile_type = HSP3_TYPE_USER + typefunc_count;
+				}
+				code_set_plugin_remap( compile_type, info->type );
+				typefunc_count++;
+			}
 			//Alertf( "%d_%d [%s][%s]", i, info->type, libname, funcname );
 #ifdef HSPUTF8
 			freehac(&hacfuncname);

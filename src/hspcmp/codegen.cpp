@@ -1473,12 +1473,12 @@ void CToken::GenerateCodePP_regcmd( void )
 			cg_varhpi+=val;
 		}
 
-		PutHPI( HPIDAT_FLAG_TYPEFUNC, 0, cmd2, cmd );
+		PutHPI( HPIDAT_FLAG_TYPEFUNC, (short)cg_typecnt, cmd2, cmd );
 		cg_typecnt++;
 		break;
 	case TK_NUM:
-		PutHPI( HPIDAT_FLAG_SELFFUNC, 0, "", "" );
 		cg_pptype = val;
+		if ( val >= cg_typecnt ) cg_typecnt = val + 1;
 		break;
 	case TK_NONE:
 		if (val == '*') {

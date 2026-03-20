@@ -99,6 +99,7 @@ int code_catcherror(HSPERROR code);
 
 HSP3TYPEINFO *code_gettypeinfo( int type );
 void code_enable_typeinfo( HSP3TYPEINFO *info );
+void code_set_plugin_remap( int compile_type, int runtime_type );
 
 int code_getdbgmode( void );
 HSP3DEBUG *code_getdbg( void );
