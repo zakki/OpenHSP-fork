@@ -62,8 +62,7 @@ enum class ChspNativeCompileMode
 
 enum
 {
-	HSC3_CHSP_TARGET_C = 64,
-	HSC3_CHSP_COMPILE_NONE = 128,
+	HSC3_CHSP_COMPILE_NONE = 64,
 };
 
 static CHsc3 *hsc3=NULL;
@@ -336,11 +335,6 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	strcat( fname2, ".i" );
 	strcpy( fname_cpp, fname );
 	chsp_compile_mode = ChspNativeCompileMode::Libtcc;
-	if ( p2 & HSC3_CHSP_TARGET_C ) {
-		hsc3->Print( (char *)"#--chsp-target is no longer supported. Specify target=plugin or target=c on #chsp_module." );
-		hsc3->PreProcessEnd();
-		return -1;
-	}
 	if ( p2 & HSC3_CHSP_COMPILE_NONE ) {
 		chsp_compile_mode = ChspNativeCompileMode::None;
 	}

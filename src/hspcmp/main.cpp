@@ -141,10 +141,6 @@ int main( int argc, char *argv[] )
 				strcpy( syspath, argv[b] + 10 );
 				continue;
 			}
-			if (strncmp(argv[b], "--chsp-target=", 14) == 0) {
-				printf( "--chsp-target is no longer supported. Specify target=plugin or target=c on #chsp_module.\n" );
-				return 1;
-			}
 			if (strncmp(argv[b], "--chsp-compile=", 15) == 0) {
 				const char *value = argv[b] + 15;
 				if ( strcmp( value, "libtcc" ) == 0 ) {
