@@ -8,8 +8,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "../membuf.h"
 #include "logger.h"
-#include "membuf.h"
 
 namespace chspv2
 {
@@ -70,7 +70,8 @@ std::unordered_map<std::string, std::string> BuildIdentifierCppNames( const Chsp
 	const std::string func_key = SanitizeForCppIdentifier( func.name );
 	for ( size_t i = 0; i < func.params.size(); ++i ) {
 		const auto &param = func.params[i];
-		names[param.name] = "chsp_var_" + func_key + "_" + std::to_string( i ) + "_" + SanitizeForCppIdentifier( param.name );
+		names[param.name] =
+			"chsp_var_" + func_key + "_" + std::to_string( i ) + "_" + SanitizeForCppIdentifier( param.name );
 	}
 	return names;
 }
@@ -125,31 +126,63 @@ std::string DefaultReturnExpr( const std::string &type )
 std::string BuiltinTarget( const std::string &name, size_t arg_count, ChspNativeTarget target )
 {
 	if ( target == ChspNativeTarget::C ) {
-		if ( name == "abs" ) return "chsp_hsp_abs";
-		if ( name == "absf" || name == "chsp_fabs" ) return "chsp_hsp_absf";
-		if ( name == "atan" ) return "chsp_hsp_atan";
-		if ( name == "cos" ) return "chsp_hsp_cos";
-		if ( name == "double" ) return "chsp_hsp_double";
-		if ( name == "expf" ) return "chsp_hsp_expf";
-		if ( name == "int" ) return "chsp_hsp_int";
-		if ( name == "limit" ) return "chsp_hsp_limit";
-		if ( name == "limitf" ) return "chsp_hsp_limitf";
-		if ( name == "logf" ) return "chsp_hsp_logf";
-		if ( name == "powf" ) return "chsp_hsp_powf";
-		if ( name == "randomize" ) return arg_count == 0 ? "chsp_randomize" : "chsp_randomize_seed";
-		if ( name == "rnd" ) return "chsp_rnd";
-		if ( name == "sin" ) return "chsp_hsp_sin";
-		if ( name == "sqrt" || name == "chsp_sqrt" ) return "chsp_hsp_sqrt";
-		if ( name == "tan" ) return "chsp_hsp_tan";
+		if ( name == "abs" ) {
+			return "chsp_hsp_abs";
+		}
+		if ( name == "absf" || name == "chsp_fabs" ) {
+			return "chsp_hsp_absf";
+		}
+		if ( name == "atan" ) {
+			return "chsp_hsp_atan";
+		}
+		if ( name == "cos" ) {
+			return "chsp_hsp_cos";
+		}
+		if ( name == "double" ) {
+			return "chsp_hsp_double";
+		}
+		if ( name == "expf" ) {
+			return "chsp_hsp_expf";
+		}
+		if ( name == "int" ) {
+			return "chsp_hsp_int";
+		}
+		if ( name == "limit" ) {
+			return "chsp_hsp_limit";
+		}
+		if ( name == "limitf" ) {
+			return "chsp_hsp_limitf";
+		}
+		if ( name == "logf" ) {
+			return "chsp_hsp_logf";
+		}
+		if ( name == "powf" ) {
+			return "chsp_hsp_powf";
+		}
+		if ( name == "randomize" ) {
+			return arg_count == 0 ? "chsp_randomize" : "chsp_randomize_seed";
+		}
+		if ( name == "rnd" ) {
+			return "chsp_rnd";
+		}
+		if ( name == "sin" ) {
+			return "chsp_hsp_sin";
+		}
+		if ( name == "sqrt" || name == "chsp_sqrt" ) {
+			return "chsp_hsp_sqrt";
+		}
+		if ( name == "tan" ) {
+			return "chsp_hsp_tan";
+		}
 		return "";
 	}
 	static const std::map<std::string, std::string> builtins = {
-		{ "abs", "chsp::hsp_abs" },       { "absf", "chsp::hsp_absf" },     { "atan", "chsp::hsp_atan" },
-		{ "chsp_fabs", "chsp::hsp_absf" }, { "chsp_sqrt", "chsp::hsp_sqrt" }, { "cos", "chsp::hsp_cos" },
-		{ "double", "chsp::hsp_double" }, { "expf", "chsp::hsp_expf" },     { "int", "chsp::hsp_int" },
-		{ "limit", "chsp::hsp_limit" },   { "limitf", "chsp::hsp_limitf" }, { "logf", "chsp::hsp_logf" },
-		{ "powf", "chsp::hsp_powf" },     { "randomize", "chsp::randomize" }, { "rnd", "chsp::rnd" },
-		{ "sin", "chsp::hsp_sin" },       { "sqrt", "chsp::hsp_sqrt" },     { "tan", "chsp::hsp_tan" },
+		{ "abs", "chsp::hsp_abs" },		   { "absf", "chsp::hsp_absf" },	   { "atan", "chsp::hsp_atan" },
+		{ "chsp_fabs", "chsp::hsp_absf" }, { "chsp_sqrt", "chsp::hsp_sqrt" },  { "cos", "chsp::hsp_cos" },
+		{ "double", "chsp::hsp_double" },  { "expf", "chsp::hsp_expf" },	   { "int", "chsp::hsp_int" },
+		{ "limit", "chsp::hsp_limit" },	   { "limitf", "chsp::hsp_limitf" },   { "logf", "chsp::hsp_logf" },
+		{ "powf", "chsp::hsp_powf" },	   { "randomize", "chsp::randomize" }, { "rnd", "chsp::rnd" },
+		{ "sin", "chsp::hsp_sin" },		   { "sqrt", "chsp::hsp_sqrt" },	   { "tan", "chsp::hsp_tan" },
 	};
 	const auto it = builtins.find( name );
 	if ( it == builtins.end() ) {
@@ -265,7 +298,8 @@ void CollectArrayStrideFromStmt( const ChspStmt &stmt, const std::unordered_set<
 	}
 }
 
-TranslateContext BuildTranslateContext( const ChspFunction &func, const std::unordered_map<std::string, std::string> &function_cpp_names,
+TranslateContext BuildTranslateContext( const ChspFunction &func,
+										const std::unordered_map<std::string, std::string> &function_cpp_names,
 										ChspNativeTarget target )
 {
 	TranslateContext ctx;
@@ -318,16 +352,16 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 			return "";
 		}
 		return wrap_if_needed( "-" + TranslateExpr( *expr.children[0], ctx, ok, ExprPrecedence( expr ), true ),
-							  ExprPrecedence( expr ) );
+							   ExprPrecedence( expr ) );
 	case ChspExprKind::Binary:
 		if ( expr.children.size() != 2 || expr.children[0] == nullptr || expr.children[1] == nullptr ) {
 			ok = false;
 			return "";
 		}
-		return wrap_if_needed(
-			TranslateExpr( *expr.children[0], ctx, ok, ExprPrecedence( expr ), false ) + " " + OperatorText( expr.token_kind ) + " " +
-				TranslateExpr( *expr.children[1], ctx, ok, ExprPrecedence( expr ), true ),
-			ExprPrecedence( expr ) );
+		return wrap_if_needed( TranslateExpr( *expr.children[0], ctx, ok, ExprPrecedence( expr ), false ) + " " +
+								   OperatorText( expr.token_kind ) + " " +
+								   TranslateExpr( *expr.children[1], ctx, ok, ExprPrecedence( expr ), true ),
+							   ExprPrecedence( expr ) );
 	case ChspExprKind::Group:
 		if ( expr.children.size() != 1 || expr.children[0] == nullptr ) {
 			ok = false;
@@ -361,8 +395,8 @@ std::string TranslateExpr( const ChspExpr &expr, const TranslateContext &ctx, bo
 				ok = false;
 				return "";
 			}
-			return cpp_name + "[(" + TranslateExpr( *expr.children[1], ctx, ok, 0, false ) + ") * " + std::to_string( stride ) + " + (" +
-				   TranslateExpr( *expr.children[2], ctx, ok, 0, false ) + ")]";
+			return cpp_name + "[(" + TranslateExpr( *expr.children[1], ctx, ok, 0, false ) + ") * " +
+				   std::to_string( stride ) + " + (" + TranslateExpr( *expr.children[2], ctx, ok, 0, false ) + ")]";
 		}
 		ok = false;
 		return "";
@@ -411,7 +445,8 @@ bool HasTrailingBlockElseChild( const ChspStmt &stmt, size_t &else_index )
 		return false;
 	}
 	for ( size_t i = 0; i < stmt.children.size(); ++i ) {
-		if ( stmt.children[i] != nullptr && stmt.children[i]->kind == ChspStmtKind::Else && stmt.children[i]->token_kind == '{' ) {
+		if ( stmt.children[i] != nullptr && stmt.children[i]->kind == ChspStmtKind::Else &&
+			 stmt.children[i]->token_kind == '{' ) {
 			else_index = i;
 			return true;
 		}
@@ -501,10 +536,13 @@ std::string RenderStatementInline( const ChspStmt &stmt, TranslateContext &ctx, 
 			return "";
 		}
 		if ( stmt.children.size() == 1 ) {
-			return "if (" + TranslateExpr( *stmt.exprs[0], ctx, ok ) + ") " + RenderStatementInline( *stmt.children[0], ctx, ok );
+			return "if (" + TranslateExpr( *stmt.exprs[0], ctx, ok ) + ") " +
+				   RenderStatementInline( *stmt.children[0], ctx, ok );
 		}
-		if ( stmt.children.size() == 2 && stmt.children[1] != nullptr && stmt.children[1]->kind == ChspStmtKind::Else ) {
-			return "if (" + TranslateExpr( *stmt.exprs[0], ctx, ok ) + ") " + RenderStatementInline( *stmt.children[0], ctx, ok ) + " " +
+		if ( stmt.children.size() == 2 && stmt.children[1] != nullptr &&
+			 stmt.children[1]->kind == ChspStmtKind::Else ) {
+			return "if (" + TranslateExpr( *stmt.exprs[0], ctx, ok ) + ") " +
+				   RenderStatementInline( *stmt.children[0], ctx, ok ) + " " +
 				   RenderStatementInline( *stmt.children[1], ctx, ok );
 		}
 		ok = false;
@@ -524,7 +562,8 @@ std::string RenderStatementInline( const ChspStmt &stmt, TranslateContext &ctx, 
 	}
 }
 
-void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContext &ctx, int &indent_level, bool &emitted_explicit_return )
+void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContext &ctx, int &indent_level,
+							 bool &emitted_explicit_return )
 {
 	switch ( stmt.kind ) {
 	case ChspStmtKind::Empty:
@@ -609,7 +648,8 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContex
 							break;
 						}
 						if ( stmt.children[i] != nullptr ) {
-							WriteFunctionStmtToCpp( buf, *stmt.children[i], ctx, indent_level, emitted_explicit_return );
+							WriteFunctionStmtToCpp( buf, *stmt.children[i], ctx, indent_level,
+													emitted_explicit_return );
 						}
 					}
 					indent_level = std::max( 1, indent_level - 1 );
@@ -688,17 +728,16 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContex
 				buf.PutStr( "}" );
 				buf.PutCR();
 				return;
-			} else {
-				const auto rendered = RenderStatementInline( stmt, ctx, ok );
-				if ( ok ) {
-					buf.PutStr( MakeIndent( indent_level ).c_str() );
-					buf.PutStr( rendered.c_str() );
-					buf.PutCR();
-					if ( StartsWith( Trim( rendered ), "else return" ) ) {
-						emitted_explicit_return = true;
-					}
-					return;
+			}
+			const auto rendered = RenderStatementInline( stmt, ctx, ok );
+			if ( ok ) {
+				buf.PutStr( MakeIndent( indent_level ).c_str() );
+				buf.PutStr( rendered.c_str() );
+				buf.PutCR();
+				if ( StartsWith( Trim( rendered ), "else return" ) ) {
+					emitted_explicit_return = true;
 				}
+				return;
 			}
 		}
 		buf.PutStr( MakeIndent( indent_level ).c_str() );
@@ -723,8 +762,9 @@ void WriteFunctionStmtToCpp( CMemBuf &buf, const ChspStmt &stmt, TranslateContex
 	buf.PutStr( "// unsupported statement\n" );
 }
 
-bool WriteInlineIfWithTrailingBlockElse( CMemBuf &buf, const ChspStmt &stmt, const std::vector<std::unique_ptr<ChspStmt>> &stmts,
-										 size_t &index, TranslateContext &ctx, int indent_level, bool &emitted_explicit_return )
+bool WriteInlineIfWithTrailingBlockElse( CMemBuf &buf, const ChspStmt &stmt,
+										 const std::vector<std::unique_ptr<ChspStmt>> &stmts, size_t &index,
+										 TranslateContext &ctx, int indent_level, bool &emitted_explicit_return )
 {
 	size_t else_index = 0;
 	if ( !HasTrailingBlockElseChild( stmt, else_index ) || stmt.exprs.size() != 1 || stmt.exprs[0] == nullptr ) {
@@ -828,8 +868,9 @@ void WriteLocalDeclsToNative( CMemBuf &buf, const ChspFunction &func, const Tran
 	}
 }
 
-void WriteFunctionToNative( CMemBuf &buf, const ChspFunction &func, const std::unordered_map<std::string, std::string> &function_cpp_names,
-						   ChspNativeTarget target )
+void WriteFunctionToNative( CMemBuf &buf, const ChspFunction &func,
+							const std::unordered_map<std::string, std::string> &function_cpp_names,
+							ChspNativeTarget target )
 {
 	const auto cpp_name_it = function_cpp_names.find( func.name );
 	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
@@ -867,15 +908,15 @@ void WriteFunctionToNative( CMemBuf &buf, const ChspFunction &func, const std::u
 		if ( stmt == nullptr ) {
 			continue;
 		}
-		if ( WriteInlineIfWithTrailingBlockElse( buf, *stmt, func.body_stmts, i, ctx, indent_level, emitted_explicit_return ) ) {
+		if ( WriteInlineIfWithTrailingBlockElse( buf, *stmt, func.body_stmts, i, ctx, indent_level,
+												 emitted_explicit_return ) ) {
 			continue;
 		}
-		if ( stmt->kind == ChspStmtKind::BlockMarker && i + 1 < func.body_stmts.size() && func.body_stmts[i + 1] != nullptr &&
-			 func.body_stmts[i + 1]->kind == ChspStmtKind::Else ) {
+		if ( stmt->kind == ChspStmtKind::BlockMarker && i + 1 < func.body_stmts.size() &&
+			 func.body_stmts[i + 1] != nullptr && func.body_stmts[i + 1]->kind == ChspStmtKind::Else ) {
 			const auto &else_stmt = *func.body_stmts[i + 1];
-			const bool is_else_if =
-				else_stmt.token_kind == ':' && else_stmt.children.size() == 1 && else_stmt.children[0] != nullptr &&
-				else_stmt.children[0]->kind == ChspStmtKind::If;
+			const bool is_else_if = else_stmt.token_kind == ':' && else_stmt.children.size() == 1 &&
+									else_stmt.children[0] != nullptr && else_stmt.children[0]->kind == ChspStmtKind::If;
 			int line_indent = indent_level;
 			if ( !is_else_if ) {
 				line_indent = std::max( 1, indent_level - 1 );
@@ -923,9 +964,9 @@ void WriteModuleHeaderToHsp( CMemBuf &buf, const std::string &module_tag, const 
 	buf.PutCR();
 	buf.PutStr( "#uselib \"" );
 	buf.PutStr( module_name.c_str() );
-#if defined(HSPWIN)
+#if defined( HSPWIN )
 	buf.PutStr( ".dll\"\n\n" );
-#elif defined (HSPMAC)
+#elif defined( HSPMAC )
 	buf.PutStr( ".dylib\"\n\n" );
 #else
 	buf.PutStr( ".so\"\n\n" );
@@ -964,8 +1005,8 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 
 } // namespace
 
-int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspProgram &program, CLogger &logger, CMemBuf &hsp_out,
-						   CMemBuf &native_out, const char *source_name, ChspNativeTarget target )
+int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspProgram &program, CLogger &logger,
+						   CMemBuf &hsp_out, CMemBuf &native_out, const char *source_name, ChspNativeTarget target )
 {
 	WriteNativePreamble( native_out, target );
 
@@ -995,7 +1036,8 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 			break;
 		case ChspDirectiveKind::Module:
 			if ( module_index >= program.modules.size() ) {
-				logger.Mesf( "#Error:Internal cHSP module index mismatch [%s]", source_name != nullptr ? source_name : "<buffer>" );
+				logger.Mesf( "#Error:Internal cHSP module index mismatch [%s]",
+							 source_name != nullptr ? source_name : "<buffer>" );
 				return -1;
 			}
 			current_module_tag = "m" + std::to_string( module_index );
@@ -1018,18 +1060,21 @@ int GenerateProgramOutput( const std::vector<ChspSourceLine> &lines, const ChspP
 				return -1;
 			}
 			if ( module_index == 0 || module_index > program.modules.size() ) {
-				logger.Mesf( "#Error:Internal cHSP function module mismatch [%s]", source_name != nullptr ? source_name : "<buffer>" );
+				logger.Mesf( "#Error:Internal cHSP function module mismatch [%s]",
+							 source_name != nullptr ? source_name : "<buffer>" );
 				return -1;
 			}
 			{
 				const auto &module = program.modules[module_index - 1];
 				if ( function_index >= module.functions.size() ) {
-					logger.Mesf( "#Error:Internal cHSP function index mismatch [%s]", source_name != nullptr ? source_name : "<buffer>" );
+					logger.Mesf( "#Error:Internal cHSP function index mismatch [%s]",
+								 source_name != nullptr ? source_name : "<buffer>" );
 					return -1;
 				}
 				const auto &function = module.functions[function_index];
 				const auto cpp_name_it = function_cpp_names.find( function.name );
-				const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : function.name;
+				const std::string cpp_name =
+					cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : function.name;
 				WriteFunctionDeclToHsp( hsp_out, function, cpp_name );
 				WriteFunctionToNative( native_out, function, function_cpp_names, target );
 			}

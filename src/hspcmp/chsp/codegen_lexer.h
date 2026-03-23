@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 
+#include "../token_def.h"
 #include "lexer_util.h"
 #include "logger.h"
-#include "token_def.h"
 
 #define CG_FLAG_ENABLE 0
 #define CG_FLAG_DISABLE 1
@@ -58,7 +58,7 @@ struct CCgToken
 	std::string cg_str;
 };
 
-class CCgLexer : public CCompilerUtil
+class CCgLexer : public CSourceTextUtil
 {
 public:
 	explicit CCgLexer( const std::shared_ptr<CompileOptions> &compopt, std::shared_ptr<CLogger> log );

@@ -15,7 +15,8 @@
 #include "../../hsp3/hsp3struct.h"			// hsp3 core define
 #include "../../hsp3/hspwnd.h"				// hsp3 windows define
 
-#include "../chsp_frontend_v2.h"
+#include "../chsp/chsp_frontend_v2.h"
+#include "../chsp/chsp_libtcc_shared.h"
 #include "../membuf.h"
 #include "../supio.h"
 #include "../hsc3.h"
@@ -55,6 +56,18 @@ static int opt1,opt2,opt3;
 
 static int orgcompath=0;
 static char compath[_MAX_PATH];
+
+enum class ChspNativeCompileMode
+{
+	None,
+	Libtcc,
+};
+
+enum
+{
+	HSC3_CHSP_TARGET_CPP = 64,
+	HSC3_CHSP_COMPILE_NONE = 128,
+};
 
 static CHsc3 *hsc3=NULL;
 static CAht *aht=NULL;
@@ -112,7 +125,6 @@ static int contains_chsp_directive( char *text )
 	if ( strstr( text, "#chsp_" ) != NULL ) return 1;
 	return 0;
 }
-
 
 /*
 	rev 54
@@ -303,6 +315,8 @@ EXPORT BOOL WINAPI hsc_comp ( int p1, int p2, int p3, int p4 )
 	//			( ppopt = preprocessor option )
 	//			(       0=default/1=ver2.6 mode )
 	//			(       32=UTF8 input mode )
+	//			(       64=cHSP C++ target )
+	//			(      128=disable cHSP native compile )
 	//			( dbgopt = debug window option )
 	//			(       0=default/1=debug mode )
 /*
@@ -317,6 +331,8 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	int st;
 	int ppopt;
 	int cmpmode;
+	ChspNativeTarget chsp_target;
+	ChspNativeCompileMode chsp_compile_mode;
 	char fname2[_MAX_PATH];
 	char fname_cpp[_MAX_PATH];
 
@@ -330,7 +346,16 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 	strcpy( fname2, fname );
 	strcat( fname2, ".i" );
 	strcpy( fname_cpp, fname );
-	strcat( fname_cpp, ".cpp" );
+	chsp_target = ChspNativeTarget::C;
+	chsp_compile_mode = ChspNativeCompileMode::Libtcc;
+	if ( p2 & HSC3_CHSP_TARGET_CPP ) {
+		chsp_target = ChspNativeTarget::Cpp;
+		chsp_compile_mode = ChspNativeCompileMode::None;
+	}
+	if ( p2 & HSC3_CHSP_COMPILE_NONE ) {
+		chsp_compile_mode = ChspNativeCompileMode::None;
+	}
+	strcat( fname_cpp, chsp_target == ChspNativeTarget::C ? ".c" : ".cpp" );
 	hsc3->SetCommonPath( compath );
 	ppopt = 0;
 	if (p1 & 1) ppopt |= HSC3_OPT_DEBUGMODE;
@@ -361,11 +386,19 @@ p1が16(bit4)の場合はキーワード解析リストを出力します
 		char *preprocessed = hsc3->outbuf != NULL ? hsc3->outbuf->GetBuffer() : NULL;
 		int has_chsp = contains_chsp_directive( preprocessed );
 		st = frontend.GenerateFromBuffer( fname, preprocessed != NULL ? preprocessed : "", &transformed_out, &cpp_out,
-										  ChspNativeTarget::Cpp );
+										  chsp_target );
 		if (( st == 0 )&&( has_chsp )) {
 			if ( cpp_out.SaveFile( fname_cpp ) < 0 ) {
 				hsc3->Print( (char *)"#Can't write generated cHSP native file." );
 				st = -1;
+			}
+			if (( st == 0 )&&( chsp_compile_mode == ChspNativeCompileMode::Libtcc )) {
+				if ( chsp_target != ChspNativeTarget::C ) {
+					hsc3->Print( (char *)"#cHSP libtcc compilation requires C target." );
+					st = -1;
+				} else {
+					st = chsp_compile_library_with_libtcc( hsc3, fname_cpp, compath, transformed_out );
+				}
 			}
 		}
 		if ( st != 0 ) {

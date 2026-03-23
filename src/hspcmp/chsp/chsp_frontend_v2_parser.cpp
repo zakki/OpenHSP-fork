@@ -1,14 +1,14 @@
 #include "chsp_frontend_v2_internal.h"
 
-#include <initializer_list>
 #include <cstring>
+#include <initializer_list>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "../hsp3/hsp3config.h"
+#include "../../hsp3/hsp3config.h"
 
 #include "codegen_lexer.h"
 #include "logger.h"
@@ -112,8 +112,8 @@ public:
 		try {
 			while ( cursor != nullptr ) {
 				auto result = lexer.GetTokenCG( cursor, GETTOKEN_DEFAULT );
-				auto& next = result.first;
-				auto& token = result.second;
+				auto &next = result.first;
+				auto &token = result.second;
 				if ( token.ttype == TK_EOL || token.ttype == TK_EOF ) {
 					break;
 				}
@@ -444,7 +444,8 @@ std::unique_ptr<ChspExpr> CalcCG_start( ChspTokenCursor &cursor );
 std::unique_ptr<ChspExpr> CalcCG_factor( ChspTokenCursor &cursor );
 std::unique_ptr<ChspStmt> ParseElseStatement( ChspTokenCursor &cursor, const ChspLexedToken *else_token );
 
-std::unique_ptr<ChspExpr> AppendCallArgument( std::unique_ptr<ChspExpr> expr, std::unique_ptr<ChspExpr> arg, int token_kind )
+std::unique_ptr<ChspExpr> AppendCallArgument( std::unique_ptr<ChspExpr> expr, std::unique_ptr<ChspExpr> arg,
+											  int token_kind )
 {
 	if ( expr == nullptr || arg == nullptr ) {
 		return nullptr;
@@ -608,7 +609,8 @@ std::unique_ptr<ChspExpr> CalcCG_unary( ChspTokenCursor &cursor )
 }
 
 template <typename ParseNext>
-std::unique_ptr<ChspExpr> ParseCalcBinary( ChspTokenCursor &cursor, ParseNext parse_next, std::initializer_list<int> ops )
+std::unique_ptr<ChspExpr> ParseCalcBinary( ChspTokenCursor &cursor, ParseNext parse_next,
+										   std::initializer_list<int> ops )
 {
 	auto lhs = parse_next( cursor );
 	if ( lhs == nullptr ) {
@@ -687,7 +689,8 @@ bool ParseInlineStatementList( ChspTokenCursor &cursor, std::vector<std::unique_
 	return true;
 }
 
-bool ParseInlineBranchStatements( ChspTokenCursor &cursor, std::vector<std::unique_ptr<ChspStmt>> &children, bool allow_else )
+bool ParseInlineBranchStatements( ChspTokenCursor &cursor, std::vector<std::unique_ptr<ChspStmt>> &children,
+								  bool allow_else )
 {
 	while ( true ) {
 		while ( TokenMatches( cursor.Peek(), ':' ) ) {
@@ -1008,17 +1011,19 @@ std::vector<ChspSourceLine> BuildSourceIndex( const char *input_text, const std:
 		if ( should_tokenize ) {
 			line.tokens = collector.TokenizeLine( line.text, line.line );
 		}
+		const ChspDirectiveKind directive = line.directive;
 		lines_out.push_back( std::move( line ) );
-		if ( line.directive == ChspDirectiveKind::DefFunc || line.directive == ChspDirectiveKind::DefCFunc ) {
+		if ( directive == ChspDirectiveKind::DefFunc || directive == ChspDirectiveKind::DefCFunc ) {
 			in_chsp_function = true;
-		} else if ( line.directive == ChspDirectiveKind::End ) {
+		} else if ( directive == ChspDirectiveKind::End ) {
 			in_chsp_function = false;
 		}
 	}
 	return lines_out;
 }
 
-bool ParseProgram( const std::vector<ChspSourceLine> &lines, ChspProgram &program, CLogger &logger, const char *source_name )
+bool ParseProgram( const std::vector<ChspSourceLine> &lines, ChspProgram &program, CLogger &logger,
+				   const char *source_name )
 {
 	ChspModule *current_module = nullptr;
 	for ( size_t i = 0; i < lines.size(); ++i ) {

@@ -55,6 +55,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;HSPWIN;HSPDEBUG;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\extlib\tcc\libtcc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -64,6 +65,8 @@
       <AdditionalOptions>/source-charset:utf-8 /execution-charset:shift_jis %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
+      <AdditionalDependencies>libtcc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\extlib\tcc\libtcc;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -72,6 +75,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;HSPWIN;HSPDEBUG;HSPWIN;HSPDEBUG;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\extlib\tcc\libtcc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -79,6 +83,8 @@
       <AdditionalOptions>/source-charset:utf-8 /execution-charset:shift_jis %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
+      <AdditionalDependencies>libtcc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\extlib\tcc\libtcc;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -98,6 +104,7 @@
     <ClCompile Include="..\ahtobj.cpp" />
     <ClCompile Include="..\codegen.cpp" />
     <ClCompile Include="..\comutil.cpp" />
+    <ClCompile Include="..\chsp\chsp_libtcc_shared.cpp" />
     <ClCompile Include="..\errormsg.cpp" />
     <ClCompile Include="..\hsc3.cpp" />
     <ClCompile Include="..\hsmanager.cpp" />
@@ -107,12 +114,12 @@
     <ClCompile Include="..\membuf.cpp" />
     <ClCompile Include="..\tagstack.cpp" />
     <ClCompile Include="..\token.cpp" />
-    <ClCompile Include="..\codegen_lexer.cpp" />
-    <ClCompile Include="..\chsp_frontend_v2.cpp" />
-    <ClCompile Include="..\chsp_frontend_v2_parser.cpp" />
-    <ClCompile Include="..\chsp_frontend_v2_emitter.cpp" />
-    <ClCompile Include="..\lexer_util.cpp" />
-    <ClCompile Include="..\logger.cpp" />
+    <ClCompile Include="..\chsp\codegen_lexer.cpp" />
+    <ClCompile Include="..\chsp\chsp_frontend_v2.cpp" />
+    <ClCompile Include="..\chsp\chsp_frontend_v2_parser.cpp" />
+    <ClCompile Include="..\chsp\chsp_frontend_v2_emitter.cpp" />
+    <ClCompile Include="..\chsp\lexer_util.cpp" />
+    <ClCompile Include="..\chsp\logger.cpp" />
     <ClCompile Include="dpm.cpp" />
     <ClCompile Include="Hspcmp3.cpp" />
   </ItemGroup>
@@ -126,6 +133,7 @@
     <ClInclude Include="..\ahtmodel.h" />
     <ClInclude Include="..\ahtobj.h" />
     <ClInclude Include="..\comutil.h" />
+    <ClInclude Include="..\chsp\chsp_libtcc_shared.h" />
     <ClInclude Include="..\errormsg.h" />
     <ClInclude Include="..\hsc3.h" />
     <ClInclude Include="..\hsmanager.h" />
@@ -136,11 +144,11 @@
     <ClInclude Include="..\supio.h" />
     <ClInclude Include="..\tagstack.h" />
     <ClInclude Include="..\token.h" />
-    <ClInclude Include="..\chsp_frontend_v2.h" />
-    <ClInclude Include="..\chsp_frontend_v2_internal.h" />
-    <ClInclude Include="..\codegen_lexer.h" />
-    <ClInclude Include="..\lexer_util.h" />
-    <ClInclude Include="..\logger.h" />
+    <ClInclude Include="..\chsp\chsp_frontend_v2.h" />
+    <ClInclude Include="..\chsp\chsp_frontend_v2_internal.h" />
+    <ClInclude Include="..\chsp\codegen_lexer.h" />
+    <ClInclude Include="..\chsp\lexer_util.h" />
+    <ClInclude Include="..\chsp\logger.h" />
     <ClInclude Include="..\token_def.h" />
     <ClInclude Include="dpm.h" />
   </ItemGroup>

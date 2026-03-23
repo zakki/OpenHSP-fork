@@ -324,6 +324,7 @@ goto *MAIN
 
 		progress = 1.0 * (x + y * w + 1) / (w * h)
 
+		if (y \ 20 = 0) or (y = h - 1) {
 		redraw 0
 		repeat h
 			y = double(cnt)
@@ -343,6 +344,7 @@ goto *MAIN
 		pos 0,20 : mes "->" + double(endtime - starttime) / progress / 1000 + "sec " + (100.0 * progress) + "%"
 		redraw 1
 		await 0
+		}
 	loop
 	endtime = (gettime(5) * 60 + gettime(6)) * 1000 + gettime(7)
 	prev = "" + double(endtime - starttime) / 1000 + "sec"
