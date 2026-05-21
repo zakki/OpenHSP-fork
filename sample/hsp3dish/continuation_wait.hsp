@@ -1,0 +1,139 @@
+;	HSP3Dish screen flow sample
+;	Each scene is a user-defined command with its own await loop.
+;
+#include "hsp3dish.as"
+#packopt xsize 480
+#packopt ysize 320
+
+title "Screen flow"
+
+choice = 0
+key = 0
+
+repeat
+	title_scene
+	select_scene
+	result_scene
+loop
+
+#deffunc title_scene
+	repeat
+		redraw 0
+		color 32,50,84
+		boxf
+
+		color 255,255,255
+		font msgothic,26,1
+		pos 48,52
+		mes "Screen Flow"
+
+		font msgothic,18
+		pos 48,98
+		mes "One scene = one command."
+		mes "Click to go next."
+
+		color 255,230,120
+		boxf 120,210,360,266
+		color 0,0,0
+		pos 178,228
+		mes "START"
+
+		redraw 1
+		stick key,15+256
+		if key&256 : break
+		await 1000/60
+	loop
+	wait_release
+	return
+
+#deffunc select_scene
+	choice = 0
+	repeat
+		redraw 0
+		color 36,60,54
+		boxf
+
+		color 255,255,255
+		font msgothic,24,1
+		pos 42,32
+		mes "Select a panel"
+
+		font msgothic,18
+		pos 42,70
+		mes "Click/tap one color."
+
+		color 230,90,90
+		boxf 54,120,426,164
+		color 90,210,130
+		boxf 54,178,426,222
+		color 100,160,255
+		boxf 54,236,426,280
+
+		color 0,0,0
+		pos 74,132
+		mes "Red scene"
+		pos 74,190
+		mes "Green scene"
+		pos 74,248
+		mes "Blue scene"
+
+		redraw 1
+		stick key,15+256
+		if key&256 {
+			if mousey >= 120 {
+				if mousey <= 164 : choice = 1 : break
+			}
+			if mousey >= 178 {
+				if mousey <= 222 : choice = 2 : break
+			}
+			if mousey >= 236 {
+				if mousey <= 280 : choice = 3 : break
+			}
+		}
+		await 1000/60
+	loop
+	wait_release
+	return
+
+#deffunc result_scene
+	repeat
+		redraw 0
+		if choice = 1 : color 150,42,42
+		if choice = 2 : color 42,120,72
+		if choice = 3 : color 48,84,150
+		boxf
+
+		color 255,255,255
+		font msgothic,24,1
+		pos 42,38
+		mes "Result scene"
+
+		font msgothic,18
+		pos 42,82
+		if choice = 1 : mes "You selected red."
+		if choice = 2 : mes "You selected green."
+		if choice = 3 : mes "You selected blue."
+
+		color 255,255,255
+		boxf 96,150,384,230
+		color 0,0,0
+		pos 142,180
+		mes "Click/tap to restart"
+
+		redraw 1
+		stick key,15+256
+		if key&256 : break
+		await 1000/60
+	loop
+	wait_release
+	return
+
+#deffunc wait_release
+	repeat
+		stick key,15+256
+		if (key&256)=0 : break
+		await 1000/60
+	loop
+	return
+
+stop

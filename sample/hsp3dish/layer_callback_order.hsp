@@ -1,0 +1,71 @@
+;	HSP3Dish layer callback sample
+;	Three layer callbacks draw on the same area.
+;
+#include "hsp3dish.as"
+#packopt xsize 480
+#packopt ysize 320
+
+title "Layer callback order"
+
+layerobj ginfo_sx,ginfo_sy,objlayer_max,*layer_one
+layerobj ginfo_sx,ginfo_sy,objlayer_max,*layer_two
+layerobj ginfo_sx,ginfo_sy,objlayer_max,*layer_three
+
+frame = 0
+
+*main
+	redraw 0
+
+	color 28,44,70
+	boxf
+
+	color 255,255,255
+	font msgothic,24,1
+	pos 24,24
+	mes "layerobj callback"
+
+	font msgothic,18
+	pos 24,64
+	mes "Main drawing: frame "+frame
+	mes "Callbacks draw red, green, then blue."
+	mes "If the order changes, the front color/number changes."
+
+	color 80,100,130
+	boxf 72,136,408,272
+
+	redraw 1
+	frame++
+	await 1000/30
+	goto *main
+
+*layer_one
+	if lparam != objlayer_cmddraw : return
+	color 240,96,96
+	boxf 112,156,368,252
+	color 255,220,220
+	font msgothic,64,1
+	pos 214,172
+	mes "1"
+	return
+
+*layer_two
+	if lparam != objlayer_cmddraw : return
+	color 96,220,140
+	boxf 132,156,388,252
+	color 220,255,230
+	font msgothic,64,1
+	pos 234,172
+	mes "2"
+	return
+
+*layer_three
+	if lparam != objlayer_cmddraw : return
+	color 120,170,255
+	boxf 152,156,408,252
+	color 225,235,255
+	font msgothic,64,1
+	pos 254,172
+	mes "3"
+	return
+
+stop
