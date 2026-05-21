@@ -1,0 +1,31 @@
+#runtime "hsp3cl"
+
+start_second = gettime(6)
+repeat
+	await 10
+	if gettime(6) != start_second : break
+loop
+
+start = now_seconds()
+delay_loop 30, 5
+finish = now_seconds()
+
+elapsed = finish - start
+if elapsed < 0 : elapsed += 24 * 60 * 60
+
+if elapsed < 1 {
+	mes "elapsed-too-short"
+	end 1
+}
+
+mes "elapsed-ok"
+end
+
+#defcfunc now_seconds
+	return gettime(4) * 3600 + gettime(5) * 60 + gettime(6)
+
+#deffunc delay_loop int step_count, int count
+	repeat count
+		wait step_count
+	loop
+	return

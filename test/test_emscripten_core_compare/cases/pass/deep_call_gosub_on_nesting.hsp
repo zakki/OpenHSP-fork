@@ -1,0 +1,44 @@
+#runtime "hsp3cl"
+
+mes "main:start"
+call_chain 0
+mes "main:end"
+end
+
+#deffunc call_chain int depth
+	mes "func:" + depth + ":before"
+	await 0
+	g_depth = depth
+	on depth gosub *case0, *case1, *case2, *case3
+	mes "func:" + depth + ":after-on"
+	if depth < 3 : call_chain depth + 1
+	mes "func:" + depth + ":return"
+	return
+
+*case0
+	mes "case0:before"
+	gosub *shared
+	mes "case0:after"
+	return
+
+*case1
+	mes "case1:before"
+	gosub *shared
+	mes "case1:after"
+	return
+
+*case2
+	mes "case2:before"
+	gosub *shared
+	mes "case2:after"
+	return
+
+*case3
+	mes "case3:before"
+	gosub *shared
+	mes "case3:after"
+	return
+
+*shared
+	mes "shared:" + g_depth
+	return

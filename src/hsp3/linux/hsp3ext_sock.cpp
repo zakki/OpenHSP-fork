@@ -40,6 +40,7 @@ static int p1,p2,p3,p4,p5;
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 

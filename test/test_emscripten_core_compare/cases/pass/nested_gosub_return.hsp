@@ -1,0 +1,15 @@
+#runtime "hsp3cl"
+mes "main-before"
+gosub *first
+mes "main-after"
+end
+
+*first
+mes "first-before"
+gosub *second
+mes "first-after"
+return
+
+*second
+mes "second"
+return

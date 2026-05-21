@@ -38,6 +38,13 @@ LINK_FLAGS = $(LINK_FLAGS_CORE)
 LINK_FLAGS_GP = $(LINK_FLAGS_CORE) \
 		-s FULL_ES2=1 -s USE_WEBGL2=1 -s MIN_WEBGL_VERSION=2
 
+CFLAGS_CL = -Wno-write-strings -std=c++11 -fexec-charset=UTF-8 -DHSPEMSCRIPTEN -DHSPDEBUG \
+	-fexceptions -s NODERAWFS=1 -s DISABLE_EXCEPTION_CATCHING=0
+CFLAGS_CL_LOOP = $(CFLAGS_CL) -DHSPEMSCRIPTEN_NODE_LOOP -s EXIT_RUNTIME=1
+CFLAGS_CL_TEST = $(CFLAGS_CL_LOOP) -DHSP3_CORE_TEST
+CFLAGS_CMP = -Wno-write-strings -std=c++11 -fexec-charset=UTF-8 -DHSPEMSCRIPTEN -DHSPLINUX -DHSPDEBUG \
+	-s NODERAWFS=1 -s STACK_SIZE=1048576
+
 OBJS = \
 	src/hsp3/dpmread.js.o \
 	src/hsp3/filepack.js.o \
@@ -81,6 +88,54 @@ OBJS = \
 	src/hsp3dish/emscripten/webtask_emscripten.js.o \
 	src/hsp3dish/emscripten/stb_image.js.o \
 	src/hsp3/emscripten/supio_emscripten.js.o
+
+OBJS_CMP = \
+	src/hspcmp/ahtmodel.cmp.o \
+	src/hspcmp/ahtobj.cmp.o \
+	src/hspcmp/codegen.cmp.o \
+	src/hspcmp/comutil.cmp.o \
+	src/hspcmp/errormsg.cmp.o \
+	src/hspcmp/hsc3.cmp.o \
+	src/hspcmp/hspcmd.cmp.o \
+	src/hspcmp/label.cmp.o \
+	src/hspcmp/localinfo.cmp.o \
+	src/hspcmp/main.cmp.o \
+	src/hspcmp/membuf.cmp.o \
+	src/hsp3/strnote.cmp.o \
+	src/hspcmp/tagstack.cmp.o \
+	src/hspcmp/hsmanager.cmp.o \
+	src/hspcmp/token.cmp.o \
+	src/hsp3/strbuf.cmp.o \
+	src/hsp3/linux/supio_linux.cmp.o
+
+OBJS_CL = \
+	src/hsp3/linux/main.cl.o \
+	src/hsp3/hsp3.cl.o \
+	src/hsp3/hsp3code.cl.o \
+	src/hsp3/hsp3debug.cl.o \
+	src/hsp3/hsp3int.cl.o \
+	src/hsp3/hspvar_core.cl.o \
+	src/hsp3/hspvar_double.cl.o \
+	src/hsp3/hspvar_int.cl.o \
+	src/hsp3/hspvar_int64.cl.o \
+	src/hsp3/hspvar_label.cl.o \
+	src/hsp3/hspvar_str.cl.o \
+	src/hsp3/hspvar_struct.cl.o \
+	src/hsp3/stack.cl.o \
+	src/hsp3/strbuf.cl.o \
+	src/hsp3/strnote.cl.o \
+	src/hsp3/dpmread.cl.o \
+	src/hsp3/filepack.cl.o \
+	src/hsp3/hsp3crypt.cl.o \
+	src/hsp3/hsp3utfcnv.cl.o \
+	src/hsp3/linux/supio_linux.cl.o \
+	src/hsp3/linux/hsp3cl.cl.o \
+	src/hsp3/emscripten/hsp3ext_emscripten.cl.o \
+	src/hsp3/linux/hsp3ext_sock.cl.o \
+	src/hsp3/linux/hsp3gr_linux.cl.o
+
+OBJS_CL_LOOP = $(OBJS_CL:.cl.o=.clloop.o)
+OBJS_CL_TEST = $(OBJS_CL:.cl.o=.cltest.o) test/test_emscripten_core_compare/hsp3cl_coretest_ext.cltest.o
 
 OBJS_GP = \
 	src/hsp3/dpmread.g.o \
@@ -434,6 +489,34 @@ all: $(TARGETS)
 
 .SUFFIXES: .cpp
 
+hspcmp.js: $(OBJS_CMP)
+	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -s -o $@
+%.cmp.o: %.c
+	$(CC) $(CFLAGS_CMP) -c $< -o $*.cmp.o
+%.cmp.o: %.cpp
+	$(CXX) $(CFLAGS_CMP) -c $< -o $*.cmp.o
+
+hsp3cl.js: $(OBJS_CL)
+	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -s -o $@
+%.cl.o: %.c
+	$(CC) $(CFLAGS_CL) -c $< -o $*.cl.o
+%.cl.o: %.cpp
+	$(CXX) $(CFLAGS_CL) -c $< -o $*.cl.o
+
+hsp3cl_loop.js: $(OBJS_CL_LOOP)
+	$(CXX) $(CFLAGS_CL_LOOP) $(OBJS_CL_LOOP) -lm -lstdc++ -s -o $@
+%.clloop.o: %.c
+	$(CC) $(CFLAGS_CL_LOOP) -c $< -o $*.clloop.o
+%.clloop.o: %.cpp
+	$(CXX) $(CFLAGS_CL_LOOP) -c $< -o $*.clloop.o
+
+hsp3cl_loop_test.js: $(OBJS_CL_TEST)
+	$(CXX) $(CFLAGS_CL_TEST) $(OBJS_CL_TEST) -lm -lstdc++ -s -o $@
+%.cltest.o: %.c
+	$(CC) $(CFLAGS_CL_TEST) -c $< -o $*.cltest.o
+%.cltest.o: %.cpp
+	$(CXX) $(CFLAGS_CL_TEST) -c $< -o $*.cltest.o
+
 hsp3dish.js: $(OBJS) src/hsp3dish/emscripten/license.js
 	$(CXX) $(CFLAGS) $(LINK_FLAGS) $(OBJS) -o $@ $(LIBS) \
 	--extern-pre-js src/hsp3dish/emscripten/license.js
@@ -474,5 +557,5 @@ libLinearMath.js.a: $(OBJS_LINEAR_MATH)
 	$(CXX) $(CFLAGS_GP) -std=c++11 -c $< -o $*.g.o
 
 clean:
-	rm -f $(OBJS) $(OBJS_GP) $(OBJS_GAMEPLAY) $(TARGETS)
+	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_CL_LOOP) $(OBJS_CL_TEST) $(OBJS_GAMEPLAY) $(TARGETS) hspcmp.js hsp3cl.js hsp3cl_loop.js hsp3cl_loop_test.js
 

@@ -1,0 +1,22 @@
+#runtime "hsp3cl"
+
+#regcmd 28
+#cmd _coretest_callback_sysvars $02
+
+_coretest_callback_sysvars *callback_a, *callback_b
+mes "after-dispatch"
+end
+
+*callback_a
+	mes "callback-a:" + iparam + "," + wparam + "," + lparam
+	mes "callback-a-ref:" + refstr
+	mes "callback-a-refd:" + refdval
+	mes "callback-a-stat:" + stat + "," + strsize
+	return
+
+*callback_b
+	mes "callback-b:" + iparam + "," + wparam + "," + lparam
+	mes "callback-b-ref:" + refstr
+	mes "callback-b-refd:" + refdval
+	mes "callback-b-stat:" + stat + "," + strsize
+	return

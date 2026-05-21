@@ -1,0 +1,17 @@
+#runtime "hsp3cl"
+; expect-error 42
+
+#regcmd 28
+#cmd _coretest_callback2 $00
+
+_coretest_callback2 *callback_await, 1, *callback_unused, 2
+mes "after-dispatch"
+end
+
+*callback_await
+	await 0
+	return
+
+*callback_unused
+	mes "unused"
+	return

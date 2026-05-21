@@ -1,0 +1,16 @@
+#runtime "hsp3cl"
+
+#regcmd 28
+#cmd _coretest_callback2 $00
+
+_coretest_callback2 *callback_a, 1, *callback_b, 2
+mes "after-dispatch"
+end
+
+*callback_a
+	mes "callback-a:" + iparam + "," + wparam + "," + lparam
+	return
+
+*callback_b
+	mes "callback-b:" + iparam + "," + wparam + "," + lparam
+	return

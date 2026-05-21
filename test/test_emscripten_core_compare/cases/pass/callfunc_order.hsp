@@ -1,0 +1,9 @@
+#runtime "hsp3cl"
+emit "aaa"
+emit "bbb"
+emit "ccc"
+end
+
+#deffunc emit str label
+	mes label
+	return

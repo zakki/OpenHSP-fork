@@ -16,6 +16,7 @@ CFLAGS_ENV =  -DHSP64 -Werror=int-to-pointer-cast # 64bit
 CFLAGS_DISH = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 CFLAGS_GP = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11 $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 CFLAGS_CL = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
+CFLAGS_CL_TEST = $(CFLAGS_CL) -DHSP3_CORE_TEST
 CFLAGS_CMP = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 PKG_CONFIG = pkg-config
 
@@ -112,6 +113,8 @@ OBJS_CL = \
 	src/hsp3/linux/devctrl_io.o \
 	src/hsp3/linux/hsp3extlib_ffi.o \
 	src/hsp3/linux/hsp3gr_linux.o
+
+OBJS_CL_TEST = $(OBJS_CL:.o=.coretest.o) test/test_emscripten_core_compare/hsp3cl_coretest_ext.coretest.o
 
 OBJS_GP = \
 	src/hsp3/dpmread.gpo \
@@ -494,6 +497,13 @@ hsp3cl: $(OBJS_CL)
 %.o: %.cpp
 	$(CXX) $(CFLAGS_CL) -c $< -o $*.o
 
+hsp3cl_coretest: $(OBJS_CL_TEST)
+	$(CXX) $(CFLAGS_CL_TEST) $(OBJS_CL_TEST) -lm -lstdc++ -lcurl -lgpiod -lpthread -lffi -o $@
+%.coretest.o: %.c
+	$(CC) $(CFLAGS_CL_TEST) -c $< -o $*.coretest.o
+%.coretest.o: %.cpp
+	$(CXX) $(CFLAGS_CL_TEST) -c $< -o $*.coretest.o
+
 hsed: src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp
 	$(CXX) -O2 -Wno-write-strings -o hsed src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp `$(PKG_CONFIG) --cflags --libs gtk+-2.0`
 
@@ -514,5 +524,5 @@ libLinearMath.a: $(OBJS_LINEAR_MATH)
 	$(AR) rcs $@ $(OBJS_LINEAR_MATH)
 
 clean:
-	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
+	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_CL_TEST) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
 

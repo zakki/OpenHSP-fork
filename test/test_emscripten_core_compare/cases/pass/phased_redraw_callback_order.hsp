@@ -1,0 +1,16 @@
+#runtime "hsp3cl"
+
+#regcmd 28
+#cmd _coretest_phased_redraw $01
+
+_coretest_phased_redraw *posteff, *layermax
+mes "after-redraw"
+end
+
+*posteff
+	mes "posteff"
+	return
+
+*layermax
+	mes "layermax"
+	return

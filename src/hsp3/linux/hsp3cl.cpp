@@ -20,6 +20,18 @@
 #include "hsp3ext_sock.h"
 #include "hsp3extlib_ffi.h"
 
+#ifdef HSP3_CORE_TEST
+void hsp3typeinit_coretest_extcmd( HSP3TYPEINFO *info );
+#ifdef HSPEMSCRIPTEN_NODE_LOOP
+int hsp3coretest_has_native_continuation( void );
+int hsp3coretest_run_native_continuation_step( void );
+#endif
+#endif
+
+#ifdef HSPEMSCRIPTEN_NODE_LOOP
+#include <emscripten.h>
+#endif
+
 /*----------------------------------------------------------*/
 
 static Hsp3 *hsp;
@@ -91,15 +103,27 @@ void hsp3cl_msgfunc( HSPCTX *hspctx )
 		case RUNMODE_WAIT:
 			//		wait命令による時間待ち
 			//		(実際はcode_exec_waitにtick countを渡す)
+#ifdef HSPEMSCRIPTEN_NODE_LOOP
+			tick = gettick();
+			hspctx->runmode = code_exec_wait( tick );
+			return;
+#else
 			usleep( ( hspctx->waitcount) * 10000 );
 			//hspctx->runmode = code_exec_wait( tick );
 			hspctx->runmode = RUNMODE_RUN;
 			break;
+#endif
 
 		case RUNMODE_AWAIT:
 			//		await命令による時間待ち
 			//		(実際はcode_exec_awaitにtick countを渡す)
 			tick = gettick();
+#ifdef HSPEMSCRIPTEN_NODE_LOOP
+			if ( code_exec_await( tick ) != RUNMODE_RUN ) {
+				return;
+			}
+			break;
+#else
 			if ( code_exec_await( tick ) != RUNMODE_RUN ) {
 					usleep( ( hspctx->waittick - tick) * 1000 );
 			} else {
@@ -113,6 +137,7 @@ void hsp3cl_msgfunc( HSPCTX *hspctx )
 				//hspctx->runmode = RUNMODE_RUN;
 			}
 			break;
+#endif
 
 		case RUNMODE_END:
 			//		end命令
@@ -215,6 +240,13 @@ int hsp3cl_init( char *startfile )
 	tinfo->hspexinfo = exinfo;
 	hsp3typeinit_sock_extcmd( tinfo );
 
+#ifdef HSP3_CORE_TEST
+	HSP3TYPEINFO *testinfo = code_gettypeinfo( TYPE_USERDEF+10 );
+	testinfo->hspctx = ctx;
+	testinfo->hspexinfo = exinfo;
+	hsp3typeinit_coretest_extcmd( testinfo );
+#endif
+
 	cl_option = 0;
 
 	return 0;
@@ -226,7 +258,9 @@ static void hsp3cl_bye( void )
 	//		HSP関連の解放
 	//
 	delete hsp;
+#ifndef HSPEMSCRIPTEN
 	DllManager().free_all_library();
+#endif
 }
 
 
@@ -286,12 +320,107 @@ void hsp3cl_error( void )
 }
 
 
+#ifdef HSPEMSCRIPTEN_NODE_LOOP
+
+static int hsp3cl_loop_code_state;
+
+static void hsp3cl_finish_loop( int endcode )
+{
+	if ( cl_option & HSP3CL_OPT1_RESOUT ) {
+		if ( cl_fp != NULL ) fclose( cl_fp );
+	}
+	hsp3cl_bye();
+	emscripten_force_exit( endcode );
+}
+
+static void hsp3cl_loop_error( void )
+{
+	try {
+		hsp3cl_error();
+	}
+	catch( ... ) {
+	}
+	hsp3cl_finish_loop( -1 );
+}
+
+static void hsp3cl_loop_tick( void )
+{
+	int runmode;
+	int tick;
+
+	switch( ctx->runmode ) {
+	case RUNMODE_WAIT:
+		tick = gettick();
+		if ( code_exec_wait( tick ) != RUNMODE_RUN ) return;
+		break;
+	case RUNMODE_AWAIT:
+		tick = gettick();
+		if ( code_exec_await( tick ) != RUNMODE_RUN ) return;
+		break;
+	case RUNMODE_END:
+		hsp3cl_finish_loop( ctx->endcode );
+		return;
+	case RUNMODE_ERROR:
+		hsp3cl_loop_error();
+		return;
+	case RUNMODE_LOGMES:
+		ctx->runmode = RUNMODE_RUN;
+		break;
+	case RUNMODE_STOP:
+		return;
+	}
+
+	for( int i = 0; i < 1000; i++ ) {
+#ifdef HSP3_CORE_TEST
+		// The core-test native continuation mirrors HSP3Dish redraw phasing for
+		// CLI regression tests, and must not interleave with active HSP frames.
+		if (( code_emscripten_is_continuation_active() == 0 ) && hsp3coretest_has_native_continuation()) {
+			runmode = hsp3coretest_run_native_continuation_step();
+		} else
+#endif
+		runmode = code_execcmd_one( hsp3cl_loop_code_state );
+		if ( ctx->runmode != RUNMODE_RUN ) runmode = ctx->runmode;
+
+		switch( runmode ) {
+		case RUNMODE_RUN:
+			break;
+		case RUNMODE_WAIT:
+		case RUNMODE_AWAIT:
+			return;
+		case RUNMODE_END:
+			hsp3cl_finish_loop( ctx->endcode );
+			return;
+		case RUNMODE_ERROR:
+			hsp3cl_loop_error();
+			return;
+		default:
+			return;
+		}
+	}
+}
+
+int hsp3cl_exec( void )
+{
+	if ( cl_option & HSP3CL_OPT1_RESOUT ) {
+		cl_fp = fopen( HSP3CL_RESFILE, "w" );
+	}
+
+	hsp3cl_loop_code_state = 0;
+	emscripten_set_main_loop( hsp3cl_loop_tick, 0, 1 );
+	return 0;
+}
+
+#else
+
 int hsp3cl_exec( void )
 {
 	//		実行メインを呼び出す
 	//
 	int runmode;
 	int endcode;
+#ifdef HSPEMSCRIPTEN
+	int code_execcmd_state;
+#endif
 
 	if ( cl_option & HSP3CL_OPT1_RESOUT ) {
 		cl_fp = fopen( HSP3CL_RESFILE, "w" );
@@ -301,7 +430,19 @@ rerun:
 
 	//		実行の開始
 	//
+#ifdef HSPEMSCRIPTEN
+	code_execcmd_state = 0;
+	while(1) {
+		runmode = code_execcmd_one(code_execcmd_state);
+		if (runmode != RUNMODE_RUN) break;
+		if (ctx->runmode != RUNMODE_RUN) {
+			runmode = ctx->runmode;
+			if (runmode != RUNMODE_RUN) break;
+		}
+	}
+#else
 	runmode = code_execcmd();
+#endif
 	if ( runmode == RUNMODE_ERROR ) {
 		try {
 			hsp3cl_error();
@@ -334,3 +475,5 @@ rerun:
 	hsp3cl_bye();
 	return endcode;
 }
+
+#endif

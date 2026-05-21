@@ -1,0 +1,23 @@
+#runtime "hsp3cl"
+
+repeat 3
+	mes "main-before:" + cnt
+	loop_worker cnt
+	mes "main-after:" + cnt
+loop
+end
+
+#deffunc loop_worker int outer, local localv
+	localv = outer * 100
+	repeat 2
+		localv += 1
+		mes "worker:" + outer + ":" + cnt + ":" + localv + ":before"
+		await 0
+		gosub *loop_inner
+		mes "worker:" + outer + ":" + cnt + ":" + localv + ":after"
+	loop
+	return
+
+*loop_inner
+	mes "inner:" + outer + ":" + cnt + ":" + localv
+	return

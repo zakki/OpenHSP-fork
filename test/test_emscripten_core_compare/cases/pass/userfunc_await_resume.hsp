@@ -1,0 +1,11 @@
+#runtime "hsp3cl"
+mes "main-before"
+do_wait 0
+mes "main-after"
+end
+
+#deffunc do_wait int delay
+	mes "func-before"
+	await delay
+	mes "func-after"
+	return
