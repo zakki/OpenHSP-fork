@@ -1,0 +1,17 @@
+#include "hspany.as"
+
+mes "=== hspany ==="
+dimtype v, vartype("any"), 5
+
+v(0) = 123
+v(1) = "abc"
+v(2) = 1.5
+v(3) = int64("8589934592")
+
+mes "0=" + str(v(0))
+mes "1=" + v(1)
+mes "2=" + strf("%.1f", v(2))
+mes "3=" + str(v(3))
+
+v(1) = "abcdefghijklmnopqrstuvwxyz"
+mes "1b=" + v(1)

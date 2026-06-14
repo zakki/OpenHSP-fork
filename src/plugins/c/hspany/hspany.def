@@ -1,0 +1,4 @@
+LIBRARY hspany
+EXPORTS
+    hsp3cmdinit
+
