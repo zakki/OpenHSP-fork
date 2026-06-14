@@ -16,6 +16,11 @@ mes "3=" + v(3)
 v(1) = "abcdefghijklmnopqrstuvwxyz"
 mes "1b=" + v(1)
 
+repeat 4
+    a = v.cnt
+    mes "v." + cnt + "=" + a + " : " + vartype(a)
+loop
+
 mes "=== hspany 2d ==="
 dimtype m, vartype("any"), 2, 3
 
