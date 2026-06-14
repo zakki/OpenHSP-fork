@@ -8,10 +8,36 @@ v(1) = "abc"
 v(2) = 1.5
 v(3) = int64("8589934592")
 
-mes "0=" + str(v(0))
+mes "0=" + v(0)
 mes "1=" + v(1)
 mes "2=" + strf("%.1f", v(2))
-mes "3=" + str(v(3))
+mes "3=" + v(3)
 
 v(1) = "abcdefghijklmnopqrstuvwxyz"
 mes "1b=" + v(1)
+
+mes "=== hspany 2d ==="
+dimtype m, vartype("any"), 2, 3
+
+m(0, 0) = "origin"
+m(1, 0) = 456
+m(0, 1) = 2.75
+m(1, 2) = int64("8589934594")
+
+mes "m00=" + m(0, 0)
+mes "m10=" + m(1, 0)
+mes "m01=" + strf("%.2f", m(0, 1))
+mes "m12=" + m(1, 2)
+
+mes "=== hspany 3d ==="
+dimtype c, vartype("any"), 2, 2, 2
+
+c(0, 0, 0) = "front"
+c(1, 0, 0) = 789
+c(0, 1, 1) = 3.5
+c(1, 1, 1) = int64("8589934595")
+
+mes "c000=" + c(0, 0, 0)
+mes "c100=" + c(1, 0, 0)
+mes "c011=" + strf("%.1f", c(0, 1, 1))
+mes "c111=" + c(1, 1, 1)
