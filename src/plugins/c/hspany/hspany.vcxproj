@@ -169,8 +169,8 @@
     <None Include="Makefile" />
     <None Include="README.md" />
     <None Include="sample_any.hsp" />
+    <None Include="sample_oop.hsp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>
-

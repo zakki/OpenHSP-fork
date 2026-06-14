@@ -16,6 +16,9 @@ mes "3=" + v(3)
 v(1) = "abcdefghijklmnopqrstuvwxyz"
 mes "1b=" + v(1)
 
+v(4) = *label_value
+gosub v(4)
+
 repeat 4
     a = v.cnt
     mes "v." + cnt + "=" + a + " : " + vartype(a)
@@ -46,3 +49,9 @@ mes "c000=" + c(0, 0, 0)
 mes "c100=" + c(1, 0, 0)
 mes "c011=" + strf("%.1f", c(0, 1, 1))
 mes "c111=" + c(1, 1, 1)
+
+stop
+
+*label_value
+mes "label=ok"
+return

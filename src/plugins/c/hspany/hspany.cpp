@@ -28,6 +28,7 @@ typedef struct
 		double d;
 		int64_t l;
 		char *s;
+		unsigned short *label;
 	} value;
 } AnyValue;
 
@@ -109,6 +110,10 @@ static void AnyValue_SetTyped( AnyValue *value, int type, const void *ptr )
 		memcpy( value->value.s, ptr, size );
 		break;
 		}
+	case HSPVAR_FLAG_LABEL:
+		value->flag = HSPVAR_FLAG_LABEL;
+		value->value.label = *(unsigned short * const *)ptr;
+		break;
 	case HSPVAR_FLAG_NONE:
 		break;
 	default:
@@ -131,6 +136,9 @@ static void *HspVarAny_GetBlockPtr( const AnyValue *value, int *size )
 	case HSPVAR_FLAG_STR:
 		if ( size ) *size = (int)strlen( value->value.s ) + 1;
 		return value->value.s;
+	case HSPVAR_FLAG_LABEL:
+		if ( size ) *size = sizeof(unsigned short *);
+		return (void *)&value->value.label;
 	default:
 		if ( size ) *size = sizeof(int);
 		conv_i = 0;
@@ -167,6 +175,9 @@ static void *HspVarAny_Cnv( const void *buffer, int flag )
 	case HSPVAR_FLAG_STR:
 		conv_any.value.s = (char *)buffer;
 		return &conv_any;
+	case HSPVAR_FLAG_LABEL:
+		conv_any.value.label = *(unsigned short * const *)buffer;
+		return &conv_any;
 	default:
 		if ( flag == g_any_flag ) return (void *)buffer;
 		throw HSPVAR_ERROR_TYPEMISS;
@@ -181,6 +192,11 @@ static void *HspVarAny_CnvCustom( const void *buffer, int flag )
 	if ( flag == g_any_flag ) return (void *)buffer;
 
 	ptr = HspVarAny_GetBlockPtr( value, NULL );
+	if ( flag == HSPVAR_FLAG_LABEL ) {
+		if ( value->flag == HSPVAR_FLAG_LABEL ) return ptr;
+		throw HSPVAR_ERROR_TYPEMISS;
+	}
+	if ( value->flag == HSPVAR_FLAG_LABEL ) throw HSPVAR_ERROR_TYPEMISS;
 	switch( flag ) {
 	case HSPVAR_FLAG_STR:
 		if ( value->flag == HSPVAR_FLAG_INT ) {

@@ -28,6 +28,9 @@
     <None Include="sample_any.hsp">
       <Filter>HSP Files</Filter>
     </None>
+    <None Include="sample_oop.hsp">
+      <Filter>HSP Files</Filter>
+    </None>
     <None Include="Makefile">
       <Filter>Build Files</Filter>
     </None>
@@ -36,4 +39,3 @@
     </None>
   </ItemGroup>
 </Project>
-
