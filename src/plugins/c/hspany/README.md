@@ -7,7 +7,7 @@
 ```hsp
 #include "hspany.as"
 
-dimtype v, vartype("any"), 4
+dimtype v, vartype("any"), 5
 v(0) = 123
 v(1) = "abc"
 v(2) = 1.5
@@ -36,7 +36,7 @@ Linux では `hspany.as` が `./hspany.so` をロードします。実行時の�
 
 ## Windows build
 
-Visual Studio 2022 で `hspany.sln` を開いてビルドします。`hspany.def` で `hsp3cmdinit` を未修飾名としてエクスポートしているため、HSP 側は 32bit/64bit ともに `#regcmd "hsp3cmdinit","hspany.dll",1` を使えます。
+Visual Studio 2022 で `hspany.sln` を開いてビルドします。32bit 版は `hspany.dll`、64bit 版は `hspany_64.dll` を出力します。`hspany.as` は `__hsp64__` でロードする DLL 名を切り替えます。
 
 ## 制限
 
