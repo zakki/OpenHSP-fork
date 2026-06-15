@@ -59,6 +59,43 @@ jobs:
           src/hspcmp/*.js
           src/hspcmp/*.wasm
 
+  build-hspany-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build hspany
+      working-directory: src/plugins/c/hspany
+      run: make
+    - name: Archive hspany artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: hspany-linux-x86_64
+        path: src/plugins/c/hspany/hspany.so
+
+  build-hspany-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+        - platform: x86
+          artifact-name: hspany-win32
+          artifact-path: src/plugins/c/hspany/Win32/Release/hspany.dll
+        - platform: x64
+          artifact-name: hspany-win64
+          artifact-path: src/plugins/c/hspany/x64/Release/hspany_64.dll
+    steps:
+    - uses: actions/checkout@v4
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+    - name: Build hspany
+      working-directory: src/plugins/c/hspany
+      run: msbuild hspany.sln -t:Rebuild -p:Configuration=Release -p:Platform=${{ matrix.platform }}
+    - name: Archive hspany artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: ${{ matrix.artifact-path }}
+
   build-win32:
     runs-on: windows-latest
 
