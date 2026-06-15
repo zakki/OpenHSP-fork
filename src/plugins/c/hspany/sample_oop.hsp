@@ -1,48 +1,48 @@
 #include "hspany.as"
 
-#define OBJ_NAME 0
-#define OBJ_KIND 1
-#define OBJ_X 2
-#define OBJ_Y 3
-#define OBJ_HP 4
-#define OBJ_UPDATE 5
-#define OBJ_DRAW 6
-#define OBJ_FIELDS 7
+#define OF_NAME 0
+#define OF_KIND 1
+#define OF_X 2
+#define OF_Y 3
+#define OF_HP 4
+#define OF_UPDATE 5
+#define OF_DRAW 6
+#define OF_FIELDS 7
 
-#define OBJ_PLAYER 1
-#define OBJ_ENEMY 2
-#define OBJ_ITEM 3
+#define OK_PLAYER 1
+#define OK_ENEMY 2
+#define OK_ITEM 3
 
-dimtype obj, vartype("any"), 4, OBJ_FIELDS
+dimtype obj, vartype("any"), 4, OF_FIELDS
 
 objmax = 3
 
 id = 0
-obj(id, OBJ_NAME) = "player"
-obj(id, OBJ_KIND) = OBJ_PLAYER
-obj(id, OBJ_X) = 10.0
-obj(id, OBJ_Y) = 2.0
-obj(id, OBJ_HP) = 120
-obj(id, OBJ_UPDATE) = *update_player
-obj(id, OBJ_DRAW) = *draw_unit
+obj(id, OF_NAME) = "player"
+obj(id, OF_KIND) = OK_PLAYER
+obj(id, OF_X) = 10.0
+obj(id, OF_Y) = 2.0
+obj(id, OF_HP) = 120
+obj(id, OF_UPDATE) = *update_player
+obj(id, OF_DRAW) = *draw_unit
 
 id = 1
-obj(id, OBJ_NAME) = "enemy"
-obj(id, OBJ_KIND) = OBJ_ENEMY
-obj(id, OBJ_X) = 20.0
-obj(id, OBJ_Y) = 5.0
-obj(id, OBJ_HP) = 40
-obj(id, OBJ_UPDATE) = *update_enemy
-obj(id, OBJ_DRAW) = *draw_unit
+obj(id, OF_NAME) = "enemy"
+obj(id, OF_KIND) = OK_ENEMY
+obj(id, OF_X) = 20.0
+obj(id, OF_Y) = 5.0
+obj(id, OF_HP) = 40
+obj(id, OF_UPDATE) = *update_enemy
+obj(id, OF_DRAW) = *draw_unit
 
 id = 2
-obj(id, OBJ_NAME) = "potion"
-obj(id, OBJ_KIND) = OBJ_ITEM
-obj(id, OBJ_X) = 15.0
-obj(id, OBJ_Y) = 1.0
-obj(id, OBJ_HP) = 0
-obj(id, OBJ_UPDATE) = *update_item
-obj(id, OBJ_DRAW) = *draw_item
+obj(id, OF_NAME) = "potion"
+obj(id, OF_KIND) = OK_ITEM
+obj(id, OF_X) = 15.0
+obj(id, OF_Y) = 1.0
+obj(id, OF_HP) = 0
+obj(id, OF_UPDATE) = *update_item
+obj(id, OF_DRAW) = *draw_item
 
 mes "=== hspany oop demo ==="
 
@@ -52,35 +52,35 @@ repeat 3
 
     repeat objmax
         id = cnt
-        gosub obj(id, OBJ_UPDATE)
+        gosub obj(id, OF_UPDATE)
     loop
 
     repeat objmax
         id = cnt
-        gosub obj(id, OBJ_DRAW)
+        gosub obj(id, OF_DRAW)
     loop
 loop
 
 stop
 
 *update_player
-obj(id, OBJ_X) = obj(id, OBJ_X) + 1.5
-obj(id, OBJ_HP) = obj(id, OBJ_HP) - 1
+obj(id, OF_X) = obj(id, OF_X) + 1.5
+obj(id, OF_HP) = obj(id, OF_HP) - 1
 return
 
 *update_enemy
-obj(id, OBJ_X) = obj(id, OBJ_X) - 0.75
-obj(id, OBJ_HP) = obj(id, OBJ_HP) - 3
+obj(id, OF_X) = obj(id, OF_X) - 0.75
+obj(id, OF_HP) = obj(id, OF_HP) - 3
 return
 
 *update_item
-obj(id, OBJ_Y) = obj(id, OBJ_Y) + 0.25
+obj(id, OF_Y) = obj(id, OF_Y) + 0.25
 return
 
 *draw_unit
-mes obj(id, OBJ_NAME) + " kind=" + obj(id, OBJ_KIND) + " x=" + strf("%.2f", obj(id, OBJ_X)) + " hp=" + obj(id, OBJ_HP)
+mes obj(id, OF_NAME) + " kind=" + obj(id, OF_KIND) + " x=" + strf("%.2f", obj(id, OF_X)) + " hp=" + obj(id, OF_HP)
 return
 
 *draw_item
-mes obj(id, OBJ_NAME) + " kind=" + obj(id, OBJ_KIND) + " y=" + strf("%.2f", obj(id, OBJ_Y))
+mes obj(id, OF_NAME) + " kind=" + obj(id, OF_KIND) + " y=" + strf("%.2f", obj(id, OF_Y))
 return
