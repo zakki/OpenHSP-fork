@@ -166,30 +166,11 @@ static void *HspVarAny_CnvCustom( const void *buffer, int flag )
 	if ( flag == g_any_flag ) return (void *)buffer;
 
 	ptr = HspVarAny_GetBlockPtr( value, NULL );
-	if ( flag == HSPVAR_FLAG_LABEL ) {
-		if ( value->flag == HSPVAR_FLAG_LABEL ) return ptr;
-		throw HSPVAR_ERROR_TYPEMISS;
-	}
-	if ( value->flag == HSPVAR_FLAG_LABEL ) throw HSPVAR_ERROR_TYPEMISS;
+	if ( value->flag == flag ) return ptr;
+	if ( ( value->flag == HSPVAR_FLAG_LABEL ) || ( flag == HSPVAR_FLAG_LABEL ) ) throw HSPVAR_ERROR_TYPEMISS;
+
 	switch( flag ) {
-	case HSPVAR_FLAG_STR:
-		if ( value->flag == HSPVAR_FLAG_INT ) {
-			sprintf( conv_s, "%d", *(int *)ptr );
-			return conv_s;
-		}
-		if ( value->flag == HSPVAR_FLAG_DOUBLE ) {
-			sprintf( conv_s, "%f", *(double *)ptr );
-			return conv_s;
-		}
-		if ( value->flag == HSPVAR_FLAG_INT64 ) {
-			sprintf( conv_s, "%lld", (long long)(*(int64_t *)ptr) );
-			return conv_s;
-		}
-		if ( value->flag == HSPVAR_FLAG_STR ) return ptr;
-		sprintf( conv_s, "%d", 0 );
-		return conv_s;
 	case HSPVAR_FLAG_INT:
-		if ( value->flag == HSPVAR_FLAG_INT ) return ptr;
 		if ( value->flag == HSPVAR_FLAG_DOUBLE ) {
 			conv_i = (int)(*(double *)ptr);
 			return &conv_i;
@@ -205,7 +186,6 @@ static void *HspVarAny_CnvCustom( const void *buffer, int flag )
 		conv_i = 0;
 		return &conv_i;
 	case HSPVAR_FLAG_DOUBLE:
-		if ( value->flag == HSPVAR_FLAG_DOUBLE ) return ptr;
 		if ( value->flag == HSPVAR_FLAG_INT ) {
 			conv_d = (double)(*(int *)ptr);
 			return &conv_d;
@@ -221,7 +201,6 @@ static void *HspVarAny_CnvCustom( const void *buffer, int flag )
 		conv_d = 0.0;
 		return &conv_d;
 	case HSPVAR_FLAG_INT64:
-		if ( value->flag == HSPVAR_FLAG_INT64 ) return ptr;
 		if ( value->flag == HSPVAR_FLAG_INT ) {
 			conv_l = (int64_t)(*(int *)ptr);
 			return &conv_l;
@@ -236,6 +215,21 @@ static void *HspVarAny_CnvCustom( const void *buffer, int flag )
 		}
 		conv_l = 0;
 		return &conv_l;
+	case HSPVAR_FLAG_STR:
+		if ( value->flag == HSPVAR_FLAG_INT ) {
+			snprintf( conv_s, sizeof(conv_s), "%d", *(int *)ptr );
+			return conv_s;
+		}
+		if ( value->flag == HSPVAR_FLAG_DOUBLE ) {
+			snprintf( conv_s, sizeof(conv_s), "%f", *(double *)ptr );
+			return conv_s;
+		}
+		if ( value->flag == HSPVAR_FLAG_INT64 ) {
+			snprintf( conv_s, sizeof(conv_s), "%lld", (long long)(*(int64_t *)ptr) );
+			return conv_s;
+		}
+		snprintf( conv_s, sizeof(conv_s), "%d", 0 );
+		return conv_s;
 	default:
 		throw HSPVAR_ERROR_TYPEMISS;
 	}
