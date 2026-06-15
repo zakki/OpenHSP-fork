@@ -41,38 +41,12 @@ static double conv_d;
 static char conv_s[400];
 static AnyValue conv_any;
 
-static char *any_alloc( size_t size )
-{
-	if ( g_exinfo != NULL && g_exinfo->HspFunc_malloc != NULL ) {
-		return g_exinfo->HspFunc_malloc( size );
-	}
-	return (char *)malloc( size );
-}
-
-static char *any_expand( char *ptr, size_t size )
-{
-	if ( g_exinfo != NULL && g_exinfo->HspFunc_expand != NULL ) {
-		return g_exinfo->HspFunc_expand( ptr, size );
-	}
-	return (char *)realloc( ptr, size );
-}
-
-static void any_free( void *ptr )
-{
-	if ( ptr == NULL ) return;
-	if ( g_exinfo != NULL && g_exinfo->HspFunc_free != NULL ) {
-		g_exinfo->HspFunc_free( ptr );
-		return;
-	}
-	free( ptr );
-}
-
 static void *HspVarAny_GetBlockPtr( const AnyValue *value, int *size );
 
 static void AnyValue_Clear( AnyValue *value )
 {
 	if ( value->flag == HSPVAR_FLAG_STR ) {
-		any_free( value->value.s );
+		g_exinfo->HspFunc_free( value->value.s );
 	}
 	value->flag = HSPVAR_FLAG_NONE;
 	value->reserved = 0;
@@ -106,7 +80,7 @@ static void AnyValue_SetTyped( AnyValue *value, int type, const void *ptr )
 		{
 		int size = (int)strlen( (const char *)ptr ) + 1;
 		value->flag = HSPVAR_FLAG_STR;
-		value->value.s = any_alloc( size );
+		value->value.s = g_exinfo->HspFunc_malloc( size );
 		memcpy( value->value.s, ptr, size );
 		break;
 		}
@@ -289,7 +263,7 @@ static void HspVarAny_Free( PVal *pval )
 		for( int i = 0; i < count; i++ ) {
 			AnyValue_Clear( &value[i] );
 		}
-		any_free( pval->pt );
+		g_exinfo->HspFunc_free( pval->pt );
 	}
 	pval->pt = NULL;
 	pval->mode = HSPVAR_MODE_NONE;
@@ -311,7 +285,7 @@ static void HspVarAny_Alloc( PVal *pval, const PVal *pval2 )
 			}
 		}
 		if ( size > pval->size ) {
-			value = (AnyValue *)any_expand( pval->pt, size );
+			value = (AnyValue *)g_exinfo->HspFunc_expand( pval->pt, size );
 			memset( value + old_count, 0, size - pval->size );
 			pval->pt = (char *)value;
 		}
@@ -320,7 +294,7 @@ static void HspVarAny_Alloc( PVal *pval, const PVal *pval2 )
 		return;
 	}
 
-	AnyValue *value = (AnyValue *)any_alloc( size );
+	AnyValue *value = (AnyValue *)g_exinfo->HspFunc_malloc( size );
 	memset( value, 0, size );
 	pval->pt = (char *)value;
 	pval->size = size;
