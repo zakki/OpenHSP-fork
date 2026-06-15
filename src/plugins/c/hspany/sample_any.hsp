@@ -50,6 +50,17 @@ mes "c100=" + c(1, 0, 0)
 mes "c011=" + strf("%.1f", c(0, 1, 1))
 mes "c111=" + c(1, 1, 1)
 
+mes "=== hspany flex ==="
+dimtype f, vartype("any"), 1
+f(2) = "expanded"
+mes "f2=" + f(2)
+
+dimtype fm, vartype("any"), 2, 1
+fm(1, 0) = "base"
+fm(1, 3) = 4.5
+mes "fm10=" + fm(1, 0)
+mes "fm13=" + strf("%.1f", fm(1, 3))
+
 stop
 
 *label_value

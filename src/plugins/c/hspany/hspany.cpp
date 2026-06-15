@@ -328,7 +328,7 @@ static void HspVarAny_ObjectWrite( PVal *pval, void *data, int type )
 	HspVarAny_Set( pval, HspVarAny_GetPtr( pval ), any );
 }
 
-static void HspVarAny_Array( PVal *pval, int offset )
+static void HspVarAny_Array( PVal *pval, int offset, bool expand )
 {
 	if ( pval->arraycnt >= 5 ) throw HSPVAR_ERROR_ARRAYOVER;
 	if ( pval->arraycnt == 0 ) {
@@ -338,11 +338,22 @@ static void HspVarAny_Array( PVal *pval, int offset )
 	}
 	pval->arraycnt++;
 	if ( offset < 0 ) throw HSPVAR_ERROR_ARRAYOVER;
-	if ( offset >= pval->len[pval->arraycnt] ) throw HSPVAR_ERROR_ARRAYOVER;
+	if ( offset >= pval->len[pval->arraycnt] ) {
+		if ( expand ) {
+			if ( ( pval->arraycnt >= 4 ) || ( pval->len[pval->arraycnt + 1] == 0 ) ) {
+				if ( pval->support & HSPVAR_SUPPORT_FLEXARRAY ) {
+					g_exinfo->HspFunc_redim( pval, pval->arraycnt, offset + 1 );
+					pval->offset += offset * pval->arraymul;
+					return;
+				}
+			}
+		}
+		throw HSPVAR_ERROR_ARRAYOVER;
+	}
 	pval->offset += offset * pval->arraymul;
 }
 
-static int HspVarAny_GetElement( PVal *pval )
+static int HspVarAny_GetElement( PVal *pval, bool expand )
 {
 	PVal pval_temp;
 	int chk, idx;
@@ -363,20 +374,20 @@ static int HspVarAny_GetElement( PVal *pval )
 		if ( chk != PARAM_OK && chk != PARAM_SPLIT ) throw HSPERR_ARRAY_OVERFLOW;
 		if ( (*g_exinfo->mpval)->flag != HSPVAR_FLAG_INT ) throw HSPERR_TYPE_MISMATCH;
 		idx = *(int *)((*g_exinfo->mpval)->pt);
-		HspVarAny_Array( pval, idx );
+		HspVarAny_Array( pval, idx, expand );
 	}
 	return chk;
 }
 
 static void HspVarAny_ArrayObject( PVal *pval )
 {
-	int chk = HspVarAny_GetElement( pval );
+	int chk = HspVarAny_GetElement( pval, true );
 	if ( chk != PARAM_ENDSPLIT ) throw HSPERR_BAD_ARRAY_EXPRESSION;
 }
 
 static void *HspVarAny_ArrayObjectRead( PVal *pval, int *mptype )
 {
-	int chk = HspVarAny_GetElement( pval );
+	int chk = HspVarAny_GetElement( pval, false );
 	if ( chk != PARAM_ENDSPLIT ) throw HSPERR_BAD_ARRAY_EXPRESSION;
 
 	AnyValue *value = (AnyValue *)HspVarAny_GetPtr( pval );
