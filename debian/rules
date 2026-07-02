@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/buildflags.mk
+
+BUILD_FLAGS = DEBUG=1 CPPFLAGS="$(CPPFLAGS)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)"
+
+%:
+	dh $@
+
+override_dh_update_autotools_config:
+
+override_dh_auto_build:
+	$(MAKE) $(BUILD_FLAGS)
+
+override_dh_auto_clean:
+	$(MAKE) clean
+
+override_dh_auto_install:
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp PREFIX=/usr $(BUILD_FLAGS)
+
+override_dh_dwz:
+	dh_dwz --no-dwz-multifile
+
+override_dh_strip:
+	dh_strip --no-automatic-dbgsym

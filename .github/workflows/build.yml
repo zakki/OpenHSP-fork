@@ -14,7 +14,7 @@ jobs:
     - name: Install libraries
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgtk2.0-dev libglew-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libgles2-mesa-dev libegl1-mesa-dev libcurl4-openssl-dev libgpiod2 libgpiod-dev
+        sudo apt-get install -y libgtk2.0-dev libglew-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libgles2-mesa-dev libegl1-mesa-dev libglu1-mesa-dev libcurl4-openssl-dev libgpiod2 libgpiod-dev
     - name: make
       run: make -j2
     - name: Archive production artifacts

@@ -1,0 +1,11 @@
+OpenHSP for Debian/Ubuntu
+=========================
+
+The command-line hspcmp entry point is a wrapper around
+/usr/lib/openhsp/hspcmp. It supplies the packaged common include directory and
+runtime directory by default:
+
+  --compath=/usr/lib/openhsp/common/
+  --syspath=/usr/lib/openhsp/
+
+Pass a later --compath or --syspath option if a project needs a custom tree.

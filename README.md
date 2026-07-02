@@ -57,6 +57,14 @@ Use “setup.sh” for install the library and build or or try make from command
 	make
 
 The necessary tools have been compiled and HSP3 is ready for use.
+To install the built tools system-wide, run:
+
+	sudo make install
+
+The default install prefix is `/usr/local`. Distribution package builds can stage
+the install tree with `DESTDIR` and override the prefix:
+
+	make install DESTDIR=/path/to/package-root PREFIX=/usr
 
 
 # Legacy Raspberry Pi installation
@@ -135,4 +143,3 @@ Copyright (C) 1997-2025, Onion Software/onitama, all rights reserved.
 These softwares are provided by the copyright holders and contributors "as is" and
 any express or implied warranties, including, but not limited to, the implied
 warranties of merchantability and fitness for a particular purpose are disclaimed.
-

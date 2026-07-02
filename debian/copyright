@@ -1,0 +1,103 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: OpenHSP
+Source: https://github.com/onitama/OpenHSP
+
+Files: *
+Copyright: 1997-2025 ONION software/onitama
+License: BSD-3-Clause
+
+Files: src/hsp3dish/extlib/src/zlib/*
+Copyright: 1995-2022 Jean-loup Gailly and Mark Adler
+License: Zlib
+
+Files: src/hsp3dish/extlib/src/libpng/*
+Copyright: 1995-2014 Glenn Randers-Pehrson and contributors
+License: Libpng
+
+Files: src/hsp3dish/extlib/src/glew/*
+Copyright:
+ 2002-2007 Milan Ikits
+ 2002-2007 Marcelo E. Magallon
+ 2002 Lev Povalahev
+ 1999-2007 Brian Paul
+ 2007 The Khronos Group Inc.
+License: BSD-3-Clause and MIT
+
+Files:
+ src/hsp3dish/extlib/src/BulletCollision/*
+ src/hsp3dish/extlib/src/BulletDynamics/*
+ src/hsp3dish/extlib/src/LinearMath/*
+Copyright: 2003-2014 Erwin Coumans and Bullet contributors
+License: Zlib
+
+License: BSD-3-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ .
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+ .
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+ .
+ 3. Neither the name of the copyright holder nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGE.
+
+License: Zlib
+ This software is provided 'as-is', without any express or implied warranty.
+ In no event will the authors be held liable for any damages arising from the
+ use of this software.
+ .
+ Permission is granted to anyone to use this software for any purpose,
+ including commercial applications, and to alter it and redistribute it freely,
+ subject to the following restrictions:
+ .
+ 1. The origin of this software must not be misrepresented; you must not claim
+    that you wrote the original software.
+ 2. Altered source versions must be plainly marked as such, and must not be
+    misrepresented as being the original software.
+ 3. This notice may not be removed or altered from any source distribution.
+
+License: Libpng
+ The PNG Reference Library is supplied "AS IS". The Contributing Authors and
+ Group 42, Inc. disclaim all warranties, expressed or implied, including,
+ without limitation, the warranties of merchantability and of fitness for any
+ purpose.
+ .
+ Permission is hereby granted to use, copy, modify, and distribute this source
+ code, or portions hereof, for any purpose, without fee, subject to the
+ following restrictions:
+ .
+ 1. The origin of this source code must not be misrepresented.
+ 2. Altered versions must be plainly marked as such and must not be
+    misrepresented as being the original source.
+ 3. This Copyright notice may not be removed or altered from any source or
+    altered source distribution.
+
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and/or associated documentation files, to deal in the
+ software without restriction, including without limitation the rights to use,
+ copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ the software, and to permit persons to whom the software is furnished to do
+ so, subject to the condition that the copyright notice and this permission
+ notice shall be included in all copies or substantial portions of the
+ software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.

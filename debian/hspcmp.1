@@ -1,0 +1,130 @@
+.TH HSPCMP 1 "July 2026" "OpenHSP 3.8 beta1" "User Commands"
+.SH NAME
+hspcmp \- compile Hot Soup Processor scripts
+.SH SYNOPSIS
+.B hspcmp
+.RI [ options ]
+.I file.hsp
+.SH DESCRIPTION
+.B hspcmp
+is the HSP3 code compiler.  It converts Hot Soup Processor version 3
+scripts into intermediate object files that can be executed by an HSP
+runtime.
+.PP
+The command-line tool can compile HSP scripts, preprocess source files,
+inspect keyword and source-analysis information, and execute compiled AX
+object files with an HSP runtime.
+.PP
+The Debian package installs this command as a wrapper that supplies the OpenHSP
+common include path and runtime system path by default:
+.PP
+.RS
+.nf
+--compath=/usr/lib/openhsp/common/
+--syspath=/usr/lib/openhsp/
+.fi
+.RE
+.PP
+Pass a later
+.B --compath
+or
+.B --syspath
+option to use a custom tree.
+.SH OPTIONS
+.TP
+.BI \-o file
+Write the output object file
+.RI ( .ax )
+to
+.IR file .
+.TP
+.B \-d
+Generate an object file with debugging information.
+.TP
+.B \-p
+Run preprocessing only.
+.TP
+.B \-c
+Compile in HSP 2.55 compatible mode.
+.TP
+.B \-i
+Read the source script as UTF-8.
+.TP
+.B \-u
+Output string data in UTF-8.
+.TP
+.B \-j
+Read the source script as UTF-8 and automatically select the output format.
+.TP
+.B \-w
+Set the debug-window display flag in the object file.
+.TP
+.B \-s
+Output a string data file
+.RI ( strmap ).
+.TP
+.B \-m
+Compile as a script for Emscripten.
+.TP
+.BR \-e ", " \-e0 ", " \-e1 ", " \-r ", " \-r0 ", " \-r1
+Execute an object file with the runtime named in the object header.
+.B \-e0
+and
+.B \-r0
+display only the runtime name.
+.B \-r
+and
+.B \-r1
+also wait for error-code confirmation.
+.TP
+.BI \-h keyword
+Display help for
+.IR keyword .
+This option is available in the Linux version.
+.TP
+.BI \-lk keyword
+Display the HSP3 keyword list filtered by
+.IR keyword .
+.TP
+.BI \-ll label
+Analyze the source and extract the line that defines
+.IR label .
+.TP
+.BI \-lv variable
+Analyze the source and extract the line that defines
+.IR variable .
+.TP
+.BI \-ls keyword
+Analyze the source and extract the line that defines
+.IR keyword .
+.TP
+.B \-lr
+Also extract referenced lines during source analysis.
+.TP
+.B \-lp
+Include partial keyword matches in source-analysis extraction.
+.TP
+.BI \-\-syspath= directory
+Set the HSP system folder used when executing a runtime.
+.TP
+.BI \-\-compath= directory
+Set the common folder searched by
+.B #include
+directives.
+.SH EXAMPLES
+.TP
+.B hspcmp \-d \-oout.ax test1.hsp
+Compile
+.I test1.hsp
+and write
+.I out.ax
+with debugging information.
+.TP
+.B hspcmp \-e test1.ax
+Execute
+.I test1.ax
+with the HSP runtime selected by the object file.
+.SH SEE ALSO
+.BR hsp3cl (1),
+.BR hsp3dish (1),
+.BR hsp3gp (1)

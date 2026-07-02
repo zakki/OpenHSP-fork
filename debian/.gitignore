@@ -1,0 +1,8 @@
+.debhelper/
+debhelper-build-stamp
+files
+*.debhelper.log
+*.substvars
+openhsp/
+openhsp-hsed/
+tmp/

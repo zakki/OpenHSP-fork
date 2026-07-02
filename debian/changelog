@@ -1,0 +1,5 @@
+openhsp (3.8~beta1) unstable; urgency=medium
+
+  * Add local Debian packaging for OpenHSP.
+
+ -- Kensuke Matsuzaki <knsk.mtzk@gmail.com>  Thu, 02 Jul 2026 00:00:00 +0900

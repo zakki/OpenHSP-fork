@@ -2,6 +2,12 @@ CC = gcc
 CXX = g++
 AR = ar
 DEBUG ?= 0
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+OPENHSPDIR ?= $(PREFIX)/lib/openhsp
+APPDIR ?= $(PREFIX)/share/applications
+PIXMAPDIR ?= $(PREFIX)/share/pixmaps
+INSTALL ?= install
 
 ifeq ($(DEBUG),1)
 DEBUG_CFLAGS = -g
@@ -13,11 +19,20 @@ endif
 
 # CFLAGS_ENV = # 32bit
 CFLAGS_ENV =  -DHSP64 -Werror=int-to-pointer-cast # 64bit
-CFLAGS_DISH = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
-CFLAGS_GP = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11 $(CFLAGS_ENV) $(DEBUG_CFLAGS)
-CFLAGS_CL = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
-CFLAGS_CMP = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 PKG_CONFIG = pkg-config
+
+HSP_DISH_DEFS = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
+HSP_GP_DEFS = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11 $(CFLAGS_ENV) $(DEBUG_CFLAGS)
+HSP_CL_DEFS = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
+HSP_CMP_DEFS = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
+CFLAGS_DISH = $(CPPFLAGS) $(CFLAGS) $(HSP_DISH_DEFS)
+CXXFLAGS_DISH = $(CPPFLAGS) $(CXXFLAGS) $(HSP_DISH_DEFS)
+CFLAGS_GP = $(CPPFLAGS) $(CFLAGS) $(HSP_GP_DEFS)
+CXXFLAGS_GP = $(CPPFLAGS) $(CXXFLAGS) $(HSP_GP_DEFS)
+CFLAGS_CL = $(CPPFLAGS) $(CFLAGS) $(HSP_CL_DEFS)
+CXXFLAGS_CL = $(CPPFLAGS) $(CXXFLAGS) $(HSP_CL_DEFS)
+CFLAGS_CMP = $(CPPFLAGS) $(CFLAGS) $(HSP_CMP_DEFS)
+CXXFLAGS_CMP = $(CPPFLAGS) $(CXXFLAGS) $(HSP_CMP_DEFS)
 
 OBJS = \
 	src/hsp3/dpmread.do \
@@ -454,7 +469,7 @@ OBJS_LINEAR_MATH = \
 	src/hsp3dish/extlib/src/LinearMath/btThreads.gpo \
 	src/hsp3dish/extlib/src/LinearMath/btVector3.gpo
 
-TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed
+TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax
 LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
 LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
 LIBS_GP = \
@@ -465,37 +480,72 @@ LIBS_GP = \
 
 all: $(TARGETS)
 
+.PHONY: all install uninstall clean
+
 .SUFFIXES: .cpp
 hsp3dish: $(OBJS)
-	$(CXX) $(CFLAGS_DISH) $(OBJS) $(STRIPFLAGS) -o $@ $(LIBS1)
+	$(CXX) $(CXXFLAGS_DISH) $(OBJS) $(STRIPFLAGS) $(LDFLAGS) -o $@ $(LIBS1)
 %.do: %.c
 	$(CC) $(CFLAGS_DISH) -c $< -o $*.do
 %.do: %.cpp
-	$(CXX) $(CFLAGS_DISH) -c $< -o $*.do
+	$(CXX) $(CXXFLAGS_DISH) -c $< -o $*.do
 
 hsp3gp: $(OBJS_GP) $(LIBS_GP)
-	$(CXX) $(CFLAGS_GP) $(OBJS_GP) $(STRIPFLAGS) -o $@ $(LIBS2) $(LIBS_GP)
+	$(CXX) $(CXXFLAGS_GP) $(OBJS_GP) $(STRIPFLAGS) $(LDFLAGS) -o $@ $(LIBS2) $(LIBS_GP)
 %.gpo: %.c
 	$(CC) $(CFLAGS_GP) -c $< -o $*.gpo
 %.gpo: %.cpp
-	$(CXX) $(CFLAGS_GP) -c $< -o $*.gpo
+	$(CXX) $(CXXFLAGS_GP) -c $< -o $*.gpo
 
 hspcmp: $(OBJS_CMP)
-	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) $(STRIPFLAGS) -o $@
+	$(CXX) $(CXXFLAGS_CMP) $(OBJS_CMP) $(STRIPFLAGS) $(LDFLAGS) -o $@
 %.o: %.c
 	$(CC) $(CFLAGS_CMP) -c $< -o $*.o
 %.o: %.cpp
-	$(CXX) $(CFLAGS_CMP) -c $< -o $*.o
+	$(CXX) $(CXXFLAGS_CMP) -c $< -o $*.o
 
 hsp3cl: $(OBJS_CL)
-	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -lcurl -lgpiod -lpthread -lffi -o $@
+	$(CXX) $(CXXFLAGS_CL) $(OBJS_CL) $(LDFLAGS) -lm -lstdc++ -lcurl -lgpiod -lpthread -lffi -o $@
 %.o: %.c
 	$(CC) $(CFLAGS_CL) -c $< -o $*.o
 %.o: %.cpp
-	$(CXX) $(CFLAGS_CL) -c $< -o $*.o
+	$(CXX) $(CXXFLAGS_CL) -c $< -o $*.o
 
 hsed: src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp
-	$(CXX) -O2 -Wno-write-strings -o hsed src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp `$(PKG_CONFIG) --cflags --libs gtk+-2.0`
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -O2 $(DEBUG_CFLAGS) -Wno-write-strings $(LDFLAGS) -o hsed src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp `$(PKG_CONFIG) --cflags --libs gtk+-2.0`
+
+helpmes.ax: hspcmp hspsdk/hsphelp/helpmes.hsp common/mod_hs.as
+	./hspcmp -i -u hspsdk/hsphelp/helpmes.hsp -o$@
+
+install: $(TARGETS)
+	$(INSTALL) -d $(DESTDIR)$(BINDIR)
+	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)
+	$(INSTALL) -d $(DESTDIR)$(APPDIR)
+	$(INSTALL) -d $(DESTDIR)$(PIXMAPDIR)
+	$(INSTALL) -m 0755 hspcmp hsp3cl hsp3dish hsp3gp hsed $(DESTDIR)$(OPENHSPDIR)/
+	$(INSTALL) -m 0644 helpmes.ax $(DESTDIR)$(OPENHSPDIR)/
+	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)/common
+	cp -a common/. $(DESTDIR)$(OPENHSPDIR)/common/
+	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)/hsphelp
+	cp -a hsphelp/. $(DESTDIR)$(OPENHSPDIR)/hsphelp/
+	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)/hsphelp_en
+	cp -a hsphelp_en/. $(DESTDIR)$(OPENHSPDIR)/hsphelp_en/
+	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)/hspsdk/hsphelp
+	cp -a hspsdk/hsphelp/. $(DESTDIR)$(OPENHSPDIR)/hspsdk/hsphelp/
+	$(INSTALL) -m 0644 hsed.desktop $(DESTDIR)$(APPDIR)/
+	$(INSTALL) -m 0644 hsed.png $(DESTDIR)$(PIXMAPDIR)/
+	printf '%s\n' '#!/bin/sh' 'exec $(OPENHSPDIR)/hspcmp --compath=$(OPENHSPDIR)/common/ --syspath=$(OPENHSPDIR)/ "$$@"' > $(DESTDIR)$(BINDIR)/hspcmp
+	printf '%s\n' '#!/bin/sh' 'exec $(OPENHSPDIR)/hsp3cl "$$@"' > $(DESTDIR)$(BINDIR)/hsp3cl
+	printf '%s\n' '#!/bin/sh' 'exec $(OPENHSPDIR)/hsp3dish "$$@"' > $(DESTDIR)$(BINDIR)/hsp3dish
+	printf '%s\n' '#!/bin/sh' 'exec $(OPENHSPDIR)/hsp3gp "$$@"' > $(DESTDIR)$(BINDIR)/hsp3gp
+	printf '%s\n' '#!/bin/sh' 'exec $(OPENHSPDIR)/hsed "$$@"' > $(DESTDIR)$(BINDIR)/hsed
+	chmod 0755 $(DESTDIR)$(BINDIR)/hspcmp $(DESTDIR)$(BINDIR)/hsp3cl $(DESTDIR)$(BINDIR)/hsp3dish $(DESTDIR)$(BINDIR)/hsp3gp $(DESTDIR)$(BINDIR)/hsed
+
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/hspcmp $(DESTDIR)$(BINDIR)/hsp3cl $(DESTDIR)$(BINDIR)/hsp3dish $(DESTDIR)$(BINDIR)/hsp3gp $(DESTDIR)$(BINDIR)/hsed
+	rm -f $(DESTDIR)$(APPDIR)/hsed.desktop
+	rm -f $(DESTDIR)$(PIXMAPDIR)/hsed.png
+	rm -rf $(DESTDIR)$(OPENHSPDIR)
 
 libgameplay.a: $(OBJS_GAMEPLAY)
 	rm -f $@
@@ -515,4 +565,3 @@ libLinearMath.a: $(OBJS_LINEAR_MATH)
 
 clean:
 	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
-

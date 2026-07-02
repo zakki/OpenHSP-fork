@@ -1,0 +1,42 @@
+Source: openhsp
+Section: devel
+Priority: optional
+Maintainer: Kensuke Matsuzaki <knsk.mtzk@gmail.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ libcurl4-openssl-dev,
+ libegl-dev,
+ libffi-dev,
+ libgl-dev,
+ libglu1-mesa-dev,
+ libgpiod-dev,
+ libgtk2.0-dev,
+ libsdl2-dev,
+ libsdl2-image-dev,
+ libsdl2-mixer-dev,
+ libsdl2-ttf-dev,
+ pkg-config
+Standards-Version: 4.6.2
+Homepage: https://github.com/onitama/OpenHSP
+Rules-Requires-Root: no
+
+Package: openhsp
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends}
+Description: Hot Soup Processor tools and Linux runtimes
+ OpenHSP provides the Hot Soup Processor compiler and Linux runtimes.
+ This package installs the command-line compiler, console runtime,
+ HSP3Dish runtime, HGIMG4 runtime, and common include files.
+
+Package: openhsp-hsed
+Section: editors
+Architecture: any
+Depends:
+ openhsp (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends}
+Description: GTK2 script editor for Hot Soup Processor
+ This package provides the lightweight GTK2 HSP script editor and desktop
+ launcher for the OpenHSP Linux tools.
