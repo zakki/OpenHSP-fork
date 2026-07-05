@@ -59,6 +59,42 @@ jobs:
           src/hspcmp/*.js
           src/hspcmp/*.wasm
 
+  build-deb:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-22.04-amd64
+            runner: ubuntu-22.04
+          - name: ubuntu-22.04-arm64
+            runner: ubuntu-22.04-arm
+          - name: ubuntu-24.04-amd64
+            runner: ubuntu-24.04
+          - name: ubuntu-24.04-arm64
+            runner: ubuntu-24.04-arm
+          - name: ubuntu-26.04-amd64
+            runner: ubuntu-26.04
+          - name: ubuntu-26.04-arm64
+            runner: ubuntu-26.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y devscripts equivs
+        sudo mk-build-deps -i -r -t "apt-get -y" debian/control
+    - name: Build packages
+      run: |
+        dpkg-buildpackage -us -uc -b
+        mkdir -p deb-artifacts
+        cp ../*.deb deb-artifacts/
+    - name: Archive .deb packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: openhsp-deb-${{ matrix.name }}
+        path: deb-artifacts/*.deb
+
   build-win32:
     runs-on: windows-latest
 
