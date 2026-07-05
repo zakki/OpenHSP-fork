@@ -74,19 +74,31 @@ jobs:
             runner: ubuntu-24.04-arm
           - name: ubuntu-26.04-amd64
             runner: ubuntu-26.04
+            build_profiles: nogpiod
           - name: ubuntu-26.04-arm64
             runner: ubuntu-26.04-arm
+            build_profiles: nogpiod
     runs-on: ${{ matrix.runner }}
+    env:
+      DEB_BUILD_PROFILES: ${{ matrix.build_profiles || '' }}
     steps:
     - uses: actions/checkout@v4
     - name: Install build dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y devscripts equivs
-        sudo mk-build-deps -i -r -t "apt-get -y" debian/control
+        if [ -n "$DEB_BUILD_PROFILES" ]; then
+          sudo mk-build-deps -i -r -t "apt-get -y" -P "$DEB_BUILD_PROFILES" debian/control
+        else
+          sudo mk-build-deps -i -r -t "apt-get -y" debian/control
+        fi
     - name: Build packages
       run: |
-        dpkg-buildpackage -us -uc -b
+        if [ -n "$DEB_BUILD_PROFILES" ]; then
+          dpkg-buildpackage -us -uc -b -P"$DEB_BUILD_PROFILES"
+        else
+          dpkg-buildpackage -us -uc -b
+        fi
         mkdir -p deb-artifacts
         cp ../*.deb deb-artifacts/
     - name: Archive .deb packages

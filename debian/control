@@ -9,7 +9,7 @@ Build-Depends:
  libffi-dev,
  libgl-dev,
  libglu1-mesa-dev,
- libgpiod-dev,
+ libgpiod-dev <!nogpiod>,
  libgtk2.0-dev,
  libsdl2-dev,
  libsdl2-image-dev,
@@ -34,6 +34,7 @@ Description: Hot Soup Processor tools and Linux runtimes
 
 Package: openhsp-gpio-gpiod
 Architecture: any
+Build-Profiles: <!nogpiod>
 Depends:
  openhsp (= ${binary:Version}),
  ${misc:Depends},

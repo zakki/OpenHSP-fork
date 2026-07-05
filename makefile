@@ -2,6 +2,7 @@ CC = gcc
 CXX = g++
 AR = ar
 DEBUG ?= 0
+ENABLE_GPIOD ?= 1
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 OPENHSPDIR ?= $(PREFIX)/lib/openhsp
@@ -469,7 +470,13 @@ OBJS_LINEAR_MATH = \
 	src/hsp3dish/extlib/src/LinearMath/btThreads.gpo \
 	src/hsp3dish/extlib/src/LinearMath/btVector3.gpo
 
-TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax libhsp3gpio_gpiod.so
+ifeq ($(ENABLE_GPIOD),1)
+GPIOD_TARGET = libhsp3gpio_gpiod.so
+GPIOD_INSTALL = $(INSTALL) -m 0755 libhsp3gpio_gpiod.so $(DESTDIR)$(OPENHSPDIR)/
+endif
+
+TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax $(GPIOD_TARGET)
+CLEAN_TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax libhsp3gpio_gpiod.so
 LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -ldl -lpthread -lffi
 LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -ldl -lpthread -lffi
 LIBS_GP = \
@@ -525,7 +532,8 @@ install: $(TARGETS)
 	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)
 	$(INSTALL) -d $(DESTDIR)$(APPDIR)
 	$(INSTALL) -d $(DESTDIR)$(PIXMAPDIR)
-	$(INSTALL) -m 0755 hspcmp hsp3cl hsp3dish hsp3gp hsed libhsp3gpio_gpiod.so $(DESTDIR)$(OPENHSPDIR)/
+	$(INSTALL) -m 0755 hspcmp hsp3cl hsp3dish hsp3gp hsed $(DESTDIR)$(OPENHSPDIR)/
+	$(GPIOD_INSTALL)
 	$(INSTALL) -m 0644 helpmes.ax $(DESTDIR)$(OPENHSPDIR)/
 	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)/common
 	cp -a common/. $(DESTDIR)$(OPENHSPDIR)/common/
@@ -567,4 +575,4 @@ libLinearMath.a: $(OBJS_LINEAR_MATH)
 	$(AR) rcs $@ $(OBJS_LINEAR_MATH)
 
 clean:
-	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
+	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(CLEAN_TARGETS) $(LIBS_GP)

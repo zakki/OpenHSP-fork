@@ -4,6 +4,10 @@ include /usr/share/dpkg/buildflags.mk
 
 BUILD_FLAGS = DEBUG=1 CPPFLAGS="$(CPPFLAGS)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" LDFLAGS="$(LDFLAGS)"
 
+ifneq (,$(filter nogpiod,$(DEB_BUILD_PROFILES)))
+BUILD_FLAGS += ENABLE_GPIOD=0
+endif
+
 %:
 	dh $@
 
