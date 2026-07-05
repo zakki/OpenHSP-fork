@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <regex.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include <linux/input.h>
 #include <stdbool.h>
 
@@ -471,234 +472,118 @@ static int echo_file2( char *name, int value )
 	return echo_file( name, vstr );
 }
 
-#define USE_GPIOD
+typedef int (*hsp3_gpio_init_t)( void );
+typedef void (*hsp3_gpio_bye_t)( void );
+typedef int (*hsp3_gpio_out_t)( int port, int value );
+typedef int (*hsp3_gpio_in_t)( int port, int *value );
+typedef int (*hsp3_gpio_dir_t)( int port, int *value );
 
-#ifdef USE_GPIOD
+static void *gpio_provider_handle;
+static int gpio_provider_loaded;
+static int gpio_provider_ready;
+static hsp3_gpio_init_t gpio_provider_init;
+static hsp3_gpio_bye_t gpio_provider_bye;
+static hsp3_gpio_out_t gpio_provider_out;
+static hsp3_gpio_in_t gpio_provider_in;
+static hsp3_gpio_dir_t gpio_provider_dir;
 
-//	use gpiod
-#include<gpiod.h>
-
-#define GPIO_TYPE_NONE 0
-#define GPIO_TYPE_OUT 1
-#define GPIO_TYPE_IN 2
-#define GPIO_MAX 32
-
-const char *gpiod_appname = "hsp3dish";
-
-static gpiod_chip *gchip;
-struct gpiod_line *gline;
-static int gpio_type[GPIO_MAX];
-
-static int gpiod_line( int port )
+static void *gpio_dlopen_from_exedir( const char *filename )
 {
-	if ( port >= GPIO_MAX ) return -1;
-	gline = gpiod_chip_get_line(gchip, port);
-	if ( gline == NULL ) return -1;
-	return 0;
+	char exepath[4096];
+	char libpath[4096];
+	ssize_t len = readlink("/proc/self/exe", exepath, sizeof(exepath) - 1);
+	if ( len <= 0 ) return NULL;
+	exepath[len] = '\0';
+
+	char *slash = strrchr(exepath, '/');
+	if ( slash == NULL ) return NULL;
+	*slash = '\0';
+
+	size_t dirlen = strlen(exepath);
+	size_t filelen = strlen(filename);
+	if ( dirlen + 1 + filelen + 1 > sizeof(libpath) ) return NULL;
+	memcpy(libpath, exepath, dirlen);
+	libpath[dirlen] = '/';
+	memcpy(libpath + dirlen + 1, filename, filelen + 1);
+	return dlopen(libpath, RTLD_NOW | RTLD_LOCAL);
 }
 
-static int gpio_out( int port, int value )
+static int gpio_load_provider( void )
 {
-	int i = gpiod_line(port);
-	if ( i < 0 ) return -1;
+	if ( gpio_provider_loaded ) return gpio_provider_ready;
+	gpio_provider_loaded = 1;
 
-	if ( gpio_type[port] != GPIOD_LINE_DIRECTION_OUTPUT ) {
-		// GPIOを出力モードに設定する
-		if (gpiod_line_request_output(gline, gpiod_appname, value) != 0) {
-			return -1;
-		}
-		gpio_type[port]=GPIOD_LINE_DIRECTION_OUTPUT;
+	const char *provider = getenv("OPENHSP_GPIO_PROVIDER");
+	if ( provider != NULL && provider[0] != '\0' ) {
+		gpio_provider_handle = dlopen(provider, RTLD_NOW | RTLD_LOCAL);
+	}
+	if ( gpio_provider_handle == NULL ) {
+		gpio_provider_handle = gpio_dlopen_from_exedir("libhsp3gpio_gpiod.so");
+	}
+	if ( gpio_provider_handle == NULL ) {
+		gpio_provider_handle = dlopen("libhsp3gpio_gpiod.so", RTLD_NOW | RTLD_LOCAL);
+	}
+	if ( gpio_provider_handle == NULL ) return 0;
+
+	gpio_provider_init = (hsp3_gpio_init_t)dlsym(gpio_provider_handle, "hsp3_gpio_init");
+	gpio_provider_bye = (hsp3_gpio_bye_t)dlsym(gpio_provider_handle, "hsp3_gpio_bye");
+	gpio_provider_out = (hsp3_gpio_out_t)dlsym(gpio_provider_handle, "hsp3_gpio_out");
+	gpio_provider_in = (hsp3_gpio_in_t)dlsym(gpio_provider_handle, "hsp3_gpio_in");
+	gpio_provider_dir = (hsp3_gpio_dir_t)dlsym(gpio_provider_handle, "hsp3_gpio_dir");
+
+	if ( gpio_provider_init == NULL || gpio_provider_bye == NULL ||
+		 gpio_provider_out == NULL || gpio_provider_in == NULL ||
+		 gpio_provider_dir == NULL ) {
+		dlclose(gpio_provider_handle);
+		gpio_provider_handle = NULL;
 		return 0;
 	}
-	// GPIOの値を設定する
-	i = gpiod_line_set_value( gline, value );
-	if  (i < 0 ) return -1;
-	return 0;
-}
 
-static int gpio_in( int port, int *value )
-{
-	int i = gpiod_line(port);
-	if ( i < 0 ) return -2;
-
-	if ( gpio_type[port] != GPIOD_LINE_DIRECTION_INPUT ) {
-		// GPIOを入力モードに設定する
-		if (gpiod_line_request_input(gline, gpiod_appname) != 0) {
-			return -3;
-		}
-		gpio_type[port]=GPIOD_LINE_DIRECTION_INPUT;
-	}
-	// GPIOの値を取得する
-	i = gpiod_line_get_value(gline);
-	if  (i < 0 ) return -4;
-	*value = i;
-	return 0;
-}
-
-static int gpio_dir( int port, int *value )
-{
-	int i = gpiod_line(port);
-	if ( i < 0 ) return -1;
-
-	i = gpiod_line_direction(gline);
-	*value = i;
-	return 0;
-}
-
-static void gpio_init( void )
-{
-	// GPIOデバイスを開く
-	gchip = gpiod_chip_open_lookup("");
-	if ( gchip == NULL ) {
-		printf("gpiod initalize failed.\r\n");
-	}
-	int i;
-	for(i=0;i<GPIO_MAX;i++) {
-		gpio_type[i] = 0;
-	}
-}
-
-static void gpio_bye( void )
-{
-	// GPIOデバイスを閉じる
-	if ( gchip != NULL ) {
-		gpiod_chip_close(gchip);
-	}
-}
-
-#else
-
-//	use file I/O
-#define GPIO_TYPE_NONE 0
-#define GPIO_TYPE_OUT 1
-#define GPIO_TYPE_IN 2
-#define GPIO_MAX 32
-
-#define GPIO_CLASS "/sys/class/gpio/"
-
-static int gpio_type[GPIO_MAX];
-static int gpio_value[GPIO_MAX];
-
-static int gpio_delport( int port )
-{
-	if ((port<0)||(port>=GPIO_MAX)) return -1;
-
-	if ( gpio_type[port]==GPIO_TYPE_NONE ) return 0;
-	//echo_file2( GPIO_CLASS "unexport", port );
-	//usleep(100000);		//0.1秒待つ(念のため)
-	gpio_type[port]=GPIO_TYPE_NONE;
-	return 0;
-}
-
-static int gpio_setport( int port, int type )
-{
-	if ((port<0)||(port>=GPIO_MAX)) return -1;
-
-	if ( gpio_type[port]==GPIO_TYPE_NONE ) {
-		echo_file2( GPIO_CLASS "export", port );
-		usleep(100000);		//0.1秒待つ(念のため)
-	}
-
-	if ( gpio_type[port] == type ) return 0;
-
-	int res = 0;
-	char vstr[256];
-	sprintf( vstr, GPIO_CLASS "gpio%d/direction", port );
-
-	switch( type ) {
-	case GPIO_TYPE_OUT:
-		res = echo_file( vstr, "out" );
-		break;
-	case GPIO_TYPE_IN:
-		res = echo_file( vstr, "in" );
-		break;
-	}
-
-	if ( res ) {
-		gpio_type[port] = GPIO_TYPE_NONE;
-		return res;
-	}
-
-	gpio_type[port] = type;
-	gpio_value[port] = 0;
-	return 0;
+	if ( gpio_provider_init() != 0 ) return 0;
+	gpio_provider_ready = 1;
+	return 1;
 }
 
 static int gpio_out( int port, int value )
 {
-	if ((port<0)||(port>=GPIO_MAX)) return -1;
-	if ( gpio_type[port]!=GPIO_TYPE_OUT ) {
-		int res = gpio_setport( port, GPIO_TYPE_OUT );
-		if ( res ) return res;
-	}
-
-	char vstr[256];
-	sprintf( vstr, GPIO_CLASS "gpio%d/value", port );
-	if ( value == 0 ) {
-		gpio_value[port] = 0;
-		return echo_file( vstr, "0" );
-	}
-	gpio_value[port] = 1;
-	return echo_file( vstr, "1" );
+	if ( gpio_load_provider() == 0 ) return -1;
+	return gpio_provider_out(port, value);
 }
 
 static int gpio_in( int port, int *value )
 {
-	if ((port<0)||(port>=GPIO_MAX)) return -1;
-	if ( gpio_type[port]!=GPIO_TYPE_IN ) {
-		int res = gpio_setport( port, GPIO_TYPE_IN );
-		if ( res ) return res;
-	}
-
-	int fd,rd,i;
-	char vstr[256];
-	char ev[256];
-	char a1;
-	sprintf( vstr, GPIO_CLASS "gpio%d/value", port );
-
-	fd = open( vstr, O_RDONLY | O_NONBLOCK );
-	if (fd < 0) {
-		return -1;
-	}
-    rd = read(fd,ev,255);
-    if(rd > 0) {
-		i = 0;
-		while(1) {
-			if ( i >= rd ) break;
-			a1 = ev[i++];
-			if ( a1 == '0' ) gpio_value[port] = 0;
-			if ( a1 == '1' ) gpio_value[port] = 1;
-		}
-	}
-	close(fd);
-
-	*value = gpio_value[port];
-	return 0;
+	if ( gpio_load_provider() == 0 ) return -1;
+	return gpio_provider_in(port, value);
 }
 
 static int gpio_dir( int port, int *value )
 {
-	*value = 0;
-	return 0;
+	if ( gpio_load_provider() == 0 ) return -1;
+	return gpio_provider_dir(port, value);
 }
 
 static void gpio_init( void )
 {
-	int i;
-	for(i=0;i<GPIO_MAX;i++) {
-		gpio_type[i] = GPIO_TYPE_NONE;
-	}
+	gpio_provider_handle = NULL;
+	gpio_provider_loaded = 0;
+	gpio_provider_ready = 0;
+	gpio_provider_init = NULL;
+	gpio_provider_bye = NULL;
+	gpio_provider_out = NULL;
+	gpio_provider_in = NULL;
+	gpio_provider_dir = NULL;
 }
 
 static void gpio_bye( void )
 {
-	int i;
-	for(i=0;i<GPIO_MAX;i++) {
-		gpio_delport(i);
+	if ( gpio_provider_ready && gpio_provider_bye != NULL ) {
+		gpio_provider_bye();
 	}
+	if ( gpio_provider_handle != NULL ) {
+		dlclose(gpio_provider_handle);
+	}
+	gpio_init();
 }
-
-#endif
 
 //--------------------------------------------------------------
 
@@ -869,4 +754,3 @@ void hsp3dish_termdevinfo_io( void )
 
 
 /*----------------------------------------------------------*/
-

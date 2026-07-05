@@ -469,9 +469,9 @@ OBJS_LINEAR_MATH = \
 	src/hsp3dish/extlib/src/LinearMath/btThreads.gpo \
 	src/hsp3dish/extlib/src/LinearMath/btVector3.gpo
 
-TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax
-LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
-LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
+TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax libhsp3gpio_gpiod.so
+LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -ldl -lpthread -lffi
+LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -ldl -lpthread -lffi
 LIBS_GP = \
 	libgameplay.a \
 	libBulletDynamics.a \
@@ -505,11 +505,14 @@ hspcmp: $(OBJS_CMP)
 	$(CXX) $(CXXFLAGS_CMP) -c $< -o $*.o
 
 hsp3cl: $(OBJS_CL)
-	$(CXX) $(CXXFLAGS_CL) $(OBJS_CL) $(LDFLAGS) -lm -lstdc++ -lcurl -lgpiod -lpthread -lffi -o $@
+	$(CXX) $(CXXFLAGS_CL) $(OBJS_CL) $(LDFLAGS) -lm -lstdc++ -lcurl -ldl -lpthread -lffi -o $@
 %.o: %.c
 	$(CC) $(CFLAGS_CL) -c $< -o $*.o
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS_CL) -c $< -o $*.o
+
+libhsp3gpio_gpiod.so: src/hsp3/linux/devctrl_gpio_gpiod.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS_ENV) $(DEBUG_CFLAGS) -fPIC -shared $(LDFLAGS) -o $@ $< -lgpiod
 
 hsed: src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -O2 $(DEBUG_CFLAGS) -Wno-write-strings $(LDFLAGS) -o hsed src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp `$(PKG_CONFIG) --cflags --libs gtk+-2.0`
@@ -522,7 +525,7 @@ install: $(TARGETS)
 	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)
 	$(INSTALL) -d $(DESTDIR)$(APPDIR)
 	$(INSTALL) -d $(DESTDIR)$(PIXMAPDIR)
-	$(INSTALL) -m 0755 hspcmp hsp3cl hsp3dish hsp3gp hsed $(DESTDIR)$(OPENHSPDIR)/
+	$(INSTALL) -m 0755 hspcmp hsp3cl hsp3dish hsp3gp hsed libhsp3gpio_gpiod.so $(DESTDIR)$(OPENHSPDIR)/
 	$(INSTALL) -m 0644 helpmes.ax $(DESTDIR)$(OPENHSPDIR)/
 	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)/common
 	cp -a common/. $(DESTDIR)$(OPENHSPDIR)/common/

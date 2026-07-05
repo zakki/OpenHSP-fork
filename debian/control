@@ -25,10 +25,24 @@ Architecture: any
 Depends:
  ${misc:Depends},
  ${shlibs:Depends}
+Suggests:
+ openhsp-gpio-gpiod
 Description: Hot Soup Processor tools and Linux runtimes
  OpenHSP provides the Hot Soup Processor compiler and Linux runtimes.
  This package installs the command-line compiler, console runtime,
  HSP3Dish runtime, HGIMG4 runtime, and common include files.
+
+Package: openhsp-gpio-gpiod
+Architecture: any
+Depends:
+ openhsp (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends}
+Description: libgpiod GPIO provider for OpenHSP runtimes
+ This package enables GPIO commands in the OpenHSP Linux runtimes through
+ libgpiod.  It is intended for systems such as Raspberry Pi or x86 single
+ board computers that expose GPIO lines through the Linux GPIO character
+ device interface.
 
 Package: openhsp-hsed
 Section: editors

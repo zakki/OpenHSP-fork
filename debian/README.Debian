@@ -9,3 +9,12 @@ runtime directory by default:
   --syspath=/usr/lib/openhsp/
 
 Pass a later --compath or --syspath option if a project needs a custom tree.
+
+GPIO support
+------------
+
+The Linux runtimes do not link libgpiod directly. GPIO commands are enabled
+only when the optional openhsp-gpio-gpiod package is installed. This keeps the
+default openhsp package usable on systems without GPIO hardware or libgpiod,
+while allowing Raspberry Pi and x86 single-board computer users to add GPIO
+support separately.
