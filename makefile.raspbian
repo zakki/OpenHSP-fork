@@ -1,6 +1,13 @@
 CC = gcc
 CXX = g++
 AR = ar
+ENABLE_GPIOD ?= 1
+INSTALL ?= install
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+OPENHSPDIR ?= $(PREFIX)/lib/openhsp
+APPDIR ?= $(PREFIX)/share/applications
+PIXMAPDIR ?= $(PREFIX)/share/pixmaps
 
 CFLAGS_ENV = # 32bit
 CFLAGS_DISH = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV)
@@ -101,7 +108,17 @@ OBJS_CL = \
 	src/hsp3/linux/hsp3extlib_ffi.o \
 	src/hsp3/linux/hsp3gr_linux.o
 
-TARGETS = hsp3dish hsp3cl hspcmp hsed
+ifeq ($(ENABLE_GPIOD),1)
+GPIOD_TARGET = libhsp3gpio_gpiod.so
+GPIOD_INSTALL = $(INSTALL) -m 0755 libhsp3gpio_gpiod.so $(DESTDIR)$(OPENHSPDIR)/
+endif
+SYSFS_TARGET = libhsp3gpio_sysfs.so
+SYSFS_INSTALL = $(INSTALL) -m 0755 libhsp3gpio_sysfs.so $(DESTDIR)$(OPENHSPDIR)/
+
+TARGETS = hsp3dish hsp3cl hspcmp hsed $(GPIOD_TARGET) $(SYSFS_TARGET)
+CLEAN_TARGETS = hsp3dish hsp3cl hspcmp hsed libhsp3gpio_gpiod.so libhsp3gpio_sysfs.so
+LIBS_DISH = -lm -lstdc++ -lcurl -ldl -lpthread -lffi
+LIBS_CL = -lm -lstdc++ -lcurl -ldl -lpthread -lffi
 LIBS_GP = \
 	libgameplay.a \
 	libBulletDynamics.a \
@@ -110,9 +127,11 @@ LIBS_GP = \
 
 all: $(TARGETS)
 
+.PHONY: all install uninstall clean
+
 .SUFFIXES: .cpp
 hsp3dish: $(OBJS)
-	$(CXX) $(CFLAGS_DISH) $(OBJS) $(LDFLAGS) -s -o $@
+	$(CXX) $(CFLAGS_DISH) $(OBJS) $(LDFLAGS) -s -o $@ $(LIBS_DISH)
 %.do: %.c
 	$(CC) $(CFLAGS_DISH) -c $< -o $*.do
 %.do: %.cpp
@@ -126,15 +145,46 @@ hspcmp: $(OBJS_CMP)
 	$(CXX) $(CFLAGS_CMP) -c $< -o $*.o
 
 hsp3cl: $(OBJS_CL)
-	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -lcurl -s -o $@
+	$(CXX) $(CFLAGS_CL) $(OBJS_CL) $(LDFLAGS) -s -o $@ $(LIBS_CL)
 %.o: %.c
 	$(CC) $(CFLAGS_CL) -c $< -o $*.o
 %.o: %.cpp
 	$(CXX) $(CFLAGS_CL) -c $< -o $*.o
 
+libhsp3gpio_gpiod.so: src/hsp3/linux/devctrl_gpio_gpiod.cpp
+	$(CXX) $(CFLAGS_ENV) -fPIC -shared $(LDFLAGS) -o $@ $< -lgpiod
+
+libhsp3gpio_sysfs.so: src/hsp3/linux/devctrl_gpio_sysfs.cpp
+	$(CXX) $(CFLAGS_ENV) -fPIC -shared $(LDFLAGS) -o $@ $<
+
 hsed: src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp
 	$(CXX) -O2 -Wno-write-strings -o hsed src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp `$(PKG_CONFIG) --cflags --libs gtk+-2.0`
 
-clean:
-	rm -f $(OBJS) $(OBJS_CMP) $(OBJS_CL) $(TARGETS)
+install: $(TARGETS)
+	$(INSTALL) -d $(DESTDIR)$(BINDIR)
+	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)
+	$(INSTALL) -d $(DESTDIR)$(APPDIR)
+	$(INSTALL) -d $(DESTDIR)$(PIXMAPDIR)
+	$(INSTALL) -m 0755 hspcmp hsp3cl hsp3dish hsed $(DESTDIR)$(OPENHSPDIR)/
+	$(GPIOD_INSTALL)
+	$(SYSFS_INSTALL)
+	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)/common
+	cp -a common/. $(DESTDIR)$(OPENHSPDIR)/common/
+	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)/hsphelp
+	cp -a hsphelp/. $(DESTDIR)$(OPENHSPDIR)/hsphelp/
+	$(INSTALL) -m 0644 hsed.desktop $(DESTDIR)$(APPDIR)/
+	$(INSTALL) -m 0644 hsed.png $(DESTDIR)$(PIXMAPDIR)/
+	printf '%s\n' '#!/bin/sh' 'exec $(OPENHSPDIR)/hspcmp --compath=$(OPENHSPDIR)/common/ --syspath=$(OPENHSPDIR)/ "$$@"' > $(DESTDIR)$(BINDIR)/hspcmp
+	printf '%s\n' '#!/bin/sh' 'exec $(OPENHSPDIR)/hsp3cl "$$@"' > $(DESTDIR)$(BINDIR)/hsp3cl
+	printf '%s\n' '#!/bin/sh' 'exec $(OPENHSPDIR)/hsp3dish "$$@"' > $(DESTDIR)$(BINDIR)/hsp3dish
+	printf '%s\n' '#!/bin/sh' 'exec $(OPENHSPDIR)/hsed "$$@"' > $(DESTDIR)$(BINDIR)/hsed
+	chmod 0755 $(DESTDIR)$(BINDIR)/hspcmp $(DESTDIR)$(BINDIR)/hsp3cl $(DESTDIR)$(BINDIR)/hsp3dish $(DESTDIR)$(BINDIR)/hsed
 
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/hspcmp $(DESTDIR)$(BINDIR)/hsp3cl $(DESTDIR)$(BINDIR)/hsp3dish $(DESTDIR)$(BINDIR)/hsed
+	rm -f $(DESTDIR)$(APPDIR)/hsed.desktop
+	rm -f $(DESTDIR)$(PIXMAPDIR)/hsed.png
+	rm -rf $(DESTDIR)$(OPENHSPDIR)
+
+clean:
+	rm -f $(OBJS) $(OBJS_CMP) $(OBJS_CL) $(CLEAN_TARGETS)
