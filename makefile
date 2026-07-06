@@ -3,6 +3,7 @@ CXX = g++
 AR = ar
 DEBUG ?= 0
 ENABLE_GPIOD ?= 1
+USE_SYSTEM_EXTLIBS ?= 0
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 OPENHSPDIR ?= $(PREFIX)/lib/openhsp
@@ -22,8 +23,20 @@ endif
 CFLAGS_ENV =  -DHSP64 -Werror=int-to-pointer-cast # 64bit
 PKG_CONFIG = pkg-config
 
+ifeq ($(USE_SYSTEM_EXTLIBS),1)
+HSP_GP_EXTLIB_PACKAGES = glew libpng zlib
+HSP_GP_EXTLIB_CHECK := $(shell $(PKG_CONFIG) --exists $(HSP_GP_EXTLIB_PACKAGES) || echo missing)
+ifneq ($(HSP_GP_EXTLIB_CHECK),)
+$(error USE_SYSTEM_EXTLIBS=1 requires pkg-config packages: $(HSP_GP_EXTLIB_PACKAGES))
+endif
+HSP_GP_EXTLIB_CFLAGS = $(shell $(PKG_CONFIG) --cflags $(HSP_GP_EXTLIB_PACKAGES))
+HSP_GP_EXTLIB_LIBS = $(shell $(PKG_CONFIG) --libs $(HSP_GP_EXTLIB_PACKAGES))
+else
+HSP_GP_EXTLIB_CFLAGS = -I src/hsp3dish/extlib/src/glew
+endif
+
 HSP_DISH_DEFS = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
-HSP_GP_DEFS = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11 $(CFLAGS_ENV) $(DEBUG_CFLAGS)
+HSP_GP_DEFS = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src $(HSP_GP_EXTLIB_CFLAGS) -I src/hsp3dish/gameplay/src -std=c++11 $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 HSP_CL_DEFS = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 HSP_CMP_DEFS = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 CFLAGS_DISH = $(CPPFLAGS) $(CFLAGS) $(HSP_DISH_DEFS)
@@ -281,7 +294,10 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/gameplay/src/Vector4.gpo \
 	src/hsp3dish/gameplay/src/VertexAttributeBinding.gpo \
 	src/hsp3dish/gameplay/src/VertexFormat.gpo \
-	src/hsp3dish/gameplay/src/VerticalLayout.gpo \
+	src/hsp3dish/gameplay/src/VerticalLayout.gpo
+
+ifneq ($(USE_SYSTEM_EXTLIBS),1)
+OBJS_GAMEPLAY += \
 	src/hsp3dish/extlib/src/glew/GL/glew.gpo \
 	src/hsp3dish/extlib/src/libpng/png.gpo \
 	src/hsp3dish/extlib/src/libpng/pngerror.gpo \
@@ -313,6 +329,7 @@ OBJS_GAMEPLAY = \
 	src/hsp3dish/extlib/src/zlib/trees.gpo \
 	src/hsp3dish/extlib/src/zlib/uncompr.gpo \
 	src/hsp3dish/extlib/src/zlib/zutil.gpo
+endif
 
 OBJS_BULLET_COLLISION = \
 	src/hsp3dish/extlib/src/BulletCollision/BroadphaseCollision/btAxisSweep3.gpo \
@@ -498,7 +515,7 @@ hsp3dish: $(OBJS)
 	$(CXX) $(CXXFLAGS_DISH) -c $< -o $*.do
 
 hsp3gp: $(OBJS_GP) $(LIBS_GP)
-	$(CXX) $(CXXFLAGS_GP) $(OBJS_GP) $(STRIPFLAGS) $(LDFLAGS) -o $@ $(LIBS2) $(LIBS_GP)
+	$(CXX) $(CXXFLAGS_GP) $(OBJS_GP) $(STRIPFLAGS) $(LDFLAGS) -o $@ $(LIBS2) $(LIBS_GP) $(HSP_GP_EXTLIB_LIBS)
 %.gpo: %.c
 	$(CC) $(CFLAGS_GP) -c $< -o $*.gpo
 %.gpo: %.cpp

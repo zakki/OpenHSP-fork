@@ -9,13 +9,16 @@ Build-Depends:
  libffi-dev,
  libgl-dev,
  libglu1-mesa-dev,
+ libglew-dev,
  libgpiod-dev <!nogpiod>,
  libgtk2.0-dev,
+ libpng-dev,
  libsdl2-dev,
  libsdl2-image-dev,
  libsdl2-mixer-dev,
  libsdl2-ttf-dev,
- pkg-config
+ pkg-config,
+ zlib1g-dev
 Standards-Version: 4.6.2
 Homepage: https://github.com/onitama/OpenHSP
 Rules-Requires-Root: no
