@@ -487,6 +487,20 @@ static hsp3_gpio_out_t gpio_provider_out;
 static hsp3_gpio_in_t gpio_provider_in;
 static hsp3_gpio_dir_t gpio_provider_dir;
 
+static void gpio_reset_provider( void )
+{
+	if ( gpio_provider_handle != NULL ) {
+		dlclose(gpio_provider_handle);
+	}
+	gpio_provider_handle = NULL;
+	gpio_provider_ready = 0;
+	gpio_provider_init = NULL;
+	gpio_provider_bye = NULL;
+	gpio_provider_out = NULL;
+	gpio_provider_in = NULL;
+	gpio_provider_dir = NULL;
+}
+
 static void *gpio_dlopen_from_exedir( const char *filename )
 {
 	char exepath[4096];
@@ -508,6 +522,34 @@ static void *gpio_dlopen_from_exedir( const char *filename )
 	return dlopen(libpath, RTLD_NOW | RTLD_LOCAL);
 }
 
+static int gpio_accept_provider( void *handle )
+{
+	if ( handle == NULL ) return 0;
+
+	gpio_provider_handle = handle;
+	gpio_provider_init = (hsp3_gpio_init_t)dlsym(gpio_provider_handle, "hsp3_gpio_init");
+	gpio_provider_bye = (hsp3_gpio_bye_t)dlsym(gpio_provider_handle, "hsp3_gpio_bye");
+	gpio_provider_out = (hsp3_gpio_out_t)dlsym(gpio_provider_handle, "hsp3_gpio_out");
+	gpio_provider_in = (hsp3_gpio_in_t)dlsym(gpio_provider_handle, "hsp3_gpio_in");
+	gpio_provider_dir = (hsp3_gpio_dir_t)dlsym(gpio_provider_handle, "hsp3_gpio_dir");
+
+	if ( gpio_provider_init == NULL || gpio_provider_bye == NULL ||
+		 gpio_provider_out == NULL || gpio_provider_in == NULL ||
+		 gpio_provider_dir == NULL ) {
+		gpio_reset_provider();
+		return 0;
+	}
+
+	if ( gpio_provider_init() != 0 ) {
+		gpio_provider_bye();
+		gpio_reset_provider();
+		return 0;
+	}
+
+	gpio_provider_ready = 1;
+	return 1;
+}
+
 static int gpio_load_provider( void )
 {
 	static const char *provider_names[] = {
@@ -520,33 +562,19 @@ static int gpio_load_provider( void )
 
 	const char *provider = getenv("OPENHSP_GPIO_PROVIDER");
 	if ( provider != NULL && provider[0] != '\0' ) {
-		gpio_provider_handle = dlopen(provider, RTLD_NOW | RTLD_LOCAL);
+		if ( gpio_accept_provider(dlopen(provider, RTLD_NOW | RTLD_LOCAL)) ) return 1;
 	}
-	for ( size_t i = 0; gpio_provider_handle == NULL && i < sizeof(provider_names) / sizeof(provider_names[0]); i++ ) {
-		gpio_provider_handle = gpio_dlopen_from_exedir(provider_names[i]);
-		if ( gpio_provider_handle == NULL ) {
-			gpio_provider_handle = dlopen(provider_names[i], RTLD_NOW | RTLD_LOCAL);
+	for ( size_t i = 0; i < sizeof(provider_names) / sizeof(provider_names[0]); i++ ) {
+		void *handle = gpio_dlopen_from_exedir(provider_names[i]);
+		if ( handle != NULL ) {
+			if ( gpio_accept_provider(handle) ) return 1;
+			continue;
+		}
+		if ( gpio_accept_provider(dlopen(provider_names[i], RTLD_NOW | RTLD_LOCAL)) ) {
+			return 1;
 		}
 	}
-	if ( gpio_provider_handle == NULL ) return 0;
-
-	gpio_provider_init = (hsp3_gpio_init_t)dlsym(gpio_provider_handle, "hsp3_gpio_init");
-	gpio_provider_bye = (hsp3_gpio_bye_t)dlsym(gpio_provider_handle, "hsp3_gpio_bye");
-	gpio_provider_out = (hsp3_gpio_out_t)dlsym(gpio_provider_handle, "hsp3_gpio_out");
-	gpio_provider_in = (hsp3_gpio_in_t)dlsym(gpio_provider_handle, "hsp3_gpio_in");
-	gpio_provider_dir = (hsp3_gpio_dir_t)dlsym(gpio_provider_handle, "hsp3_gpio_dir");
-
-	if ( gpio_provider_init == NULL || gpio_provider_bye == NULL ||
-		 gpio_provider_out == NULL || gpio_provider_in == NULL ||
-		 gpio_provider_dir == NULL ) {
-		dlclose(gpio_provider_handle);
-		gpio_provider_handle = NULL;
-		return 0;
-	}
-
-	if ( gpio_provider_init() != 0 ) return 0;
-	gpio_provider_ready = 1;
-	return 1;
+	return 0;
 }
 
 static int gpio_out( int port, int value )
@@ -569,14 +597,8 @@ static int gpio_dir( int port, int *value )
 
 static void gpio_init( void )
 {
-	gpio_provider_handle = NULL;
 	gpio_provider_loaded = 0;
-	gpio_provider_ready = 0;
-	gpio_provider_init = NULL;
-	gpio_provider_bye = NULL;
-	gpio_provider_out = NULL;
-	gpio_provider_in = NULL;
-	gpio_provider_dir = NULL;
+	gpio_reset_provider();
 }
 
 static void gpio_bye( void )
@@ -584,9 +606,7 @@ static void gpio_bye( void )
 	if ( gpio_provider_ready && gpio_provider_bye != NULL ) {
 		gpio_provider_bye();
 	}
-	if ( gpio_provider_handle != NULL ) {
-		dlclose(gpio_provider_handle);
-	}
+	gpio_provider_loaded = 0;
 	gpio_init();
 }
 
