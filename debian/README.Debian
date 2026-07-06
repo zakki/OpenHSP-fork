@@ -13,8 +13,10 @@ Pass a later --compath or --syspath option if a project needs a custom tree.
 GPIO support
 ------------
 
-The Linux runtimes do not link libgpiod directly. GPIO commands are enabled
-only when the optional openhsp-gpio-gpiod package is installed. This keeps the
-default openhsp package usable on systems without GPIO hardware or libgpiod,
-while allowing Raspberry Pi and x86 single-board computer users to add GPIO
-support separately.
+The Linux runtimes do not link GPIO backends directly. GPIO commands are
+enabled only when an optional GPIO provider package is installed. Install
+openhsp-gpio-gpiod for the Linux GPIO character device interface, or
+openhsp-gpio-sysfs for the legacy /sys/class/gpio interface used by older
+Raspberry Pi setups. This keeps the default openhsp package usable on systems
+without GPIO hardware or libgpiod, while allowing GPIO users to add support
+separately.

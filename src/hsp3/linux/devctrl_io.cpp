@@ -510,6 +510,11 @@ static void *gpio_dlopen_from_exedir( const char *filename )
 
 static int gpio_load_provider( void )
 {
+	static const char *provider_names[] = {
+		"libhsp3gpio_gpiod.so",
+		"libhsp3gpio_sysfs.so"
+	};
+
 	if ( gpio_provider_loaded ) return gpio_provider_ready;
 	gpio_provider_loaded = 1;
 
@@ -517,11 +522,11 @@ static int gpio_load_provider( void )
 	if ( provider != NULL && provider[0] != '\0' ) {
 		gpio_provider_handle = dlopen(provider, RTLD_NOW | RTLD_LOCAL);
 	}
-	if ( gpio_provider_handle == NULL ) {
-		gpio_provider_handle = gpio_dlopen_from_exedir("libhsp3gpio_gpiod.so");
-	}
-	if ( gpio_provider_handle == NULL ) {
-		gpio_provider_handle = dlopen("libhsp3gpio_gpiod.so", RTLD_NOW | RTLD_LOCAL);
+	for ( size_t i = 0; gpio_provider_handle == NULL && i < sizeof(provider_names) / sizeof(provider_names[0]); i++ ) {
+		gpio_provider_handle = gpio_dlopen_from_exedir(provider_names[i]);
+		if ( gpio_provider_handle == NULL ) {
+			gpio_provider_handle = dlopen(provider_names[i], RTLD_NOW | RTLD_LOCAL);
+		}
 	}
 	if ( gpio_provider_handle == NULL ) return 0;
 

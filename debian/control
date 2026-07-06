@@ -29,7 +29,8 @@ Depends:
  ${misc:Depends},
  ${shlibs:Depends}
 Suggests:
- openhsp-gpio-gpiod
+ openhsp-gpio-gpiod,
+ openhsp-gpio-sysfs
 Description: Hot Soup Processor tools and Linux runtimes
  OpenHSP provides the Hot Soup Processor compiler and Linux runtimes.
  This package installs the command-line compiler, console runtime,
@@ -47,6 +48,17 @@ Description: libgpiod GPIO provider for OpenHSP runtimes
  libgpiod.  It is intended for systems such as Raspberry Pi or x86 single
  board computers that expose GPIO lines through the Linux GPIO character
  device interface.
+
+Package: openhsp-gpio-sysfs
+Architecture: any
+Depends:
+ openhsp (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends}
+Description: sysfs GPIO provider for OpenHSP runtimes
+ This package enables GPIO commands in the OpenHSP Linux runtimes through
+ /sys/class/gpio.  It preserves the legacy Raspberry Pi GPIO access method
+ for systems that still expose the Linux GPIO sysfs interface.
 
 Package: openhsp-hsed
 Section: editors

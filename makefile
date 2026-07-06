@@ -491,9 +491,11 @@ ifeq ($(ENABLE_GPIOD),1)
 GPIOD_TARGET = libhsp3gpio_gpiod.so
 GPIOD_INSTALL = $(INSTALL) -m 0755 libhsp3gpio_gpiod.so $(DESTDIR)$(OPENHSPDIR)/
 endif
+SYSFS_TARGET = libhsp3gpio_sysfs.so
+SYSFS_INSTALL = $(INSTALL) -m 0755 libhsp3gpio_sysfs.so $(DESTDIR)$(OPENHSPDIR)/
 
-TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax $(GPIOD_TARGET)
-CLEAN_TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax libhsp3gpio_gpiod.so
+TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax $(GPIOD_TARGET) $(SYSFS_TARGET)
+CLEAN_TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax libhsp3gpio_gpiod.so libhsp3gpio_sysfs.so
 LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -ldl -lpthread -lffi
 LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -ldl -lpthread -lffi
 LIBS_GP = \
@@ -538,6 +540,9 @@ hsp3cl: $(OBJS_CL)
 libhsp3gpio_gpiod.so: src/hsp3/linux/devctrl_gpio_gpiod.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS_ENV) $(DEBUG_CFLAGS) -fPIC -shared $(LDFLAGS) -o $@ $< -lgpiod
 
+libhsp3gpio_sysfs.so: src/hsp3/linux/devctrl_gpio_sysfs.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS_ENV) $(DEBUG_CFLAGS) -fPIC -shared $(LDFLAGS) -o $@ $<
+
 hsed: src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -O2 $(DEBUG_CFLAGS) -Wno-write-strings $(LDFLAGS) -o hsed src/tools/linux/hsed_gtk2.cpp src/tools/linux/supio.cpp `$(PKG_CONFIG) --cflags --libs gtk+-2.0`
 
@@ -551,6 +556,7 @@ install: $(TARGETS)
 	$(INSTALL) -d $(DESTDIR)$(PIXMAPDIR)
 	$(INSTALL) -m 0755 hspcmp hsp3cl hsp3dish hsp3gp hsed $(DESTDIR)$(OPENHSPDIR)/
 	$(GPIOD_INSTALL)
+	$(SYSFS_INSTALL)
 	$(INSTALL) -m 0644 helpmes.ax $(DESTDIR)$(OPENHSPDIR)/
 	$(INSTALL) -d $(DESTDIR)$(OPENHSPDIR)/common
 	cp -a common/. $(DESTDIR)$(OPENHSPDIR)/common/
