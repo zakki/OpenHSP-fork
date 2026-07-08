@@ -273,6 +273,22 @@ typedef struct STRUCTPRM {
 #define STRUCTDAT_OT_STATEMENT 2
 #define STRUCTDAT_OT_FUNCTION 4
 
+// DLL function return type flags (stored in HED_STRUCTDAT::otindex)
+#define STRUCTDAT_RETTYPE_DEFAULT 0
+#define STRUCTDAT_RETTYPE_INT 1
+#define STRUCTDAT_RETTYPE_INT64 2
+#define STRUCTDAT_RETTYPE_DOUBLE 3
+#define STRUCTDAT_RETTYPE_FLOAT 4
+#define STRUCTDAT_RETTYPE_PTR 5
+#define STRUCTDAT_RETTYPE_VOID 6
+#define STRUCTDAT_RETTYPE_SHIFT 24
+#define STRUCTDAT_RETTYPE_MASK (0x0f << STRUCTDAT_RETTYPE_SHIFT)
+#define STRUCTDAT_GET_RETTYPE(otindex) (((otindex) & STRUCTDAT_RETTYPE_MASK) >> STRUCTDAT_RETTYPE_SHIFT)
+#define STRUCTDAT_SET_RETTYPE(otindex, rettype) (((otindex) & ~STRUCTDAT_RETTYPE_MASK) | ((rettype) << STRUCTDAT_RETTYPE_SHIFT))
+#define STRUCTDAT_IS_DLLFUNC(st) (((st)->index >= 0) && \
+	(((st)->subid == STRUCTPRM_SUBID_DLL) || ((st)->subid == STRUCTPRM_SUBID_DLLINIT) || \
+	((st)->subid == STRUCTPRM_SUBID_OLDDLL) || ((st)->subid == STRUCTPRM_SUBID_OLDDLLINIT)))
+
 //	Module function flags
 #define STRUCTDAT_INDEX_FUNC -1
 #define STRUCTDAT_INDEX_CFUNC -2
@@ -281,7 +297,6 @@ typedef struct STRUCTPRM {
 
 // function,module specific data
 
-#ifdef PTR64BIT
 typedef struct STRUCTDAT {
 	short	index;				// base LIBDAT index
 	short	subid;				// struct index
@@ -290,8 +305,9 @@ typedef struct STRUCTDAT {
 	int		nameidx;			// name index (DS)
 	int		size;				// struct size (stack)
 	int		otindex;			// OT index(Module) / cleanup flag(Dll)
-	void	*proc;				// proc address
 	int		funcflag;			// function flags(Module)
+	int		rettype;			// DLL function return type
+	void	*proc;				// proc address
 } STRUCTDAT;
 
 typedef struct HED_STRUCTDAT {
@@ -304,23 +320,6 @@ typedef struct HED_STRUCTDAT {
 	int		otindex;			// OT index(Module) / cleanup flag(Dll)
 	int		funcflag;			// function flags(Module)
 } HED_STRUCTDAT;
-
-#else
-typedef struct STRUCTDAT {
-	short	index;				// base LIBDAT index
-	short	subid;				// struct index
-	int		prmindex;			// STRUCTPRM index(MINFO)
-	int		prmmax;				// number of STRUCTPRM
-	int		nameidx;			// name index (DS)
-	int		size;				// struct size (stack)
-	int		otindex;			// OT index(Module) / cleanup flag(Dll)
-	union {
-		void	*proc;				// proc address
-		int		funcflag;			// function flags(Module)
-	};
-} STRUCTDAT;
-typedef STRUCTDAT HED_STRUCTDAT;
-#endif
 
 
 //	Var Data for Multi Parameter

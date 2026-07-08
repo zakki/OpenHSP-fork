@@ -505,6 +505,27 @@ static char *prepare_localstr( char *src, int mode )
 }
 
 static HSPPTRINT code_expand_next( ffi_type **prm_args, void **prm_values, const STRUCTDAT *, int );
+static int64_t dllfunc_result_i64;
+
+int hsp3ext_get_dllfunc_rettype( const STRUCTDAT *st )
+{
+	int rettype = st->rettype;
+	if ( rettype != STRUCTDAT_RETTYPE_DEFAULT ) return rettype;
+
+#ifdef HSP64
+	if ( st->subid == STRUCTPRM_SUBID_OLDDLL || st->subid == STRUCTPRM_SUBID_OLDDLLINIT ) {
+		return STRUCTDAT_RETTYPE_INT;
+	}
+	return STRUCTDAT_RETTYPE_INT64;
+#else
+	return STRUCTDAT_RETTYPE_INT;
+#endif
+}
+
+int64_t hsp3ext_get_dllfunc_i64_result( void )
+{
+	return dllfunc_result_i64;
+}
 
 // libffi用引数をスタック上に保持する
 union FfiParam {
@@ -600,32 +621,78 @@ static HSPPTRINT code_expand_next( ffi_type **prm_args, void **prm_values, const
 			//Alertf("%s:%d call_extfun(%p, *, %d)\n", __func__, __LINE__, st->proc, st->prmmax);
 			ffi_cif cif;
 			void *rvalue = &result;
-			bool olddll = (st->subid == STRUCTPRM_SUBID_OLDDLL || st->subid == STRUCTPRM_SUBID_OLDDLLINIT);
-			// TODO intと互換性のない返り値の受け取り
+			int32_t result_int;
+			int64_t result_int64;
+			double result_double;
+			float result_float;
+			void *result_ptr;
+			int rettype = hsp3ext_get_dllfunc_rettype( st );
+
+			switch( rettype ) {
+			case STRUCTDAT_RETTYPE_INT:
 #ifdef HSP64
-			if (olddll) {
 				rtype = &ffi_type_sint32;
-			} else {
-				rtype = &ffi_type_sint64;
-			}
 #else
-			rtype = &ffi_type_sint;
+				rtype = &ffi_type_sint;
 #endif
+				rvalue = &result_int;
+				break;
+			case STRUCTDAT_RETTYPE_INT64:
+				rtype = &ffi_type_sint64;
+				rvalue = &result_int64;
+				break;
+			case STRUCTDAT_RETTYPE_DOUBLE:
+				rtype = &ffi_type_double;
+				rvalue = &result_double;
+				break;
+			case STRUCTDAT_RETTYPE_FLOAT:
+				rtype = &ffi_type_float;
+				rvalue = &result_float;
+				break;
+			case STRUCTDAT_RETTYPE_PTR:
+				rtype = &ffi_type_pointer;
+				rvalue = &result_ptr;
+				break;
+			case STRUCTDAT_RETTYPE_VOID:
+				rtype = &ffi_type_void;
+				result = 0;
+				break;
+			default:
+				throw HSPERR_INVALID_FUNCPARAM;
+			}
 			if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, st->prmmax, rtype, prm_args) != FFI_OK) {
 				throw HSPERR_INVALID_FUNCPARAM;
 			}
-#ifdef HSP64
-			if (olddll) {
-				int olddll_result;
-				rvalue = &olddll_result;
-				ffi_call(&cif, FFI_FN(st->proc), rvalue, prm_values);
-				result = olddll_result;
-			} else {
-				ffi_call(&cif, FFI_FN(st->proc), rvalue, prm_values);
-			}
-#else
 			ffi_call(&cif, FFI_FN(st->proc), rvalue, prm_values);
+
+			switch( rettype ) {
+			case STRUCTDAT_RETTYPE_INT:
+				result = result_int;
+				break;
+			case STRUCTDAT_RETTYPE_INT64:
+				dllfunc_result_i64 = result_int64;
+				result = (HSPPTRINT)result_int64;
+				break;
+			case STRUCTDAT_RETTYPE_DOUBLE:
+				hspctx->refdval = result_double;
+				result = 0;
+				break;
+			case STRUCTDAT_RETTYPE_FLOAT:
+				hspctx->refdval = (double)result_float;
+				result = 0;
+				break;
+			case STRUCTDAT_RETTYPE_PTR:
+				dllfunc_result_i64 = (int64_t)(intptr_t)result_ptr;
+#ifdef HSP64
+				result = (HSPPTRINT)result_ptr;
+#else
+				result = (HSPPTRINT)(intptr_t)result_ptr;
 #endif
+				break;
+			case STRUCTDAT_RETTYPE_VOID:
+				result = 0;
+				break;
+			}
 			break;
 		}
 #ifndef HSP_COM_UNSUPPORTED

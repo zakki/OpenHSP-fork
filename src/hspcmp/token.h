@@ -370,6 +370,7 @@ private:
 	int GetParameterTypeCG( char *name );
 	int GetParameterStructTypeCG( char *name );
 	int GetParameterFuncTypeCG( char *name );
+	int GetParameterFuncRetTypeCG( char *name );
 	int GetParameterResTypeCG( char *name );
 
 	char *GetTokenCG( char *str, int option );

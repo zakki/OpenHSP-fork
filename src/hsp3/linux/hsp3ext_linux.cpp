@@ -225,20 +225,50 @@ static void *reffunc_dllcmd( int *type_res, int arg )
 	//		reffunc : TYPE_DLLFUNC
 	//		(拡張DLL関数)
 	//
+	STRUCTDAT *st;
+	void *ptr;
+	int rettype;
 
 	//			'('で始まるかを調べる
 	//
 	if ( *type != TYPE_MARK ) throw ( HSPERR_INVALID_FUNCPARAM );
 	if ( *val != '(' ) throw ( HSPERR_INVALID_FUNCPARAM );
 
+	st = GetPRM( arg );
+	rettype = hsp3ext_get_dllfunc_rettype( st );
 	exec_dllcmd( arg, STRUCTDAT_OT_FUNCTION );
+
+	switch( rettype ) {
+	case STRUCTDAT_RETTYPE_INT:
+	case STRUCTDAT_RETTYPE_VOID:
+		*type_res = HSPVAR_FLAG_INT;
+		reffunc_intfunc_ivalue = (int)hspctx->stat;
+		ptr = &reffunc_intfunc_ivalue;
+		break;
+	case STRUCTDAT_RETTYPE_INT64:
+		*type_res = HSPVAR_FLAG_INT64;
+		reffunc_intfunc_lvalue = hsp3ext_get_dllfunc_i64_result();
+		ptr = &reffunc_intfunc_lvalue;
+		break;
+	case STRUCTDAT_RETTYPE_PTR:
 #ifdef HSP64
-	*type_res = HSPVAR_FLAG_INT64;
-	reffunc_intfunc_lvalue = hspctx->stat;
+		*type_res = HSPVAR_FLAG_INT64;
+		reffunc_intfunc_lvalue = hsp3ext_get_dllfunc_i64_result();
+		ptr = &reffunc_intfunc_lvalue;
 #else
-	*type_res = HSPVAR_FLAG_INT;
-	reffunc_intfunc_ivalue = hspctx->stat;
+		*type_res = HSPVAR_FLAG_INT;
+		reffunc_intfunc_ivalue = (int)hspctx->stat;
+		ptr = &reffunc_intfunc_ivalue;
 #endif
+		break;
+	case STRUCTDAT_RETTYPE_DOUBLE:
+	case STRUCTDAT_RETTYPE_FLOAT:
+		*type_res = HSPVAR_FLAG_DOUBLE;
+		ptr = &hspctx->refdval;
+		break;
+	default:
+		throw ( HSPERR_INVALID_FUNCPARAM );
+	}
 
 	//			')'で終わるかを調べる
 	//
@@ -246,11 +276,7 @@ static void *reffunc_dllcmd( int *type_res, int arg )
 	if ( *val != ')' ) throw ( HSPERR_INVALID_FUNCPARAM );
 	code_next();
 
-#ifdef HSP64
-	return &reffunc_intfunc_lvalue;
-#else
-	return &reffunc_intfunc_ivalue;
-#endif
+	return ptr;
 }
 #endif
 
@@ -387,6 +413,3 @@ void hsp3ext_execfile(char* msg, char* option, int mode)
 	system(msg);
 #endif
 }
-
-
-

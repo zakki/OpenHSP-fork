@@ -1621,7 +1621,7 @@ void CToken::GenerateCodePP_func( int deftype )
 {
 	//		HSP3Codeを展開する(func)
 	//
-	int warn,i,t,subid,otflag;
+	int warn,i,t,subid,otflag,rettype;
 	int ref;
 	char fbase[1024];
 	char fname[1024];
@@ -1641,6 +1641,7 @@ void CToken::GenerateCodePP_func( int deftype )
 
 	warn = 0;
 	otflag = deftype;
+	rettype = STRUCTDAT_RETTYPE_DEFAULT;
 	GetTokenCG( GETTOKEN_DEFAULT );
 
 	if ( ttype == TK_OBJ ) {
@@ -1724,10 +1725,20 @@ void CToken::GenerateCodePP_func( int deftype )
 		PutStructParam( p2, STRUCTPRM_SUBID_STID );
 		PutStructParam( p3, STRUCTPRM_SUBID_STID );
 		PutStructParam( p4, STRUCTPRM_SUBID_STID );
+		GetTokenCG( GETTOKEN_DEFAULT );
 
 	} else {
 		while(1) {
 			if ( ttype >= TK_EOL ) break;
+			if (( ttype == TK_NONE )&&( val == 0x65 )) {	// ->が続いているか?
+				GetTokenCG( GETTOKEN_DEFAULT );
+				if ( ttype != TK_OBJ ) throw CGERROR_PP_WRONG_PARAM_NAME;
+				rettype = GetParameterFuncRetTypeCG( cg_str );
+				if ( rettype == STRUCTDAT_RETTYPE_DEFAULT ) throw CGERROR_PP_WRONG_PARAM_NAME;
+				GetTokenCG( GETTOKEN_DEFAULT );
+				if ( ttype < TK_EOL ) throw CGERROR_PP_WRONG_PARAM_NAME;
+				break;
+			}
 			if ( ttype != TK_OBJ ) throw CGERROR_PP_WRONG_PARAM_NAME;
 			t = GetParameterFuncTypeCG( cg_str );
 			if ( t == MPTYPE_NONE ) throw CGERROR_PP_WRONG_PARAM_NAME;
@@ -1735,10 +1746,28 @@ void CToken::GenerateCodePP_func( int deftype )
 			GetTokenCG( GETTOKEN_DEFAULT );
 
 			if ( ttype >= TK_EOL ) break;
+			if (( ttype == TK_NONE )&&( val == 0x65 )) {	// ->が続いているか?
+				GetTokenCG( GETTOKEN_DEFAULT );
+				if ( ttype != TK_OBJ ) throw CGERROR_PP_WRONG_PARAM_NAME;
+				rettype = GetParameterFuncRetTypeCG( cg_str );
+				if ( rettype == STRUCTDAT_RETTYPE_DEFAULT ) throw CGERROR_PP_WRONG_PARAM_NAME;
+				GetTokenCG( GETTOKEN_DEFAULT );
+				if ( ttype < TK_EOL ) throw CGERROR_PP_WRONG_PARAM_NAME;
+				break;
+			}
 			if ( ttype != TK_NONE ) throw CGERROR_PP_WRONG_PARAM_NAME;
 			if ( val != ',' ) throw CGERROR_PP_WRONG_PARAM_NAME;
 			GetTokenCG( GETTOKEN_DEFAULT );
+			if (( ttype == TK_NONE )&&( val == 0x65 )) throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
+	}
+	if (( ttype == TK_NONE )&&( val == 0x65 )) {	// ->が続いているか?
+		GetTokenCG( GETTOKEN_DEFAULT );
+		if ( ttype != TK_OBJ ) throw CGERROR_PP_WRONG_PARAM_NAME;
+		rettype = GetParameterFuncRetTypeCG( cg_str );
+		if ( rettype == STRUCTDAT_RETTYPE_DEFAULT ) throw CGERROR_PP_WRONG_PARAM_NAME;
+		GetTokenCG( GETTOKEN_DEFAULT );
+		if ( ttype < TK_EOL ) throw CGERROR_PP_WRONG_PARAM_NAME;
 	}
 
 	i = lb->Search( fbase );
@@ -1751,6 +1780,7 @@ void CToken::GenerateCodePP_func( int deftype )
 		subid = STRUCTPRM_SUBID_OLDDLL;
 		//Mesf( "Warning:Old func expression [%s]", fbase );
 	}
+	otflag = STRUCTDAT_SET_RETTYPE( otflag, rettype );
 	i = PutStructEndDll( fname, cg_libindex, subid, otflag );
 	int id = lb->Regist( fbase, TYPE_DLLFUNC, i, cg_orgfilefull, cg_orgline );
 	GenerateLabelListAndTag(id, LABBUF_FLAG_EXCMD);
@@ -1884,6 +1914,20 @@ int CToken::GetParameterFuncTypeCG( char *name )
 //	if ( !strcmp( cg_str,"hinst" ) ) return MPTYPE_PTR_HINST;
 
 	return MPTYPE_NONE;
+}
+
+
+int CToken::GetParameterFuncRetTypeCG( char *name )
+{
+	//		DLL関数の戻り値型を認識する(func)
+	//
+	if ( !strcmp( name,"int" ) ) return STRUCTDAT_RETTYPE_INT;
+	if ( !strcmp( name,"int64" ) ) return STRUCTDAT_RETTYPE_INT64;
+	if ( !strcmp( name,"double" ) ) return STRUCTDAT_RETTYPE_DOUBLE;
+	if ( !strcmp( name,"float" ) ) return STRUCTDAT_RETTYPE_FLOAT;
+	if ( !strcmp( name,"ptr" ) ) return STRUCTDAT_RETTYPE_PTR;
+	if ( !strcmp( name,"void" ) ) return STRUCTDAT_RETTYPE_VOID;
+	return STRUCTDAT_RETTYPE_DEFAULT;
 }
 
 

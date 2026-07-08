@@ -409,9 +409,12 @@ STRUCTDAT *Hsp3::copy_STRUCTDAT(HSPHED *hsphed, char *ptr, size_t size)
 		dst->size = org_dat.size;
 		dst->otindex = org_dat.otindex;
 		dst->funcflag = org_dat.funcflag;
-#ifdef PTR64BIT
+		dst->rettype = STRUCTDAT_RETTYPE_DEFAULT;
+		if ( STRUCTDAT_IS_DLLFUNC( &org_dat ) ) {
+			dst->rettype = STRUCTDAT_GET_RETTYPE( org_dat.otindex );
+			dst->otindex = org_dat.otindex & ~STRUCTDAT_RETTYPE_MASK;
+		}
 		dst->proc = NULL;
-#endif
 
 #ifdef HSP64
 		if ((dst->index == STRUCTDAT_INDEX_FUNC) ||
@@ -435,5 +438,3 @@ STRUCTDAT *Hsp3::copy_STRUCTDAT(HSPHED *hsphed, char *ptr, size_t size)
 	hsphed->max_finfo = newsize;
 	return mem_dst;
 }
-
-

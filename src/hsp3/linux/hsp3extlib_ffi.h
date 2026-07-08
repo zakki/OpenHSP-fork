@@ -64,6 +64,8 @@ void Hsp3ExtLibTerm( void );
 
 int cmdfunc_dllcmd( int cmd );
 int exec_dllcmd( int cmd, int mask );
+int hsp3ext_get_dllfunc_rettype( const STRUCTDAT *st );
+int64_t hsp3ext_get_dllfunc_i64_result( void );
 HSPPTRINT code_expand_and_call( const STRUCTDAT *st );
 HSPPTRINT call_extfunc( void *proc, int **prm, int prms, int rettype );
 
