@@ -1,0 +1,32 @@
+; test_dll_rettype.hsp
+; DLL呼び出しで明示した戻り値型のテスト
+#runtime "hsp3cl"
+
+#uselib "libc.so.6"
+#cfunc c_getpid "getpid" -> int
+#cfunc c_atoll "atoll" str -> int64
+#cfunc c_tmpfile "tmpfile" -> ptr
+#func c_fclose "fclose" int64 -> int
+#func c_srand "srand" int -> void
+
+#uselib "libm.so.6"
+#cfunc c_sin "sin" double -> double
+#cfunc c_sinf "sinf" float -> float
+
+dimtype fp, vartype("int64"), 1
+
+mes "=== typed DLL return ==="
+mes "int getpid ok=" + (c_getpid() > 0)
+mes "int64 atoll=" + c_atoll("8589934592")
+mes "double sin=" + strf("%.6f", c_sin(0.5))
+mes "float sinf=" + strf("%.6f", c_sinf(0.5))
+
+fp = c_tmpfile()
+mes "ptr tmpfile ok=" + (fp != 0)
+if fp != 0 {
+	c_fclose fp
+	mes "fclose stat=" + stat
+}
+
+c_srand 1
+mes "void srand stat=" + stat

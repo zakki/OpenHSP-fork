@@ -1,0 +1,9 @@
+gpiod initalize failed.
+=== typed DLL return ===
+int getpid ok=1
+int64 atoll=8589934592
+double sin=0.479426
+float sinf=0.479426
+ptr tmpfile ok=1
+fclose stat=0
+void srand stat=0
