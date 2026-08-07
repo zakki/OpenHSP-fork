@@ -124,19 +124,6 @@ static int get_module_directory_utf8(char* destination, size_t destination_size)
 	return copy_ansi_path_directory_to_utf8(destination, destination_size, module_path);
 }
 
-static int winexec_utf8(const char* command)
-{
-	char* ansi_command;
-	int result;
-
-	ansi_command = hsp_path_to_ansi(command);
-	if (ansi_command == NULL) return 0;
-	result = WinExec(ansi_command, SW_SHOW);
-	free(ansi_command);
-	return result;
-}
-
-
 #if defined( __GNUC__ ) && defined( __cplusplus )
 extern "C"
 #endif
@@ -792,7 +779,7 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 				i++;
 				if (i >= 50) break;
 			}
-			i = winexec_utf8( ici_opt );
+			i = hsp_exec_utf8( ici_opt );
 			if ( i < 32 ) return -1;
 		}
 	}
@@ -834,8 +821,10 @@ EXPORT BOOL WINAPI hsc3_run ( char *p1, HSPPTRINT p2, HSPPTRINT p3, HSPPTRINT p4
 	//
 	//		hsc3_run path, debug_flag  (type1)
 	//
-	int i;
-	i = WinExec( p1, SW_SHOW );
+	char* utf8_command = hsp_path_from_ansi(p1);
+	if (utf8_command == NULL) return -1;
+	int i = hsp_exec_utf8(utf8_command);
+	free(utf8_command);
 	if ( i < 32 ) return -1;
 	return 0;
 }

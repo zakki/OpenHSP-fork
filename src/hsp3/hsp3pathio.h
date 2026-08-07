@@ -39,6 +39,10 @@ char* hsp_path_from_ansi(const char* path);
 // The returned buffer is allocated with malloc and must be released with free.
 #if defined(HSPWIN) || defined(_WIN32)
 char* hsp_utf8_from_wide(const wchar_t* text);
+
+// Launch a process using a UTF-8 command line. Returns a WinExec-compatible
+// success value (>= 32) or zero on failure.
+int hsp_exec_utf8(const char* command);
 #endif
 
 // Convert an internal UTF-8 path to the legacy Windows ANSI contract.

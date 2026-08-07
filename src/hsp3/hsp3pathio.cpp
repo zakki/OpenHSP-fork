@@ -166,6 +166,26 @@ static wchar_t* hsp_utf8_to_wide(const char* text)
 	return result;
 }
 
+int hsp_exec_utf8(const char* command)
+{
+	wchar_t* wide_command = hsp_utf8_to_wide(command);
+	if (wide_command == NULL) return 0;
+
+	STARTUPINFOW startup_info = {};
+	PROCESS_INFORMATION process_info = {};
+	startup_info.cb = sizeof(startup_info);
+	startup_info.dwFlags = STARTF_USESHOWWINDOW;
+	startup_info.wShowWindow = SW_SHOW;
+	BOOL result = CreateProcessW(NULL, wide_command, NULL, NULL, FALSE, 0,
+		NULL, NULL, &startup_info, &process_info);
+	if (result) {
+		CloseHandle(process_info.hThread);
+		CloseHandle(process_info.hProcess);
+	}
+	free(wide_command);
+	return result ? 33 : 0;
+}
+
 char* hsp_utf8_from_wide(const wchar_t* text)
 {
 	if (text == NULL) return NULL;
