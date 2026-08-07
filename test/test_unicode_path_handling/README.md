@@ -18,7 +18,7 @@ The runner currently checks:
 
 - UTF-8 source and UTF-8 `#include` paths
 - CP932 source and CP932 `#include` paths
-- preprocessing output and the generated source filename marker
+- compiled `.ax` output, included source markers, and the generated source filename marker
 
 The low-level C++ test remains in `test/test_hsp3pathio`. Run it on POSIX with:
 

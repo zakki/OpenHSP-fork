@@ -47,12 +47,12 @@ def write_fixture(path: Path, text: str, encoding: str) -> None:
 		fixture.write(text)
 
 
-def run_preprocess(
+def run_compile(
     hspcmp: Path, common: Path, source: Path, output: Path, utf8_input: bool
 ) -> bytes:
     command = [
         str(hspcmp),
-        "-p",
+        "-d",
         "-o" + str(output),
         "--compath=" + str(common),
     ]
@@ -66,12 +66,16 @@ def test_utf8_source_and_include(hspcmp: Path, common: Path, workdir: Path) -> N
     source_dir.mkdir()
     include = source_dir / "含む-日本語.as"
     source = source_dir / "主ソース.hsp"
-    output = source_dir / "前処理結果.i"
+    output = source_dir / "コンパイル結果.ax"
 
     write_fixture(include, 'mes "UTF8_INCLUDE_MARKER_日本語"\n', "utf-8")
-    write_fixture(source, '#include "含む-日本語.as"\nmes "UTF8_MAIN_MARKER"\n', "utf-8")
+    write_fixture(
+        source,
+        '#include "含む-日本語.as"\nmes "UTF8_MAIN_MARKER"\nmes __file__\n',
+        "utf-8",
+    )
 
-    run_preprocess(hspcmp, common, source, output, utf8_input=True)
+    run_compile(hspcmp, common, source, output, utf8_input=True)
     result = output.read_bytes()
     assert b"UTF8_INCLUDE_MARKER_" in result
     assert source.name.encode("utf-8") in result
@@ -82,12 +86,16 @@ def test_cp932_source_and_include(hspcmp: Path, common: Path, workdir: Path) -> 
     source_dir.mkdir()
     include = source_dir / "従来.as"
     source = source_dir / "CP932-main.hsp"
-    output = source_dir / "cp932-output.i"
+    output = source_dir / "cp932-output.ax"
 
     write_fixture(include, 'mes "CP932_INCLUDE_MARKER"\n', "cp932")
-    write_fixture(source, '#include "従来.as"\nmes "CP932_MAIN_MARKER"\n', "cp932")
+    write_fixture(
+        source,
+        '#include "従来.as"\nmes "CP932_MAIN_MARKER"\nmes __file__\n',
+        "cp932",
+    )
 
-    run_preprocess(hspcmp, common, source, output, utf8_input=False)
+    run_compile(hspcmp, common, source, output, utf8_input=False)
     result = output.read_bytes()
     assert b"CP932_INCLUDE_MARKER" in result
 

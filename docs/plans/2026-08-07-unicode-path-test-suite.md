@@ -22,8 +22,8 @@
 1. Add argument parsing for `--hspcmp`, `--common`, and `--pathio-exe`.
 2. Discover `src/hspcmp/Release64/hspcmp.exe` and `src/hspcmp/Release/hspcmp.exe` when `--hspcmp` is omitted; fail with an actionable message if no compiler is available.
 3. Create a temporary directory whose path and files contain Japanese characters, while keeping the executable/common paths configurable.
-4. Generate a UTF-8 main source and UTF-8 include source, run `hspcmp -p -i -o... --compath=...`, and assert successful output plus the include marker and source filename in the preprocessed result.
-5. Generate a CP932-encoded main source that includes a Japanese-named file, run without `-i`, and assert successful preprocessing and the include marker.
+4. Generate a UTF-8 main source and UTF-8 include source, run `hspcmp -d -i -o... --compath=...`, and assert successful `.ax` output plus the include marker and `__file__` source filename.
+5. Generate a CP932-encoded main source that includes a Japanese-named file, run without `-i`, and assert successful `.ax` output and the include marker.
 6. If `--pathio-exe` is supplied, execute it and propagate failure; document the existing `make -C test/test_hsp3pathio clean run` command for POSIX.
 7. Add a batch wrapper using `%~dp0` so it works from any current directory and accepts an optional compiler path.
 
