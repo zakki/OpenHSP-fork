@@ -244,7 +244,7 @@ def test_dll_compile_and_pack(dll_path: Path, common: Path, workdir: Path) -> No
         pack_dir.mkdir()
         pack_source = pack_dir / "pack-main.hsp"
         asset = pack_dir / "素材-日本語.txt"
-        pack_output = pack_dir / "pack-result.ax"
+        pack_output = pack_dir / "start.ax"
         pack_base = pack_dir / "パック結果"
         asset_contents = b"UNICODE_PACK_ASSET\n"
         asset.write_bytes(asset_contents)
