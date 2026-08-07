@@ -697,10 +697,10 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 
 	i = hsc3->OpenPackfile();
 	if (i) { Alert( "packfileが見つかりません" ); return -1; }
-	hsc3->GetPackfileOption( hspexe, "runtime", "hsprt" );
+	hsc3->GetPackfileOption( hspexe, sizeof(hspexe), "runtime", "hsprt" );
 	if (append_text(libpath, sizeof(libpath), hspexe) != 0) return -1;
 	strcpy( hspexe, libpath );
-	hsc3->GetPackfileOption( fname, "name", "hsptmp" );
+	hsc3->GetPackfileOption( fname, sizeof(fname), "name", "hsptmp" );
 	cutext( fname );
 	type = hsc3->GetPackfileOptionInt( "type", 0 );
 	opt1 = hsc3->GetPackfileOptionInt( "xsize", 640 );
@@ -712,15 +712,15 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 	if ( opt3b ) opt3 |= 2;
 
 #ifdef ICONINS_SUPPORT
-	hsc3->GetPackfileOption( ici_icon, "icon", "" );
+	hsc3->GetPackfileOption( ici_icon, sizeof(ici_icon), "icon", "" );
 	if ( ici_icon[0] != 0 ) { ici_use_icon = 1; }
-	hsc3->GetPackfileOption( ici_version, "version", "" );
+	hsc3->GetPackfileOption( ici_version, sizeof(ici_version), "version", "" );
 	if ( ici_version[0] != 0 ) { ici_use_version = 1; }
-	hsc3->GetPackfileOption( ici_manifest, "manifest", "" );
+	hsc3->GetPackfileOption( ici_manifest, sizeof(ici_manifest), "manifest", "" );
 	if ( ici_manifest[0] != 0 ) { ici_use_manifest = 1; }
-	hsc3->GetPackfileOption( ici_lang, "lang", "" );
+	hsc3->GetPackfileOption( ici_lang, sizeof(ici_lang), "lang", "" );
 	if ( ici_lang[0] != 0 ) { ici_use_lang = 1; }
-	hsc3->GetPackfileOption( ici_upx, "upx", "" );
+	hsc3->GetPackfileOption( ici_upx, sizeof(ici_upx), "upx", "" );
 	if ( ici_upx[0] != 0 ) { ici_use_upx = 1; }
 
 	strcpy( ici_target, ici_current );

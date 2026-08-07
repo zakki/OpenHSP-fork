@@ -444,18 +444,20 @@ int CHsc3::OpenPackfile( void )
 }
 
 
-void CHsc3::GetPackfileOption( char *out, char *keyword, char *defval )
+void CHsc3::GetPackfileOption( char *out, int out_size, char *keyword, char *defval )
 {
 	int max,i;
 	char tmp[512];
 	char *s;
 	char a1;
+	if (out == NULL || out_size <= 0) return;
 	CStrNote note;
 	note.Select( pfbuf->GetBuffer() );
 	max = note.GetMaxLine();
-	strcpy( out, defval );
+	strncpy( out, defval, out_size - 1 );
+	out[out_size - 1] = 0;
 	for( i=0;i<max;i++ ) {
-		note.GetLine( tmp, i );
+		note.GetLine( tmp, i, sizeof(tmp) - 1 );
 		if (( tmp[0]==';' )&&( tmp[1]=='!' )) {
 			s = tmp+2;while(1) {
 				a1 = *s;if (( a1==0 )||( a1=='=' )) break;
@@ -463,7 +465,10 @@ void CHsc3::GetPackfileOption( char *out, char *keyword, char *defval )
 			}
 			if ( a1 != 0 ) {
 				s[0]=0;
-				if ( strcmp( tmp+2, keyword )==0 ) { strcpy( out, s+1 ); }
+				if ( strcmp( tmp+2, keyword )==0 ) {
+					strncpy( out, s+1, out_size - 1 );
+					out[out_size - 1] = 0;
+				}
 			}
 		}
 	}
@@ -475,7 +480,7 @@ int CHsc3::GetPackfileOptionInt( char *keyword, int defval )
 	char tmp[512];
 	char deftmp[32];
 	sprintf( deftmp,"%d",defval );
-	GetPackfileOption( tmp, keyword, deftmp );
+	GetPackfileOption( tmp, sizeof(tmp), keyword, deftmp );
 	if (( tmp[0]>='0' )&&( tmp[0]<='9' )) return atoi( tmp );
 	return defval;
 }
@@ -551,4 +556,3 @@ void CHsc3::Print(char* mes)
 	errbuf->PutStr(mes);
 	errbuf->PutStr("\r\n");
 }
-
