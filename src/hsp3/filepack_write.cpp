@@ -25,6 +25,16 @@
 #define _MALLOC malloc
 #define _FREE free
 
+static int hsp_pack_path_append(char* target, size_t target_size, const char* suffix)
+{
+	if (target == NULL || suffix == NULL || target_size == 0) return 0;
+	size_t target_length = strlen(target);
+	size_t suffix_length = strlen(suffix);
+	if (target_length >= target_size || suffix_length > target_size - target_length - 1) return 0;
+	memcpy(target + target_length, suffix, suffix_length + 1);
+	return 1;
+}
+
 #define WELCOMEMSG "DPM2 Manager 1.1"
 #define DPMFILEEXT ".dpm"
 #define DPMENCODE_DEFVAL 0
@@ -111,12 +121,20 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 			for (int i = 0; i < listmax; i++) {
 				notelist.GetLine(ftmp, i);
 #ifdef HSPCMP_PATH_UTF8
-				hsp_getpath_utf8(name, fixname, sizeof(fixname), 32);
+				if (!hsp_getpath_utf8(name, fixname, sizeof(fixname), 32)) {
+					sbFree(flist);
+					Print((char*)"#Path is too long or invalid UTF-8.");
+					return -1;
+				}
 #else
 				getpath(name, fixname, 32);
 #endif
-				strcat(fixname, ftmp);
-				strcat(fixname, "/*");
+				if (!hsp_pack_path_append(fixname, sizeof(fixname), ftmp) ||
+					!hsp_pack_path_append(fixname, sizeof(fixname), "/*")) {
+					sbFree(flist);
+					Print((char*)"#Path is too long.");
+					return -1;
+				}
 				HSPPTRINT res = RegisterFile(fixname, pcrypt);
 				if (res < 0) return res;
 			}
@@ -124,7 +142,10 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 
 			// すべてのファイルを追加する
 #ifdef HSPCMP_PATH_UTF8
-			hsp_getpath_utf8(name, p_fdir, sizeof(p_fdir), 32);
+			if (!hsp_getpath_utf8(name, p_fdir, sizeof(p_fdir), 32)) {
+				Print((char*)"#Path is too long or invalid UTF-8.");
+				return -1;
+			}
 #else
 			getpath(name, p_fdir, 32);
 #endif
@@ -139,7 +160,11 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 			for (int i = 0; i < listmax; i++) {
 				notelist.GetLine(ftmp, i);
 				strcpy(fixname, p_fdir);
-				strcat(fixname, ftmp);
+				if (!hsp_pack_path_append(fixname, sizeof(fixname), ftmp)) {
+					sbFree(flist);
+					Print((char*)"#Path is too long.");
+					return -1;
+				}
 				HSPPTRINT res = RegisterFile(fixname, pcrypt);
 				if (res < 0) return res;
 			}
@@ -724,4 +749,3 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 	Print(tmp);
 	return 0;
 }
-
