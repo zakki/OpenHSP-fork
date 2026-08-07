@@ -140,9 +140,10 @@ int main( int argc, char *argv[] )
 #endif
 
 	for (b=1;b<argc;b++) {
-		const char* arg = argv[b];
 #ifdef HSPWIN
-		arg = utf8_args[b].c_str();
+			const char* arg = utf8_args[b].c_str();
+#else
+			const char* arg = argv[b];
 #endif
 		a1=*arg;a2=tolower(*(arg+1));
 #ifdef HSPLINUX
