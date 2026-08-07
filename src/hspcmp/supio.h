@@ -42,12 +42,13 @@
 #include "../hsp3/linux/supio_linux.h"
 #endif
 
-static inline void hspcmp_getpath(const char* source, char* output, int mode)
+static inline int hspcmp_getpath(const char* source, char* output, int mode)
 {
 #ifdef HSPCMP_PATH_UTF8
-	if (!hsp_getpath_utf8(source, output, HSP_MAX_PATH, mode)) output[0] = 0;
+	return hsp_getpath_utf8(source, output, HSP_MAX_PATH, mode);
 #else
 	getpath((char*)source, output, mode);
+	return 1;
 #endif
 }
 

@@ -55,6 +55,8 @@ static int hspcmp_path_copy(char* destination, size_t destination_size,
 	return 1;
 }
 
+static const int hspcmp_pack_path_error = -2;
+
 #ifdef HSPCMP_DLL
 static const char* hspcmp_message_path(const char* path, char** converted)
 {
@@ -254,8 +256,9 @@ int CToken::AddPackfile( char *name, int mode )
 	char* findptr;
 	bool absolutePath = false;					// 絶対パスか?
 
-	hspcmp_getpath(name, p_fdir, 32);
-	hspcmp_getpath(name, p_fname, 8);
+	if (!hspcmp_getpath(name, p_fdir, 32) || !hspcmp_getpath(name, p_fname, 8)) {
+		return hspcmp_pack_path_error;
+	}
 
 #ifdef HSPWIN
 	strchr3(p_fdir, ':', 0, &findptr);			// ドライブ文字があった
@@ -271,16 +274,19 @@ int CToken::AddPackfile( char *name, int mode )
 	}
 
 	if (absolutePath==false) {
-		strcpy(fname, search_path);
-		strcat(fname, p_fdir);
-		strcpy(p_fdir, fname);
-		strcat(fname, p_fname);
+		if (!hspcmp_path_copy(fname, sizeof(fname), search_path, p_fdir, p_fname)) {
+			return hspcmp_pack_path_error;
+		}
 	}
 	else {
-		strcpy(fname, name);
+		if (!hspcmp_path_copy(fname, sizeof(fname), name, NULL, NULL)) {
+			return hspcmp_pack_path_error;
+		}
 	}
 
-	strcpy( packadd, fname);
+	if (!hspcmp_path_copy(packadd, sizeof(packadd), fname, NULL, NULL)) {
+		return hspcmp_pack_path_error;
+	}
 
 	if ( mode<2 ) {
 #ifdef HSPWIN
@@ -318,8 +324,9 @@ int CToken::AddPackfileOrig(char* name, int mode)
 	char* findptr;
 	bool absolutePath = false;					// 絶対パスか?
 
-	hspcmp_getpath(name, p_fdir, 32);
-	hspcmp_getpath(name, p_fname, 8);
+	if (!hspcmp_getpath(name, p_fdir, 32) || !hspcmp_getpath(name, p_fname, 8)) {
+		return hspcmp_pack_path_error;
+	}
 
 #ifdef HSPWIN
 	strchr3(p_fdir, ':', 0, &findptr);			// ドライブ文字があった
@@ -335,16 +342,19 @@ int CToken::AddPackfileOrig(char* name, int mode)
 	}
 
 	if (absolutePath == false) {
-		strcpy(fname, search_path);
-		strcat(fname, p_fdir);
-		strcpy(p_fdir, fname);
-		strcat(fname, p_fname);
+		if (!hspcmp_path_copy(fname, sizeof(fname), search_path, p_fdir, p_fname)) {
+			return hspcmp_pack_path_error;
+		}
 	}
 	else {
-		strcpy(fname, name);
+		if (!hspcmp_path_copy(fname, sizeof(fname), name, NULL, NULL)) {
+			return hspcmp_pack_path_error;
+		}
 	}
 
-	strcpy(packadd, fname);
+	if (!hspcmp_path_copy(packadd, sizeof(packadd), fname, NULL, NULL)) {
+		return hspcmp_pack_path_error;
+	}
 	if (mode < 2) {
 #ifdef HSPWIN
 		strcase(packadd);
@@ -3369,11 +3379,17 @@ ppresult_t CToken::PP_Pack( int mode )
 			pack_name = converted_name;
 		}
 #endif
+		int pack_result;
 		if (mode & 2) {
-			AddPackfile(pack_name, mode&1);
+			pack_result = AddPackfile(pack_name, mode&1);
 		}
 		else {
-			AddPackfileOrig(pack_name, mode);
+			pack_result = AddPackfileOrig(pack_name, mode);
+		}
+		if (pack_result == hspcmp_pack_path_error) {
+			SetError("pack path is too long or invalid UTF-8");
+			free(converted_name);
+			return PPRESULT_ERROR;
 		}
 		free(converted_name);
 	}
@@ -3411,7 +3427,11 @@ ppresult_t CToken::PP_PackOpt( void )
 		}
 #endif
 		sprintf( tmp, ";!%s=%s", optname, optvalue );
-		AddPackfile( tmp, 2 );
+		if (AddPackfile(tmp, 2) == hspcmp_pack_path_error) {
+			SetError("pack option path is too long or invalid UTF-8");
+			free(converted_value);
+			return PPRESULT_ERROR;
+		}
 		free(converted_value);
 	}
 	return PPRESULT_SUCCESS;
