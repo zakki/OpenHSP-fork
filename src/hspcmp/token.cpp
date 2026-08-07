@@ -4609,7 +4609,8 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 	//		戻り値のメモリは呼び出し側がfreeする必要がある。
 	//		HSPの文字列リテラルで表せない文字は
 	//		そのまま出力されるので注意。（'\n'など）
-	//		ファイル名の場合はSJISと仮定して処理する(Winのみ)
+	//		旧Windows DLLのファイル名はSJISとして処理する。
+	//		UTF-8パス契約のビルドでは入力をそのまま使用する。
 	//
 	int skip;
 	char* utftmp;
@@ -4618,11 +4619,13 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 	utftmp = (char *)src;
 #ifdef HSPWIN
 	if (filename) {
-		if (pp_utf8) {			// 入力がUTF8でファイル名の場合は変換する
+		#if !defined(HSPCMP_PATH_UTF8)
+		if (pp_utf8) {			// DLLの既存CP932パスをUTF-8へ変換する
 			int len = (int)strlen(src) * 4 + 1;
 			utftmp = (char*)malloc(len);
 			ConvSJis2Utf8((char*)src, utftmp, len);
 		}
+		#endif
 	}
 #endif
 	const unsigned char* s = (unsigned char*)utftmp;
