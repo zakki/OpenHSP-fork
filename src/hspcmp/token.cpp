@@ -4753,7 +4753,16 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 	utftmp = (char *)src;
 #ifdef HSPWIN
 	if (filename) {
-		#if !defined(HSPCMP_PATH_UTF8)
+		#if defined(HSPCMP_PATH_UTF8)
+		if (!pp_utf8) {
+			int len = (int)strlen(src) + 2;
+			utftmp = (char*)malloc(len);
+			owns_utftmp = true;
+			if (utftmp != NULL) {
+				ConvUtf82SJis((char*)src, utftmp, len);
+			}
+		}
+		#elif !defined(HSPCMP_PATH_UTF8)
 		if (pp_utf8) {			// DLLの既存CP932パスをUTF-8へ変換する
 			int len = (int)strlen(src) * 4 + 1;
 			utftmp = (char*)malloc(len);
@@ -4763,11 +4772,12 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 		#endif
 	}
 #endif
-	#if !defined(HSPWIN) || defined(HSPCMP_PATH_UTF8) || defined(HSPUTF8)
+	#if !defined(HSPWIN) || defined(HSPUTF8)
 	if (filename) {
 		utf8text = true;
 	}
 	#endif
+	if (utftmp == NULL) return NULL;
 	const unsigned char* s = (unsigned char*)utftmp;
 	while (1) {
 		unsigned char c = *s;
