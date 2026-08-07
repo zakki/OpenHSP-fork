@@ -19,6 +19,7 @@
 #include "strnote.h"
 #include "strbuf.h"
 #include "hsp3crypt.h"
+#include "hsp3pathio.h"
 #include "../hspcmp/membuf.h"
 
 #define _MALLOC malloc
@@ -27,6 +28,26 @@
 #define WELCOMEMSG "DPM2 Manager 1.1"
 #define DPMFILEEXT ".dpm"
 #define DPMENCODE_DEFVAL 0
+
+#ifdef HSPCMP_PATH_UTF8
+struct HSPPackDirListContext {
+	char** target;
+};
+
+static int hsp_pack_dirlist_callback(const char* name, void* user_data)
+{
+	HSPPackDirListContext* context = (HSPPackDirListContext*)user_data;
+	sbStrAdd(context->target, (char*)name);
+	sbStrAdd(context->target, (char*)"\r\n");
+	return 0;
+}
+
+static int hsp_pack_dirlist(const char* pattern, char** target, int flags)
+{
+	HSPPackDirListContext context = { target };
+	return hsp_dirlist_utf8(pattern, flags, hsp_pack_dirlist_callback, &context);
+}
+#endif
 
 /*------------------------------------------------------------*/
 /*
@@ -79,13 +100,21 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 			char p_fdir[HSP_MAX_PATH];
 			int listmax;
 			char* flist = sbAlloc(0x4000);
+#ifdef HSPCMP_PATH_UTF8
+			hsp_pack_dirlist(name, &flist, 5);
+#else
 			dirlist(name, &flist, 5);
+#endif
 			notelist.Select(flist);
 			listmax = notelist.GetMaxLine();
 			// ディレクトリを再帰する
 			for (int i = 0; i < listmax; i++) {
 				notelist.GetLine(ftmp, i);
+#ifdef HSPCMP_PATH_UTF8
+				hsp_getpath_utf8(name, fixname, sizeof(fixname), 32);
+#else
 				getpath(name, fixname, 32);
+#endif
 				strcat(fixname, ftmp);
 				strcat(fixname, "/*");
 				HSPPTRINT res = RegisterFile(fixname, pcrypt);
@@ -94,9 +123,17 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 			sbFree(flist);
 
 			// すべてのファイルを追加する
+#ifdef HSPCMP_PATH_UTF8
+			hsp_getpath_utf8(name, p_fdir, sizeof(p_fdir), 32);
+#else
 			getpath(name, p_fdir, 32);
+#endif
 			flist = sbAlloc(0x4000);
+#ifdef HSPCMP_PATH_UTF8
+			hsp_pack_dirlist(name, &flist, 1);
+#else
 			dirlist(name, &flist, 1);
+#endif
 			notelist.Select(flist);
 			listmax = notelist.GetMaxLine();
 			for (int i = 0; i < listmax; i++) {
@@ -687,5 +724,4 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 	Print(tmp);
 	return 0;
 }
-
 

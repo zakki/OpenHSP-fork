@@ -22,6 +22,11 @@ int hsp_file_exists_utf8(const char* path);
 // Remove a filesystem entry at the UTF-8 path, returning zero on success.
 int hsp_remove_utf8(const char* path);
 
+// Enumerate entries matching a UTF-8 filesystem pattern. The callback receives
+// each entry's UTF-8 basename and returns zero to continue.
+typedef int (*hsp_path_list_callback)(const char* name, void* user_data);
+int hsp_dirlist_utf8(const char* pattern, int flags, hsp_path_list_callback callback, void* user_data);
+
 // Convert a Windows ANSI string at a compatibility boundary to UTF-8.
 // The returned buffer is allocated with malloc and must be released with free.
 char* hsp_path_from_ansi(const char* path);

@@ -166,6 +166,59 @@ static wchar_t* hsp_utf8_to_wide(const char* text)
 	return result;
 }
 
+static char* hsp_wide_to_utf8(const wchar_t* text)
+{
+	if (text == NULL) return NULL;
+	int length = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, text, -1, NULL, 0, NULL, NULL);
+	if (length <= 0) return NULL;
+	char* result = (char*)malloc((size_t)length);
+	if (result == NULL) return NULL;
+	if (WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, text, -1, result, length, NULL, NULL) == 0) {
+		free(result);
+		return NULL;
+	}
+	return result;
+}
+
+int hsp_dirlist_utf8(const char* pattern, int flags, hsp_path_list_callback callback, void* user_data)
+{
+	if (callback == NULL) return -1;
+	wchar_t* wide_pattern = hsp_utf8_to_wide(pattern);
+	if (wide_pattern == NULL) return -1;
+
+	WIN32_FIND_DATAW data;
+	HANDLE handle = FindFirstFileW(wide_pattern, &data);
+	free(wide_pattern);
+	if (handle == INVALID_HANDLE_VALUE) return 0;
+
+	DWORD attribute_mask = 0;
+	if (flags & 1) attribute_mask |= FILE_ATTRIBUTE_DIRECTORY;
+	if (flags & 2) attribute_mask |= FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM;
+	int count = 0;
+	int result = 0;
+	for (;;) {
+		bool selected = (data.dwFileAttributes & attribute_mask) != 0;
+		if ((flags & 4) == 0) selected = !selected;
+		char* name = selected ? hsp_wide_to_utf8(data.cFileName) : NULL;
+		if (name != NULL && name[0] != 0 && strcmp(name, ".") != 0 && strcmp(name, "..") != 0) {
+			++count;
+			if (callback(name, user_data) != 0) {
+				result = -1;
+				free(name);
+				break;
+			}
+		}
+		free(name);
+		if (!FindNextFileW(handle, &data)) {
+			if (GetLastError() == ERROR_NO_MORE_FILES) break;
+			result = -1;
+			break;
+		}
+	}
+	FindClose(handle);
+	return result < 0 ? result : count;
+}
+
 int64_t hsp_filesize_utf8(const char* path)
 {
 	wchar_t* wide_path = hsp_utf8_to_wide(path);
@@ -276,6 +329,7 @@ char* hsp_path_to_ansi(const char* path)
 #else
 
 #include <sys/stat.h>
+#include <glob.h>
 
 int64_t hsp_filesize_utf8(const char* path)
 {
@@ -297,6 +351,45 @@ int hsp_remove_utf8(const char* path)
 {
 	if (path == NULL || !hsp_utf8_is_valid((const unsigned char*)path)) return -1;
 	return remove(path);
+}
+
+int hsp_dirlist_utf8(const char* pattern, int flags, hsp_path_list_callback callback, void* user_data)
+{
+	if (callback == NULL || !hsp_utf8_is_valid((const unsigned char*)pattern)) return -1;
+	glob_t matches;
+	memset(&matches, 0, sizeof(matches));
+	int glob_result = glob(pattern, 0, NULL, &matches);
+	if (glob_result == GLOB_NOMATCH) {
+		globfree(&matches);
+		return 0;
+	}
+	if (glob_result != 0) {
+		globfree(&matches);
+		return -1;
+	}
+
+	int count = 0;
+	int result = 0;
+	for (size_t i = 0; i < matches.gl_pathc; ++i) {
+		const char* full_path = matches.gl_pathv[i];
+		struct stat status;
+		if (stat(full_path, &status) != 0) continue;
+		bool is_directory = (status.st_mode & S_IFMT) == S_IFDIR;
+		const char* basename = strrchr(full_path, '/');
+		basename = basename != NULL ? basename + 1 : full_path;
+		int attributes = is_directory ? 1 : 0;
+		if (basename[0] == '.') attributes |= 2;
+		bool selected = (attributes & (flags & 3)) != 0;
+		if ((flags & 4) == 0) selected = !selected;
+		if (!selected || basename[0] == 0 || strcmp(basename, ".") == 0 || strcmp(basename, "..") == 0) continue;
+		++count;
+		if (callback(basename, user_data) != 0) {
+			result = -1;
+			break;
+		}
+	}
+	globfree(&matches);
+	return result < 0 ? result : count;
 }
 
 char* hsp_path_from_ansi(const char* path)

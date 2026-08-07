@@ -5,6 +5,13 @@
 
 #include "../src/hsp3/hsp3pathio.h"
 
+static int count_matching_path(const char* name, void* user_data)
+{
+	int* count = (int*)user_data;
+	if (strcmp(name, "hsp3pathio-日本語-😀.tmp") == 0) ++*count;
+	return 0;
+}
+
 int main()
 {
 	const char* path = "hsp3pathio-日本語-😀.tmp";
@@ -23,6 +30,9 @@ int main()
 	assert(fread(buffer, 1, sizeof(buffer) - 1, input) == strlen(expected));
 	assert(fclose(input) == 0);
 	assert(strcmp(buffer, expected) == 0);
+	int matching_paths = 0;
+	assert(hsp_dirlist_utf8("hsp3pathio-*.tmp", 1, count_matching_path, &matching_paths) >= 1);
+	assert(matching_paths == 1);
 
 	const char invalid_utf8[] = "hsp3pathio-\xf0\x28\x8c\x28.tmp";
 	assert(hsp_fopen_utf8(invalid_utf8, "rb") == NULL);

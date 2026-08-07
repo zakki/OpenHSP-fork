@@ -526,7 +526,7 @@ int hsp3_to_utf8(void* out, char* in, int bufsize)
 	//	hspchar->UTF8 に変換
 	//
 #ifdef HSPWIN
-#ifdef HSPUTF8 
+#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
 	strncpy((char*)out, in, bufsize);
 	return -1;
 #else
@@ -547,7 +547,7 @@ int utf8_to_hsp3(void* out, char* in, int bufsize)
 	//	UTF8->hspchar に変換
 	//
 #ifdef HSPWIN
-#ifdef HSPUTF8 
+#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
 	strncpy((char*)out, in, bufsize);
 	return -1;
 #else
@@ -574,7 +574,7 @@ int StrCopyLetter(char* source, char* dest)
 	int i = 1;
 
 	a1 = *p;
-#ifdef HSPUTF8 
+#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
 	if (a1 >= 128) {					// 多バイト文字チェック
 		if (a1 >= 192) i++;
 		if (a1 >= 224) i++;
@@ -599,4 +599,3 @@ int StrCopyLetter(char* source, char* dest)
 	}
 	return i;
 }
-
