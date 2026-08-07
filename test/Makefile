@@ -27,4 +27,5 @@ unicode-path:
 		echo "Example: make -C test unicode-path HSPCMP_EXE=../src/hspcmp/Release64/hspcmp.exe"; \
 		exit 2; \
 	fi
-	$(PYTHON) test_unicode_path_handling/run_tests.py --hspcmp "$(HSPCMP_EXE)" --common "$(COMMON)"
+	$(PYTHON) test_unicode_path_handling/run_tests.py --hspcmp "$(HSPCMP_EXE)" --common "$(COMMON)" \
+		$(if $(HSPCMP_DLL),--hspcmp-dll "$(HSPCMP_DLL)")

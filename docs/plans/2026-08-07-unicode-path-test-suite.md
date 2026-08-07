@@ -4,7 +4,7 @@
 
 **Goal:** Add a repeatable test runner for Unicode path handling that validates the UTF-8 path layer and the Windows compiler CLI without requiring a test framework.
 
-**Architecture:** Keep the existing C++ `hsp3pathio` unit test as the low-level test and add a Python standard-library integration runner that creates Unicode-named temporary fixtures, invokes a selected `hspcmp` executable, and checks generated files and preprocessor output. Add a Windows batch entry point that discovers the normal x64 build output while allowing an explicit executable path. Packager/DLL tests remain a separate extension point because the CLI does not expose pack generation directly.
+**Architecture:** Keep the existing C++ `hsp3pathio` unit test as the low-level test and add a Python standard-library integration runner that creates Unicode-named temporary fixtures, invokes a selected `hspcmp` executable, and checks generated files and preprocessor output. Add a Windows batch entry point that discovers the normal x64 build output while allowing an explicit executable path. DLL/pack tests are maintained as an optional extension because the CLI does not expose pack generation directly; their design is documented in [`2026-08-07-unicode-path-dll-pack-test-design.md`](2026-08-07-unicode-path-dll-pack-test-design.md).
 
 **Tech Stack:** C++11, Python 3 standard library, Windows batch, existing `make`-based pathio test.
 
