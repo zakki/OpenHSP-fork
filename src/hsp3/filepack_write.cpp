@@ -377,15 +377,18 @@ int FilePack::SavePackFile( char *name, char *packname, int encode, int opt_enco
 	char refname_hsp3[(HFP_PATH_MAX + 1)];
 	HFPOBJ* obj_bak;
 
+	fname[0] = 0;
+	if (!hsp_pack_path_append(fname, sizeof(fname), name) ||
+		!hsp_pack_path_append(fname, sizeof(fname), DPMFILEEXT)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
+	StrCase(fname);
+
 	PrepareWrite( 0, encode );
 	if (RegisterFromPacklist(packname, opt_encode) <= 0) {
 		return -1;
 	}
-
-	strcpy( fname, name );
-	strcat( fname, DPMFILEEXT);
-	fname[HFP_PATH_MAX] = 0;
-	StrCase( fname );
 
 	HSP3Crypt *cm = GetCurrentCryptManager();
 
@@ -438,13 +441,18 @@ int FilePack::SavePackFile( char *name, char *packname, int encode, int opt_enco
 
 		for(i=0;i<wrtnum;i++) {
 			p = strbase + obj->name;
+			refname[0] = 0;
 			if (obj->folder == 0) {
-				refname[0] = 0;
+				// no folder
 			}
-			else {
-				strcpy(refname, strbase + obj->folder);
+			else if (!hsp_pack_path_append(refname, sizeof(refname), strbase + obj->folder)) {
+				res = -1;
+				break;
 			}
-			strcat(refname, p);
+			if (!hsp_pack_path_append(refname, sizeof(refname), p)) {
+				res = -1;
+				break;
+			}
 			utf8_to_hsp3(refname_hsp3, refname, HFP_PATH_MAX);
 
 			//printf( "#%d : %x : %s ( %d bytes ) %s packing...\n", i, obj->offset, p, obj->size, refname );
