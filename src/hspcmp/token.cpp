@@ -4747,6 +4747,7 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 	int skip;
 	char* utftmp;
 	bool owns_utftmp = false;
+	bool utf8text = pp_utf8 != 0;
 	size_t length = 2;
 
 	utftmp = (char *)src;
@@ -4762,6 +4763,11 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 		#endif
 	}
 #endif
+	#if !defined(HSPWIN) || defined(HSPCMP_PATH_UTF8) || defined(HSPUTF8)
+	if (filename) {
+		utf8text = true;
+	}
+	#endif
 	const unsigned char* s = (unsigned char*)utftmp;
 	while (1) {
 		unsigned char c = *s;
@@ -4779,7 +4785,7 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 			break;
 		default:
 			length++;
-			skip = SkipMultiByte(c);
+			skip = utf8text ? CheckByteUTF8(c) : CheckByteSJIS(c);
 			s += skip;
 			length+=skip;
 			break;
@@ -4819,7 +4825,7 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 			*d++ = '\\';
 			break;
 		default:
-			skip = SkipMultiByte(c);
+			skip = utf8text ? CheckByteUTF8(c) : CheckByteSJIS(c);
 			*d++ = c;
 			while (skip>0) {
 				s++;
