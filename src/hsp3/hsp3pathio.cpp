@@ -166,7 +166,7 @@ static wchar_t* hsp_utf8_to_wide(const char* text)
 	return result;
 }
 
-static char* hsp_wide_to_utf8(const wchar_t* text)
+char* hsp_utf8_from_wide(const wchar_t* text)
 {
 	if (text == NULL) return NULL;
 	int length = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, text, -1, NULL, 0, NULL, NULL);
@@ -199,7 +199,7 @@ int hsp_dirlist_utf8(const char* pattern, int flags, hsp_path_list_callback call
 	for (;;) {
 		bool selected = (data.dwFileAttributes & attribute_mask) != 0;
 		if ((flags & 4) == 0) selected = !selected;
-		char* name = selected ? hsp_wide_to_utf8(data.cFileName) : NULL;
+		char* name = selected ? hsp_utf8_from_wide(data.cFileName) : NULL;
 		if (name != NULL && name[0] != 0 && strcmp(name, ".") != 0 && strcmp(name, "..") != 0) {
 			++count;
 			if (callback(name, user_data) != 0) {

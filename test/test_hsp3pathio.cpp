@@ -47,6 +47,14 @@ int main()
 	free(compatibility_output);
 	free(compatibility_path);
 
+#if defined(HSPWIN) || defined(_WIN32)
+	const wchar_t wide_path[] = L"wide-日本語-😀";
+	char* wide_path_utf8 = hsp_utf8_from_wide(wide_path);
+	assert(wide_path_utf8 != NULL);
+	assert(strcmp(wide_path_utf8, "wide-日本語-😀") == 0);
+	free(wide_path_utf8);
+#endif
+
 	char component[64];
 	assert(hsp_getpath_utf8("dir/日本語-😀.hsp", component, sizeof(component), 8));
 	assert(strcmp(component, "日本語-😀.hsp") == 0);

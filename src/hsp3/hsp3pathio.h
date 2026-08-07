@@ -8,6 +8,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if defined(HSPWIN) || defined(_WIN32)
+#include <wchar.h>
+#endif
+
 // Open a file whose path is a NUL-terminated UTF-8 string.
 // On Windows, the path is converted to UTF-16 before calling _wfopen.
 // On POSIX systems, the validated UTF-8 byte sequence is passed to fopen.
@@ -30,6 +34,12 @@ int hsp_dirlist_utf8(const char* pattern, int flags, hsp_path_list_callback call
 // Convert a Windows ANSI string at a compatibility boundary to UTF-8.
 // The returned buffer is allocated with malloc and must be released with free.
 char* hsp_path_from_ansi(const char* path);
+
+// Convert a Windows wide string at a UTF-16 boundary to UTF-8.
+// The returned buffer is allocated with malloc and must be released with free.
+#if defined(HSPWIN) || defined(_WIN32)
+char* hsp_utf8_from_wide(const wchar_t* text);
+#endif
 
 // Convert an internal UTF-8 path to the legacy Windows ANSI contract.
 // Returns NULL when the path cannot be represented without loss.

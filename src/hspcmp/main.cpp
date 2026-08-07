@@ -101,7 +101,11 @@ static 	char *p[] = {
 
 /*----------------------------------------------------------*/
 
+#ifdef HSPWIN
+int wmain( int argc, wchar_t *argv[] )
+#else
 int main( int argc, char *argv[] )
+#endif
 {
 	char a1,a2,a3;
 	int b,st;
@@ -121,7 +125,7 @@ int main( int argc, char *argv[] )
 	std::vector<std::string> utf8_args;
 	utf8_args.reserve(argc);
 	for (int i = 0; i < argc; ++i) {
-		char* converted = hsp_path_from_ansi(argv[i]);
+		char* converted = hsp_utf8_from_wide(argv[i]);
 		if (converted == NULL) return 1;
 		utf8_args.push_back(converted);
 		free(converted);
