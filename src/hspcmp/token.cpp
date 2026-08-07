@@ -4729,6 +4729,7 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 	//
 	int skip;
 	char* utftmp;
+	bool owns_utftmp = false;
 	size_t length = 2;
 
 	utftmp = (char *)src;
@@ -4738,6 +4739,7 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 		if (pp_utf8) {			// DLLの既存CP932パスをUTF-8へ変換する
 			int len = (int)strlen(src) * 4 + 1;
 			utftmp = (char*)malloc(len);
+			owns_utftmp = true;
 			ConvSJis2Utf8((char*)src, utftmp, len);
 		}
 		#endif
@@ -4813,10 +4815,8 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 	*d++ = '"';
 	*d = '\0';
 #ifdef HSPWIN
-	if (filename) {
-		if (pp_utf8) {
-			free(utftmp);
-		}
+	if (owns_utftmp) {
+		free(utftmp);
 	}
 #endif
 	return dest;
