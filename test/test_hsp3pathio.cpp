@@ -24,6 +24,18 @@ int main()
 	const char invalid_utf8[] = "hsp3pathio-\xf0\x28\x8c\x28.tmp";
 	assert(hsp_fopen_utf8(invalid_utf8, "rb") == NULL);
 
+	char component[64];
+	assert(hsp_getpath_utf8("dir/日本語-😀.hsp", component, sizeof(component), 8));
+	assert(strcmp(component, "日本語-😀.hsp") == 0);
+	assert(hsp_getpath_utf8("dir/日本語-😀.hsp", component, sizeof(component), 1 | 8));
+	assert(strcmp(component, "日本語-😀") == 0);
+	assert(hsp_getpath_utf8("dir/日本語-😀.hsp", component, sizeof(component), 2));
+	assert(strcmp(component, ".hsp") == 0);
+	assert(hsp_getpath_utf8("dir/日本語-😀.hsp", component, sizeof(component), 32));
+	assert(strcmp(component, "dir/") == 0);
+	assert(!hsp_getpath_utf8("dir/日本語-😀.hsp", component, 4, 8));
+	assert(!hsp_getpath_utf8(invalid_utf8, component, sizeof(component), 8));
+
 	remove(path);
 	return 0;
 }

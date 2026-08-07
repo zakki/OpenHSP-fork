@@ -4,6 +4,8 @@
 #include "hsp3pathio.h"
 
 #include <stdlib.h>
+#include <string.h>
+#include <string>
 
 static bool hsp_utf8_is_valid(const unsigned char* text)
 {
@@ -64,6 +66,83 @@ static bool hsp_utf8_is_valid(const unsigned char* text)
 	}
 
 	return true;
+}
+
+static bool hsp_path_is_separator(char c)
+{
+#if defined(HSPWIN) || defined(_WIN32)
+	return c == '/' || c == '\\';
+#else
+	return c == '/';
+#endif
+}
+
+int hsp_getpath_utf8(const char* path, char* output, size_t output_size, int mode)
+{
+	if (output == NULL || output_size == 0 ||
+		!hsp_utf8_is_valid((const unsigned char*)path)) return 0;
+
+	std::string source(path);
+	if (mode & 16) {
+		for (size_t i = 0; i < source.size(); ++i) {
+			if (source[i] >= 'A' && source[i] <= 'Z') {
+				source[i] = (char)(source[i] - 'A' + 'a');
+			}
+		}
+	}
+
+	size_t separator = std::string::npos;
+	for (size_t i = 0; i < source.size(); ++i) {
+		if (hsp_path_is_separator(source[i])) separator = i;
+	}
+
+	size_t directory_end = separator == std::string::npos ? 0 : separator + 1;
+	if (directory_end == 0 && source.size() >= 2 && source[1] == ':') {
+		directory_end = 2;
+	}
+
+	std::string directory = source.substr(0, directory_end);
+	std::string filename = source.substr(directory_end);
+	std::string extension;
+	std::string name = filename;
+	size_t dot = filename.rfind('.');
+	if (dot != std::string::npos) {
+		name = filename.substr(0, dot);
+		extension = filename.substr(dot);
+	}
+
+	std::string result;
+	if (mode & 8) {
+		result = filename;
+	}
+	else if (mode & 32) {
+		result = directory;
+	}
+
+	switch (mode & 7) {
+	case 1:
+		if (mode & 8) {
+			result = name;
+		}
+		else {
+			result = source;
+			if (!extension.empty() && result.size() >= extension.size() &&
+				result.compare(result.size() - extension.size(), extension.size(), extension) == 0) {
+				result.erase(result.size() - extension.size());
+			}
+		}
+		break;
+	case 2:
+		result = extension;
+		break;
+	default:
+		if ((mode & (8 | 32)) == 0) result = source;
+		break;
+	}
+
+	if (result.size() + 1 > output_size) return 0;
+	memcpy(output, result.c_str(), result.size() + 1);
+	return 1;
 }
 
 #if defined(HSPWIN) || defined(_WIN32)
