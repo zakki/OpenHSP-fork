@@ -32,6 +32,17 @@
 #include "token.h"
 #include "hsmanager.h"
 
+#ifdef HSPWIN
+static int winexec_utf8(const char* command)
+{
+	char* ansi_command = hsp_path_to_ansi(command);
+	if (ansi_command == NULL) return 0;
+	int result = WinExec(ansi_command, SW_SHOW);
+	free(ansi_command);
+	return result;
+}
+#endif
+
 /*----------------------------------------------------------*/
 
 static void usage1( void )
@@ -315,7 +326,7 @@ int main( int argc, char *argv[] )
 			printf("Runtime[%s].\n",oname);
 		} else {
 			sprintf( execmd, "%s %s", oname, fname );
-			st = WinExec( execmd, SW_SHOW );
+			st = winexec_utf8( execmd );
 			if ( st < 32 ) {
 				printf("Runtime file missing.\n");
 			}
