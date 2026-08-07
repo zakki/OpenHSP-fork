@@ -24,6 +24,16 @@
 #define _MALLOC malloc
 #define _FREE free
 
+static int hsp_pack_path_append(char* target, size_t target_size, const char* suffix)
+{
+	if (target == NULL || suffix == NULL || target_size == 0) return 0;
+	size_t target_length = strlen(target);
+	size_t suffix_length = strlen(suffix);
+	if (target_length >= target_size || suffix_length > target_size - target_length - 1) return 0;
+	memcpy(target + target_length, suffix, suffix_length + 1);
+	return 1;
+}
+
 #define WELCOMEMSG "DPM2 Manager 1.1"
 #define DPMFILEEXT ".dpm"
 #define DPMENCODE_DEFVAL 0
@@ -86,8 +96,12 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 			for (int i = 0; i < listmax; i++) {
 				notelist.GetLine(ftmp, i);
 				getpath(name, fixname, 32);
-				strcat(fixname, ftmp);
-				strcat(fixname, "/*");
+				if (!hsp_pack_path_append(fixname, sizeof(fixname), ftmp) ||
+					!hsp_pack_path_append(fixname, sizeof(fixname), "/*")) {
+					sbFree(flist);
+					Print((char*)"#Path is too long.");
+					return -1;
+				}
 				HSPPTRINT res = RegisterFile(fixname, pcrypt);
 				if (res < 0) return res;
 			}
@@ -101,8 +115,13 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 			listmax = notelist.GetMaxLine();
 			for (int i = 0; i < listmax; i++) {
 				notelist.GetLine(ftmp, i);
-				strcpy(fixname, p_fdir);
-				strcat(fixname, ftmp);
+				fixname[0] = 0;
+				if (!hsp_pack_path_append(fixname, sizeof(fixname), p_fdir) ||
+					!hsp_pack_path_append(fixname, sizeof(fixname), ftmp)) {
+					sbFree(flist);
+					Print((char*)"#Path is too long.");
+					return -1;
+				}
 				HSPPTRINT res = RegisterFile(fixname, pcrypt);
 				if (res < 0) return res;
 			}
@@ -119,8 +138,12 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 	hsp3_to_utf8(fname, fname_hsp3, HFP_PATH_MAX);
 	hsp3_to_utf8(foldername, foldername_hsp3, HFP_PATH_MAX);
 
-	strcpy(pathname, foldername);
-	strcat(pathname, fname);
+	pathname[0] = 0;
+	if (!hsp_pack_path_append(pathname, sizeof(pathname), foldername) ||
+		!hsp_pack_path_append(pathname, sizeof(pathname), fname)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 
 	HSP3Crypt* cm = GetCurrentCryptManager();
 	enc_crypt = 0;
@@ -311,15 +334,18 @@ int FilePack::SavePackFile( char *name, char *packname, int encode, int opt_enco
 	char refname_hsp3[(HFP_PATH_MAX + 1)];
 	HFPOBJ* obj_bak;
 
+	fname[0] = 0;
+	if (!hsp_pack_path_append(fname, sizeof(fname), name) ||
+		!hsp_pack_path_append(fname, sizeof(fname), DPMFILEEXT)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
+	StrCase( fname );
+
 	PrepareWrite( 0, encode );
 	if (RegisterFromPacklist(packname, opt_encode) <= 0) {
 		return -1;
 	}
-
-	strcpy( fname, name );
-	strcat( fname, DPMFILEEXT);
-	fname[HFP_PATH_MAX] = 0;
-	StrCase( fname );
 
 	HSP3Crypt *cm = GetCurrentCryptManager();
 
@@ -372,13 +398,18 @@ int FilePack::SavePackFile( char *name, char *packname, int encode, int opt_enco
 
 		for(i=0;i<wrtnum;i++) {
 			p = strbase + obj->name;
+			refname[0] = 0;
 			if (obj->folder == 0) {
-				refname[0] = 0;
+				// no folder
 			}
-			else {
-				strcpy(refname, strbase + obj->folder);
+			else if (!hsp_pack_path_append(refname, sizeof(refname), strbase + obj->folder)) {
+				res = -1;
+				break;
 			}
-			strcat(refname, p);
+			if (!hsp_pack_path_append(refname, sizeof(refname), p)) {
+				res = -1;
+				break;
+			}
 			utf8_to_hsp3(refname_hsp3, refname, HFP_PATH_MAX);
 
 			//printf( "#%d : %x : %s ( %d bytes ) %s packing...\n", i, obj->offset, p, obj->size, refname );
@@ -432,8 +463,12 @@ int FilePack::ExtractFile( HFPHED *hed, char *fname, char *savename, int encode 
 	bufsize = (int)obj->size;
 
 	HSP3Crypt* cm = GetCurrentCryptManager();
-	strcpy(namebuf_utf8, GetFolderName(obj));
-	strcat(namebuf_utf8, GetFileName(obj));
+	namebuf_utf8[0] = 0;
+	if (!hsp_pack_path_append(namebuf_utf8, sizeof(namebuf_utf8), GetFolderName(obj)) ||
+		!hsp_pack_path_append(namebuf_utf8, sizeof(namebuf_utf8), GetFileName(obj))) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 	int enc_crypt = cm->GetCRC32(namebuf_utf8, strlen(namebuf_utf8));			// ファイルパスを暗号キーにする
 	enc_crypt = cm->GetSalt(enc_crypt);
 	if (enc_crypt == 0) enc_crypt = 1;
@@ -559,19 +594,33 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 
 	//		HSPランタイムを検索
 	//
-	strcpy(hrtfile, hspexe);
+	hrtfile[0] = 0;
+	if (!hsp_pack_path_append(hrtfile, sizeof(hrtfile), hspexe)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 	StrSplit(hspexe, foldername, filename);
 
 	fp = hsp3_fopen(hrtfile);
 	if (fp == NULL) {
-		sprintf(hrtfile, "%sruntime\\%s", foldername, filename);
+		hrtfile[0] = 0;
+		if (!hsp_pack_path_append(hrtfile, sizeof(hrtfile), foldername) ||
+			!hsp_pack_path_append(hrtfile, sizeof(hrtfile), "runtime\\") ||
+			!hsp_pack_path_append(hrtfile, sizeof(hrtfile), filename)) {
+			Print((char*)"#Path is too long.");
+			return -1;
+		}
 		fp = hsp3_fopen(hrtfile);
 		//
 		if (fp == NULL) {
-			strcpy(hrtfile, filename);
+			hrtfile[0] = 0;
+			if (!hsp_pack_path_append(hrtfile, sizeof(hrtfile), filename)) {
+				Print((char*)"#Path is too long.");
+				return -1;
+			}
 			fp = hsp3_fopen(hrtfile);
 			if (fp == NULL) {
-				sprintf(tmp, "#No file [%s].", hspexe);
+				snprintf(tmp, sizeof(tmp), "#No file [%s].", hspexe);
 				Print(tmp);
 				return -1;
 			}
@@ -599,21 +648,35 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 
 	//		作成される実行ファイル名
 	//
-	strcpy(sname, basename);
+	sname[0] = 0;
+	if (!hsp_pack_path_append(sname, sizeof(sname), basename)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 	if (mode == 2) {
-		strcat(sname, ".scr");
+		if (!hsp_pack_path_append(sname, sizeof(sname), ".scr")) {
+			Print((char*)"#Path is too long.");
+			return -1;
+		}
 	}
 	else {
-		strcat(sname, ".exe");
+		if (!hsp_pack_path_append(sname, sizeof(sname), ".exe")) {
+			Print((char*)"#Path is too long.");
+			return -1;
+		}
 	}
 
 	//		DPMのチェックサムを作成
 	//
-	strcpy(dpmname, basename);
-	strcat(dpmname, DPMFILEEXT);
+	dpmname[0] = 0;
+	if (!hsp_pack_path_append(dpmname, sizeof(dpmname), basename) ||
+		!hsp_pack_path_append(dpmname, sizeof(dpmname), DPMFILEEXT)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 	fp = hsp3_fopen(dpmname);
 	if (fp == NULL) {
-		sprintf(tmp, "#No file [%s].", dpmname);
+		snprintf(tmp, sizeof(tmp), "#No file [%s].", dpmname);
 		Print(tmp);
 		return -1;
 	}
@@ -644,21 +707,21 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 
 	fp2 = hsp3_fopen(dpmname);
 	if (fp2 == NULL) {
-		sprintf(tmp, "#No file [%s].", dpmname);
+		snprintf(tmp, sizeof(tmp), "#No file [%s].", dpmname);
 		Print(tmp);
 		return -1;
 	}
 	fp = hsp3_fopen(hrtfile);
 	if (fp == NULL) {
 		hsp3_fclose(fp2);
-		sprintf(tmp, "#No file [%s].", hspexe);
+		snprintf(tmp, sizeof(tmp), "#No file [%s].", hspexe);
 		Print(tmp);
 		return -1;
 	}
 	fp3 = hsp3_fopenwrite(sname);
 	if (fp3 == NULL) {
 		hsp3_fclose(fp2); hsp3_fclose(fp);
-		sprintf(tmp, "#Write error [%s].", sname);
+		snprintf(tmp, sizeof(tmp), "#Write error [%s].", sname);
 		Print(tmp);
 		return -1;
 	}
@@ -683,9 +746,7 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 	_fcloseall();
 #endif
 
-	sprintf(tmp, "Make custom execute file [%s].", sname);
+	snprintf(tmp, sizeof(tmp), "Make custom execute file [%s].", sname);
 	Print(tmp);
 	return 0;
 }
-
-
