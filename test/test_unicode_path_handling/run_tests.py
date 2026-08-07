@@ -272,7 +272,7 @@ def test_dll_compile_and_pack(dll_path: Path, common: Path, workdir: Path) -> No
             asset.unlink()
             dll.call_path("pack_ini", pack_base)
             dll._check("pack_view", dll.pack_view(0, 0, 0, 0))
-            dll.call_path("pack_get", asset)
+            dll.call_path("pack_get", Path(asset.name))
             if not asset.is_file() or asset.read_bytes() != asset_contents:
                 raise RuntimeError("DLL pack extraction did not restore {}".format(asset))
     finally:
