@@ -618,22 +618,41 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 	int* ip;
 	int chksum, sum, sumseed, sumsize;
 	char tmp[1024];
+	int path_error = 0;
+
+	hrtfile[0] = 0;
+	if (!hsp_pack_path_append(hrtfile, sizeof(hrtfile), hspexe)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 
 	//		HSPランタイムを検索
 	//
-	strcpy(hrtfile, hspexe);
 	StrSplit(hspexe, foldername, filename);
 
 	fp = hsp3_fopen(hrtfile);
 	if (fp == NULL) {
-		sprintf(hrtfile, "%sruntime\\%s", foldername, filename);
+		hrtfile[0] = 0;
+		if (!hsp_pack_path_append(hrtfile, sizeof(hrtfile), foldername) ||
+			!hsp_pack_path_append(hrtfile, sizeof(hrtfile), "runtime\\") ||
+			!hsp_pack_path_append(hrtfile, sizeof(hrtfile), filename)) {
+			path_error = 1;
+		}
+		if (path_error) {
+			Print((char*)"#Path is too long.");
+			return -1;
+		}
 		fp = hsp3_fopen(hrtfile);
 		//
 		if (fp == NULL) {
-			strcpy(hrtfile, filename);
+			hrtfile[0] = 0;
+			if (!hsp_pack_path_append(hrtfile, sizeof(hrtfile), filename)) {
+				Print((char*)"#Path is too long.");
+				return -1;
+			}
 			fp = hsp3_fopen(hrtfile);
 			if (fp == NULL) {
-				sprintf(tmp, "#No file [%s].", hspexe);
+				snprintf(tmp, sizeof(tmp), "#No file [%s].", hspexe);
 				Print(tmp);
 				return -1;
 			}
@@ -661,21 +680,35 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 
 	//		作成される実行ファイル名
 	//
-	strcpy(sname, basename);
+	sname[0] = 0;
+	if (!hsp_pack_path_append(sname, sizeof(sname), basename)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 	if (mode == 2) {
-		strcat(sname, ".scr");
+		if (!hsp_pack_path_append(sname, sizeof(sname), ".scr")) {
+			Print((char*)"#Path is too long.");
+			return -1;
+		}
 	}
 	else {
-		strcat(sname, ".exe");
+		if (!hsp_pack_path_append(sname, sizeof(sname), ".exe")) {
+			Print((char*)"#Path is too long.");
+			return -1;
+		}
 	}
 
 	//		DPMのチェックサムを作成
 	//
-	strcpy(dpmname, basename);
-	strcat(dpmname, DPMFILEEXT);
+	dpmname[0] = 0;
+	if (!hsp_pack_path_append(dpmname, sizeof(dpmname), basename) ||
+		!hsp_pack_path_append(dpmname, sizeof(dpmname), DPMFILEEXT)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 	fp = hsp3_fopen(dpmname);
 	if (fp == NULL) {
-		sprintf(tmp, "#No file [%s].", dpmname);
+		snprintf(tmp, sizeof(tmp), "#No file [%s].", dpmname);
 		Print(tmp);
 		return -1;
 	}
@@ -706,21 +739,21 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 
 	fp2 = hsp3_fopen(dpmname);
 	if (fp2 == NULL) {
-		sprintf(tmp, "#No file [%s].", dpmname);
+		snprintf(tmp, sizeof(tmp), "#No file [%s].", dpmname);
 		Print(tmp);
 		return -1;
 	}
 	fp = hsp3_fopen(hrtfile);
 	if (fp == NULL) {
 		hsp3_fclose(fp2);
-		sprintf(tmp, "#No file [%s].", hspexe);
+		snprintf(tmp, sizeof(tmp), "#No file [%s].", hspexe);
 		Print(tmp);
 		return -1;
 	}
 	fp3 = hsp3_fopenwrite(sname);
 	if (fp3 == NULL) {
 		hsp3_fclose(fp2); hsp3_fclose(fp);
-		sprintf(tmp, "#Write error [%s].", sname);
+		snprintf(tmp, sizeof(tmp), "#Write error [%s].", sname);
 		Print(tmp);
 		return -1;
 	}
@@ -745,7 +778,7 @@ int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, in
 	_fcloseall();
 #endif
 
-	sprintf(tmp, "Make custom execute file [%s].", sname);
+	snprintf(tmp, sizeof(tmp), "Make custom execute file [%s].", sname);
 	Print(tmp);
 	return 0;
 }
