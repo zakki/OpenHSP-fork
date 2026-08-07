@@ -31,6 +31,10 @@ int main()
 	char* compatibility_path = hsp_path_from_ansi("compatibility-日本語");
 	assert(compatibility_path != NULL);
 	assert(strcmp(compatibility_path, "compatibility-日本語") == 0);
+	char* compatibility_output = hsp_path_to_ansi(compatibility_path);
+	assert(compatibility_output != NULL);
+	assert(strcmp(compatibility_output, compatibility_path) == 0);
+	free(compatibility_output);
 	free(compatibility_path);
 
 	char component[64];

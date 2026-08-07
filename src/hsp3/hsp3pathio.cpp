@@ -238,6 +238,32 @@ char* hsp_path_from_ansi(const char* path)
 	return result;
 }
 
+char* hsp_path_to_ansi(const char* path)
+{
+	wchar_t* wide_path = hsp_utf8_to_wide(path);
+	if (wide_path == NULL) return NULL;
+
+	BOOL used_default = FALSE;
+	int ansi_length = WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, wide_path, -1, NULL, 0, NULL, &used_default);
+	if (ansi_length <= 0 || used_default) {
+		free(wide_path);
+		return NULL;
+	}
+	char* result = (char*)malloc((size_t)ansi_length);
+	if (result == NULL) {
+		free(wide_path);
+		return NULL;
+	}
+	used_default = FALSE;
+	if (WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, wide_path, -1, result, ansi_length, NULL, &used_default) == 0 || used_default) {
+		free(wide_path);
+		free(result);
+		return NULL;
+	}
+	free(wide_path);
+	return result;
+}
+
 #else
 
 #include <sys/stat.h>
@@ -261,6 +287,15 @@ int hsp_file_exists_utf8(const char* path)
 char* hsp_path_from_ansi(const char* path)
 {
 	if (path == NULL) return NULL;
+	size_t length = strlen(path) + 1;
+	char* result = (char*)malloc(length);
+	if (result != NULL) memcpy(result, path, length);
+	return result;
+}
+
+char* hsp_path_to_ansi(const char* path)
+{
+	if (path == NULL || !hsp_utf8_is_valid((const unsigned char*)path)) return NULL;
 	size_t length = strlen(path) + 1;
 	char* result = (char*)malloc(length);
 	if (result != NULL) memcpy(result, path, length);

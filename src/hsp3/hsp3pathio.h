@@ -23,6 +23,10 @@ int hsp_file_exists_utf8(const char* path);
 // The returned buffer is allocated with malloc and must be released with free.
 char* hsp_path_from_ansi(const char* path);
 
+// Convert an internal UTF-8 path to the legacy Windows ANSI contract.
+// Returns NULL when the path cannot be represented without loss.
+char* hsp_path_to_ansi(const char* path);
+
 // Extract a path component using the getpath-compatible mode flags.
 // Returns nonzero on success and zero for invalid UTF-8 or a small output buffer.
 int hsp_getpath_utf8(const char* path, char* output, size_t output_size, int mode);
