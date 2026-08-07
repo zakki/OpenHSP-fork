@@ -1500,12 +1500,16 @@ EXPORT BOOL WINAPI aht_parts( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSPPTR
 	//
 	char *ep1;
 	char *ep2;
+	char *utf8_list;
 	char path[256];
 	if ( aht == NULL ) return -1;
 	ep1 = hei->HspFunc_prm_gets();			// パラメータ1:文字列
 	if (copy_cp932_path_to_utf8(path, sizeof(path), ep1) != 0) return -1;
 	ep2 = hei->HspFunc_prm_gets();			// パラメータ2:文字列
-	aht->BuildParts( ep2, path );
+	utf8_list = hsp_path_from_cp932(ep2);
+	if (utf8_list == NULL) return -1;
+	aht->BuildParts( utf8_list, path );
+	free(utf8_list);
 	return 0;
 }
 
