@@ -708,7 +708,7 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 	if ( st ) return -st;
 	st=dpmc_mkexe( type, hspexe, opt1, opt2, opt3 );
 	strcat( fname, ".dpm" );
-	DeleteFile( fname );
+	hsp_remove_utf8( fname );
 #endif
 #ifdef DPM2_SUPPORT
 	int myseed1,myseed2;
@@ -727,7 +727,7 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 	}
 	st = filepack.MakeEXEFile(type, hspexe, fname, myseed2, opt1, opt2, opt3);
 	strcat(fname, ".dpm");
-	DeleteFile(fname);
+	hsp_remove_utf8(fname);
 #endif
 
 	//		iconins process

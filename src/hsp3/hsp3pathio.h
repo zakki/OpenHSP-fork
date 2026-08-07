@@ -19,6 +19,9 @@ int64_t hsp_filesize_utf8(const char* path);
 // Return nonzero when a filesystem entry exists at the UTF-8 path.
 int hsp_file_exists_utf8(const char* path);
 
+// Remove a filesystem entry at the UTF-8 path, returning zero on success.
+int hsp_remove_utf8(const char* path);
+
 // Convert a Windows ANSI string at a compatibility boundary to UTF-8.
 // The returned buffer is allocated with malloc and must be released with free.
 char* hsp_path_from_ansi(const char* path);

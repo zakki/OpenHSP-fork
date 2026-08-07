@@ -189,6 +189,15 @@ int hsp_file_exists_utf8(const char* path)
 	return result == 0;
 }
 
+int hsp_remove_utf8(const char* path)
+{
+	wchar_t* wide_path = hsp_utf8_to_wide(path);
+	if (wide_path == NULL) return -1;
+	int result = _wremove(wide_path);
+	free(wide_path);
+	return result;
+}
+
 FILE* hsp_fopen_utf8(const char* path, const char* mode)
 {
 	if (path == NULL || mode == NULL) return NULL;
@@ -282,6 +291,12 @@ int hsp_file_exists_utf8(const char* path)
 	if (!hsp_utf8_is_valid((const unsigned char*)path)) return 0;
 	struct stat status;
 	return stat(path, &status) == 0;
+}
+
+int hsp_remove_utf8(const char* path)
+{
+	if (path == NULL || !hsp_utf8_is_valid((const unsigned char*)path)) return -1;
+	return remove(path);
 }
 
 char* hsp_path_from_ansi(const char* path)

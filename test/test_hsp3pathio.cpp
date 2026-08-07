@@ -49,6 +49,7 @@ int main()
 	assert(!hsp_getpath_utf8("dir/日本語-😀.hsp", component, 4, 8));
 	assert(!hsp_getpath_utf8(invalid_utf8, component, sizeof(component), 8));
 
-	remove(path);
+	assert(hsp_remove_utf8(path) == 0);
+	assert(!hsp_file_exists_utf8(path));
 	return 0;
 }
