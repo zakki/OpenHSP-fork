@@ -253,6 +253,10 @@ int CHsc3::PreProcess( char *fname, char *outname, int option, char *rname, void
 	if ( option & HSC3_OPT_UTF8IN ) {
 		tk.SetUTF8Input( 1 );
 	}
+#ifdef HSPCMP_PATH_UTF8
+	// UTF-8 paths and source text share one internal representation.
+	tk.SetUTF8Input( 1 );
+#endif
 	if ( option & HSC3_OPT_RUNTIME64 ) {
 		tk.SetHeaderOption(HEDINFO_HSP64);
 		tk.SetRuntime( "hsp3_64");
@@ -376,6 +380,10 @@ int CHsc3::Compile( char *fname, char *outname, int mode )
 	if ( process_option & HSC3_OPT_UTF8IN ) {
 		tk.SetUTF8Input( 1 );
 	}
+#ifdef HSPCMP_PATH_UTF8
+	// PreProcess emits UTF-8 when paths use the UTF-8 contract.
+	tk.SetUTF8Input( 1 );
+#endif
 
 	sprintf( mm,"#%s ver%s / onion software 1997-2026(c)", HSC3TITLE2, hspver );
 	tk.Mes( mm );
