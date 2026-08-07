@@ -3426,7 +3426,12 @@ ppresult_t CToken::PP_PackOpt( void )
 			optvalue = converted_value;
 		}
 #endif
-		sprintf( tmp, ";!%s=%s", optname, optvalue );
+		int option_length = snprintf( tmp, sizeof(tmp), ";!%s=%s", optname, optvalue );
+		if ( option_length < 0 || (size_t)option_length >= sizeof(tmp) ) {
+			SetError("pack option is too long");
+			free(converted_value);
+			return PPRESULT_ERROR;
+		}
 		if (AddPackfile(tmp, 2) == hspcmp_pack_path_error) {
 			SetError("pack option path is too long or invalid UTF-8");
 			free(converted_value);
