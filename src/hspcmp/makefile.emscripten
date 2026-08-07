@@ -15,6 +15,7 @@ OBJS = ahtmodel.o ahtobj.o codegen.o comutil.o errormsg.o hsc3.o \
     ../hsp3/filepack_write.o \
     ../hsp3/hsp3crypt.o \
     ../hsp3/hsp3utfcnv.o \
+    ../hsp3/hsp3pathio.o \
     ../hsp3/strbuf.o \
 	../hsp3/emscripten/supio_emscripten.o emscripten/hspcmp3.o
 TARGET = hspcmp.js

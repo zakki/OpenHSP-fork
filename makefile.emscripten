@@ -43,6 +43,7 @@ OBJS = \
 	src/hsp3/filepack.js.o \
 	src/hsp3/hsp3crypt.js.o \
 	src/hsp3/hsp3utfcnv.js.o \
+	src/hsp3/hsp3pathio.js.o \
 	src/hsp3dish/geometry.js.o \
 	src/hsp3/hsp3.js.o \
 	src/hsp3/hsp3code.js.o \
@@ -87,6 +88,7 @@ OBJS_GP = \
 	src/hsp3/filepack.g.o \
 	src/hsp3/hsp3crypt.g.o \
 	src/hsp3/hsp3utfcnv.g.o \
+	src/hsp3/hsp3pathio.g.o \
 	src/hsp3dish/geometry.g.o \
 	src/hsp3/hsp3.g.o \
 	src/hsp3/hsp3code.g.o \
@@ -481,4 +483,3 @@ libLinearMath.js.a: $(OBJS_LINEAR_MATH)
 
 clean:
 	rm -f $(OBJS) $(OBJS_GP) $(OBJS_GAMEPLAY) $(TARGETS)
-

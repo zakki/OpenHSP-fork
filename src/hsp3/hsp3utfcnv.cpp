@@ -8,7 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(HSPDEBUG) && !defined(HSPCMP)
 char* hsp3ext_getdir(int id);
+#endif
 
 #ifdef HSPWIN
 #include <windows.h>
@@ -278,7 +280,7 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
     
 	// Linux
 	hsp3_fp = hsp_fopen_utf8(name, "rb");
-#ifdef HSPDEBUG
+#if defined(HSPDEBUG) && !defined(HSPCMP)
 	if (hsp3_fp == NULL) {
 		//	hsptvフォルダを検索する
 		char fn[2048];

@@ -16,7 +16,7 @@ CFLAGS_ENV =  -DHSP64 -Werror=int-to-pointer-cast # 64bit
 CFLAGS_DISH = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSPDEBUG -DUSE_OBAQ -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 CFLAGS_GP = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11 $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 CFLAGS_CL = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
-CFLAGS_CMP = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
+CFLAGS_CMP = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSPCMP -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 PKG_CONFIG = pkg-config
 
 OBJS = \
@@ -24,6 +24,7 @@ OBJS = \
 	src/hsp3/filepack.do \
 	src/hsp3/hsp3crypt.do \
 	src/hsp3/hsp3utfcnv.do \
+	src/hsp3/hsp3pathio.do \
 	src/hsp3dish/geometry.do \
 	src/hsp3/hsp3.do \
 	src/hsp3/hsp3code.do \
@@ -79,6 +80,8 @@ OBJS_CMP = \
 	src/hspcmp/main.o \
 	src/hspcmp/membuf.o \
 	src/hsp3/strnote.o \
+	src/hsp3/hsp3utfcnv.cmp.o \
+	src/hsp3/hsp3pathio.o \
 	src/hspcmp/tagstack.o \
 	src/hspcmp/hsmanager.o \
 	src/hspcmp/token.o \
@@ -105,6 +108,7 @@ OBJS_CL = \
 	src/hsp3/filepack.o \
 	src/hsp3/hsp3crypt.o \
 	src/hsp3/hsp3utfcnv.o \
+	src/hsp3/hsp3pathio.o \
 	src/hsp3/linux/supio_linux.o \
 	src/hsp3/linux/hsp3cl.o \
 	src/hsp3/linux/hsp3ext_linux.o \
@@ -118,6 +122,7 @@ OBJS_GP = \
 	src/hsp3/filepack.gpo \
 	src/hsp3/hsp3crypt.gpo \
 	src/hsp3/hsp3utfcnv.gpo \
+	src/hsp3/hsp3pathio.gpo \
 	src/hsp3dish/geometry.gpo \
 	src/hsp3/hsp3.gpo \
 	src/hsp3/hsp3code.gpo \
@@ -482,6 +487,8 @@ hsp3gp: $(OBJS_GP) $(LIBS_GP)
 
 hspcmp: $(OBJS_CMP)
 	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) $(STRIPFLAGS) -o $@
+src/hsp3/hsp3utfcnv.cmp.o: src/hsp3/hsp3utfcnv.cpp
+	$(CXX) $(CFLAGS_CMP) -c $< -o $@
 %.o: %.c
 	$(CC) $(CFLAGS_CMP) -c $< -o $*.o
 %.o: %.cpp
@@ -515,4 +522,3 @@ libLinearMath.a: $(OBJS_LINEAR_MATH)
 
 clean:
 	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
-
