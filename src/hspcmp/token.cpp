@@ -38,6 +38,23 @@ static inline int tstrcmp(const char* str1, const char* str2)
 	return 0;
 }
 
+static int hspcmp_path_copy(char* destination, size_t destination_size,
+	const char* first, const char* second, const char* third)
+{
+	if (destination == NULL || destination_size == 0) return 0;
+	destination[0] = 0;
+	const char* parts[] = { first, second, third };
+	for (size_t i = 0; i < sizeof(parts) / sizeof(parts[0]); ++i) {
+		if (parts[i] == NULL) continue;
+		size_t destination_length = strlen(destination);
+		size_t part_length = strlen(parts[i]);
+		if (destination_length >= destination_size ||
+			part_length > destination_size - destination_length - 1) return 0;
+		memcpy(destination + destination_length, parts[i], part_length + 1);
+	}
+	return 1;
+}
+
 #ifdef HSPCMP_DLL
 static const char* hspcmp_message_path(const char* path, char** converted)
 {
@@ -4181,16 +4198,28 @@ int CToken::ExpandFile( CMemBuf *buf, char *fname, char *refname )
 	hspcmp_getpath( fname, foldername, 32 );
 	if ( *foldername != 0 ) strcpy( search_path, foldername );
 
-	strcpy(vaild_file, refname);
+	if (!hspcmp_path_copy(vaild_file, sizeof(vaild_file), refname, NULL, NULL)) {
+		Mes((char*)"#Source path is too long.");
+		return -1;
+	}
 	if ( fbuf.PutFile( fname ) < 0 ) {
-		strcpy( cname, common_path );strcat( cname, purename );
-		strcpy(vaild_file, common_path); strcat(vaild_file, refname);
+		if (!hspcmp_path_copy(cname, sizeof(cname), common_path, purename, NULL) ||
+			!hspcmp_path_copy(vaild_file, sizeof(vaild_file), common_path, refname, NULL)) {
+			Mes((char*)"#Source path is too long.");
+			return -1;
+		}
 		if ( fbuf.PutFile( cname ) < 0 ) {
-			strcpy( cname, search_path );strcat( cname, purename );
-			strcpy(vaild_file, search_path); strcat(vaild_file, refname);
+			if (!hspcmp_path_copy(cname, sizeof(cname), search_path, purename, NULL) ||
+				!hspcmp_path_copy(vaild_file, sizeof(vaild_file), search_path, refname, NULL)) {
+				Mes((char*)"#Source path is too long.");
+				return -1;
+			}
 			if ( fbuf.PutFile( cname ) < 0 ) {
-				strcpy(cname, common_path); strcat(cname, search_path); strcat(cname, purename);
-				strcpy(vaild_file, common_path); strcat(vaild_file, search_path); strcat(vaild_file, refname);
+				if (!hspcmp_path_copy(cname, sizeof(cname), common_path, search_path, purename) ||
+					!hspcmp_path_copy(vaild_file, sizeof(vaild_file), common_path, search_path, refname)) {
+					Mes((char*)"#Source path is too long.");
+					return -1;
+				}
 				if ( fbuf.PutFile( cname ) < 0 ) {
 					if ( fileadd == 0 ) {
 #ifdef HSPCMP_DLL
