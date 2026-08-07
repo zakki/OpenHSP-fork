@@ -220,8 +220,8 @@ int CToken::AddPackfile( char *name, int mode )
 	char* findptr;
 	bool absolutePath = false;					// 絶対パスか?
 
-	getpath(name, p_fdir, 32);
-	getpath(name, p_fname, 8);
+	hspcmp_getpath(name, p_fdir, 32);
+	hspcmp_getpath(name, p_fname, 8);
 
 #ifdef HSPWIN
 	strchr3(p_fdir, ':', 0, &findptr);			// ドライブ文字があった
@@ -284,8 +284,8 @@ int CToken::AddPackfileOrig(char* name, int mode)
 	char* findptr;
 	bool absolutePath = false;					// 絶対パスか?
 
-	getpath(name, p_fdir, 32);
-	getpath(name, p_fname, 8);
+	hspcmp_getpath(name, p_fdir, 32);
+	hspcmp_getpath(name, p_fname, 8);
 
 #ifdef HSPWIN
 	strchr3(p_fdir, ':', 0, &findptr);			// ドライブ文字があった
@@ -4086,8 +4086,8 @@ int CToken::ExpandFile( CMemBuf *buf, char *fname, char *refname )
 	strcpy(org_filenamefull, pp_orgfilefull);
 	org_fileline = pp_orgline;
 
-	getpath( fname, purename, 8 );
-	getpath( fname, foldername, 32 );
+	hspcmp_getpath( fname, purename, 8 );
+	hspcmp_getpath( fname, foldername, 32 );
 	if ( *foldername != 0 ) strcpy( search_path, foldername );
 
 	strcpy(vaild_file, refname);

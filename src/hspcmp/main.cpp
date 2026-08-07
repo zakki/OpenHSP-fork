@@ -19,6 +19,11 @@
 #endif
 #include <string.h>
 #include <ctype.h>
+#ifdef HSPWIN
+#include <string>
+#include <vector>
+#include "../hsp3/hsp3pathio.h"
+#endif
 
 #include "../hsp3/hsp3config.h"
 #include "supio.h"
@@ -79,6 +84,17 @@ int main( int argc, char *argv[] )
 	char helpkey[256];
 	CHsc3 *hsc3=NULL;
 
+#ifdef HSPWIN
+	std::vector<std::string> utf8_args;
+	utf8_args.reserve(argc);
+	for (int i = 0; i < argc; ++i) {
+		char* converted = hsp_path_from_ansi(argv[i]);
+		if (converted == NULL) return 1;
+		utf8_args.push_back(converted);
+		free(converted);
+	}
+#endif
+
 	//	check switch and prm
 
 	if (argc<2) { usage1();return -1; }
@@ -98,21 +114,25 @@ int main( int argc, char *argv[] )
 #endif
 
 	for (b=1;b<argc;b++) {
-		a1=*argv[b];a2=tolower(*(argv[b]+1));
+		const char* arg = argv[b];
+#ifdef HSPWIN
+		arg = utf8_args[b].c_str();
+#endif
+		a1=*arg;a2=tolower(*(arg+1));
 #ifdef HSPLINUX
 		if (a1!='-') {
 #else
 		if ((a1!='/')&&(a1!='-')) {
 #endif
-			strcpy(fname,argv[b]);
+			strcpy(fname,arg);
 		} else {
-			a3=tolower(*(argv[b]+2));
-			if (strncmp(argv[b], "--compath=", 10) == 0) {
-				strcpy( compath, argv[b] + 10 );
+			a3=tolower(*(arg+2));
+			if (strncmp(arg, "--compath=", 10) == 0) {
+				strcpy( compath, arg + 10 );
 				continue;
 			}
-			if (strncmp(argv[b], "--syspath=", 10) == 0) {
-				strcpy( syspath, argv[b] + 10 );
+			if (strncmp(arg, "--syspath=", 10) == 0) {
+				strcpy( syspath, arg + 10 );
 				continue;
 			}
 			switch (a2) {
@@ -135,7 +155,7 @@ int main( int argc, char *argv[] )
 			case 'm':
 				ppopt |= HSC3_OPT_EMSCRIPTEN; break;
 			case 'o':
-				strcpy(oname, argv[b] + 2);
+				strcpy(oname, arg + 2);
 				break;
 			case 'e':
 				execobj = 1;
@@ -147,23 +167,23 @@ int main( int argc, char *argv[] )
 				break;
 			case 'h':
 				hsphelp = 1;
-				strcpy(helpkey, argv[b] + 2);
+				strcpy(helpkey, arg + 2);
 				break;
 			case 'l':
 				if (a3 == 'k') {
-					opt_lk = argv[b] + 3; break;
+					opt_lk = (char*)arg + 3; break;
 				}
 				if (a3 == 'l') {
 					opt_lsmode = 0;
-					opt_ls = argv[b] + 3; break;
+					opt_ls = (char*)arg + 3; break;
 				}
 				if (a3 == 'v') {
 					opt_lsmode = 1;
-					opt_ls = argv[b] + 3; break;
+					opt_ls = (char*)arg + 3; break;
 				}
 				if (a3 == 's') {
 					opt_lsmode = 2;
-					opt_ls = argv[b] + 3; break;
+					opt_ls = (char*)arg + 3; break;
 				}
 				if (a3 == 'r') {
 					opt_lsref = 16; break;
@@ -320,4 +340,3 @@ int main( int argc, char *argv[] )
 	if ( hsc3 != NULL ) { delete hsc3; hsc3=NULL; }
 	return st;
 }
-

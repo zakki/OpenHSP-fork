@@ -12,6 +12,7 @@
 #include "../hsp3/strnote.h"
 #include "supio.h"
 #include "ahtobj.h"
+#include "../hsp3/hsp3utfcnv.h"
 
 #ifdef HSPWIN
 #include <windows.h>
@@ -31,9 +32,21 @@ void dirinfo(char* p, int id)
 		_getcwd(p, _MAX_PATH);
 		break;
 	case 1:				//    実行ファイルがあるディレクトリ
+	{
 		GetModuleFileName(NULL, fname, _MAX_PATH);
+#ifdef HSPCMP_PATH_UTF8
+		char* utf8_fname = hsp_path_from_ansi(fname);
+		if (utf8_fname != NULL) {
+			hspcmp_getpath(utf8_fname, p, 32);
+			free(utf8_fname);
+		} else {
+			p[0] = 0;
+		}
+#else
 		getpath(fname, p, 32);
+#endif
 		break;
+	}
 	case 2:				//    Windowsディレクトリ
 		GetWindowsDirectory(p, _MAX_PATH);
 		break;
@@ -473,7 +486,7 @@ int CAht::LoadProject( char *fname )
 	Reset();
 
 	res = 0;
-	fp=fopen( fname, "rb" );
+	fp=hsp3_fopen( fname );
 	if (fp == NULL) return -1;
 
 	fread( &hed, 1, sizeof(HTPHED), fp );
@@ -482,7 +495,7 @@ int CAht::LoadProject( char *fname )
 	    ( hed.h2 != HTP_MAGIC2 )||
 		( hed.h3 != HTP_MAGIC3 )||
 		( hed.h4 != HTP_MAGIC4 )) {
-		fclose(fp);
+		hsp3_fclose(fp);
 		return -2;
 	}
 
@@ -504,7 +517,7 @@ int CAht::LoadProject( char *fname )
 		fread( p, 1, strsize, fp );
 	}
 
-	fclose(fp);
+	hsp3_fclose(fp);
 	return res;
 }
 
@@ -686,7 +699,7 @@ int CAht::SaveProject( char *fname )
 	//	Output file
 	//
 	res = 0;
-	fp=fopen( fname, "wb" );
+	fp=hsp3_fopenwrite( fname );
 	if (fp != NULL) {
 
 		strsize = strbuf->GetSize() & 15;
@@ -714,7 +727,7 @@ int CAht::SaveProject( char *fname )
 		if ( bufsize ) fwrite( obj, bufsize, 1, fp );
 		if ( strsize ) fwrite( strbuf->GetBuffer(), strsize, 1, fp );
 
-		fclose(fp);
+		hsp3_fclose(fp);
 
 	} else {
 		res = -1;
@@ -810,7 +823,7 @@ int CAht::BuildPartsSub( int id, char *fname )
 	}
 	note.Select( tmp.GetBuffer() );
 	maxline = note.GetMaxLine();
-	getpath( fname, p->name, 1+8+16 );			// 仮にファイル名を入れておく
+	hspcmp_getpath( fname, p->name, 1+8+16 );			// 仮にファイル名を入れておく
 
 	for(i=0;i<maxline;i++) {
 		pickptr = 0;
@@ -971,4 +984,3 @@ int CAht::tstrcmp(const char* str1, const char* str2)
 	}
 	return -1;
 }
-

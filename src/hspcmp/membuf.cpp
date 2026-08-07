@@ -10,6 +10,7 @@
 #include <assert.h>
 #include "membuf.h"
 #include "supio.h"
+#include "../hsp3/hsp3utfcnv.h"
 
 //-------------------------------------------------------------
 //		Routines
@@ -305,17 +306,17 @@ int CMemBuf::PutFile( char *fname )
 	int length;
 	FILE *ff;
 
-	ff=fopen( fname,"rb" );
+	ff=hsp3_fopen( fname );
 	if (ff==NULL) return -1;
-	fseek( ff,0,SEEK_END );
+	hsp3_fseek( ff,0,SEEK_END );
 	length=(int)ftell( ff );			// normal file size
-	fclose(ff);
+	hsp3_fclose(ff);
 	if (length < 0) return -1;
 
 	p = PreparePtr( length+1 );
-	ff=fopen( fname,"rb" );
-	fread( p, 1, length, ff );
-	fclose(ff);
+	ff=hsp3_fopen( fname );
+	hsp3_fread( ff, p, length );
+	hsp3_fclose(ff);
 	p[length]=0;
 	
 	strcpy( name,fname );
@@ -451,10 +452,10 @@ int CMemBuf::SaveFile( char *fname )
 	//
 	FILE *fp;
 	int flen;
-	fp=fopen(fname,"wb");
+	fp=hsp3_fopenwrite(fname);
 	if (fp==NULL) return -1;
 	flen = fwrite( mem_buf, 1, cur, fp );
-	fclose(fp);
+	hsp3_fclose(fp);
 	strcpy( name,fname );
 	return flen;
 }
@@ -466,5 +467,4 @@ char *CMemBuf::GetFileName( void )
 	//
 	return name;
 }
-
 

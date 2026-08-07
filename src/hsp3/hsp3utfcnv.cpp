@@ -206,7 +206,7 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 {
 	FILE* hsp3_fp = NULL;
 #ifdef HSPWIN
-#ifdef HSPUTF8
+#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
 	// Windows UTF
 	hsp3_fp = hsp_fopen_utf8(name, "rb");
 #else
@@ -233,9 +233,15 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 		if ((strlen(name) + strlen(fn)) < 2047) {
 			strcat(fn, name);
 
-#ifdef HSPUTF8
+#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
 			// Windows UTF
+		#if defined(HSPCMP_PATH_UTF8) && !defined(HSPUTF8)
+			char* utf8_fn = hsp_path_from_ansi(fn);
+			hsp3_fp = hsp_fopen_utf8(utf8_fn, "rb");
+			free(utf8_fn);
+		#else
 			hsp3_fp = hsp_fopen_utf8(fn, "rb");
+		#endif
 #else
 			// Windows SJIS
 			hsp3_fp = fopen(fn, "rb");
@@ -297,7 +303,7 @@ FILE* hsp3_fopenwrite(char* fname8, HSPPTRINT offset)
 	FILE* hsp3_fp = NULL;
 
 #ifdef HSPWIN
-#ifdef HSPUTF8
+#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
 	// Windows UTF
 	if (offset < 0) {
 		hsp3_fp = hsp_fopen_utf8(fname8, "wb");
@@ -593,6 +599,4 @@ int StrCopyLetter(char* source, char* dest)
 	}
 	return i;
 }
-
-
 

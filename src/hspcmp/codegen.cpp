@@ -2192,7 +2192,7 @@ void CToken::GenerateCodePP( char *buf )
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype == TK_STRING ) {
 			strcpy(cg_orgfilefull, cg_str);
-			getpath(cg_orgfilefull,cg_orgfile,8);
+			hspcmp_getpath(cg_orgfilefull,cg_orgfile,8);
 			if ( cg_debug ) {
 				i = PutDSBuf( cg_str );
 				PutDI( 254, i, cg_orgline );				// ファイル名をデバッグ情報として登録

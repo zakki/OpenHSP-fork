@@ -201,7 +201,7 @@ static char *gettvfolder( char *name )
 	static char p[_MAX_PATH];
 	char ifname[_MAX_PATH];
 	GetModuleFileName( NULL,ifname,_MAX_PATH );
-	getpath( ifname, p, 32 );
+	hspcmp_getpath( ifname, p, 32 );
 	CutLastChr( p, '\\' );
 	strcat( p, "\\hsptv\\" );
 	strcat( p, name );
@@ -674,4 +674,3 @@ void dpmc_dpmkey( int key )
 	defseed1 = defseed1 & 0xff;
 	defseed2 = (defseed2 & 0xff)^0xaa;
 }
-

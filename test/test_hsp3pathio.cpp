@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../src/hsp3/hsp3pathio.h"
@@ -23,6 +24,10 @@ int main()
 
 	const char invalid_utf8[] = "hsp3pathio-\xf0\x28\x8c\x28.tmp";
 	assert(hsp_fopen_utf8(invalid_utf8, "rb") == NULL);
+	char* compatibility_path = hsp_path_from_ansi("compatibility-日本語");
+	assert(compatibility_path != NULL);
+	assert(strcmp(compatibility_path, "compatibility-日本語") == 0);
+	free(compatibility_path);
 
 	char component[64];
 	assert(hsp_getpath_utf8("dir/日本語-😀.hsp", component, sizeof(component), 8));

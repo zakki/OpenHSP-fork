@@ -16,6 +16,7 @@
 #include "hsc3.h"
 
 #include "membuf.h"
+#include "../hsp3/hsp3utfcnv.h"
 #include "label.h"
 #include "token.h"
 #include "localinfo.h"
@@ -495,20 +496,20 @@ int CHsc3::GetRuntimeFromHeader( char *fname, char *res )
 	int ires;
 	char *data;
 
-	fp=fopen( fname, "rb" );
+	fp=hsp3_fopen( fname );
 	if ( fp == NULL ) return -1;
 	hedsize = sizeof(hsphed);
 	fread( &hsphed, 1, hedsize, fp );
 	exsize = hsphed.pt_cs - hedsize;
 
 	if ( exsize == 0 ) {
-		fclose(fp);
+		hsp3_fclose(fp);
 		return 0;
 	}
 
 	data = (char *)malloc( exsize );
 	fread( data, 1, exsize, fp );
-	fclose(fp);
+	hsp3_fclose(fp);
 	ires = 0;
 	if ( hsphed.bootoption & HSPHED_BOOTOPT_RUNTIME ) {
 		char runtime[HSP_MAX_PATH];
@@ -550,5 +551,4 @@ void CHsc3::Print(char* mes)
 	errbuf->PutStr(mes);
 	errbuf->PutStr("\r\n");
 }
-
 

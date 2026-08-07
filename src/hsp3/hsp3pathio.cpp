@@ -182,7 +182,48 @@ FILE* hsp_fopen_utf8(const char* path, const char* mode)
 	return result;
 }
 
+char* hsp_path_from_ansi(const char* path)
+{
+	if (path == NULL) return NULL;
+
+	int wide_length = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
+	if (wide_length <= 0) return NULL;
+	wchar_t* wide_path = (wchar_t*)malloc(sizeof(wchar_t) * (size_t)wide_length);
+	if (wide_path == NULL) return NULL;
+	if (MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, path, -1, wide_path, wide_length) == 0) {
+		free(wide_path);
+		return NULL;
+	}
+
+	int utf8_length = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, wide_path, -1, NULL, 0, NULL, NULL);
+	if (utf8_length <= 0) {
+		free(wide_path);
+		return NULL;
+	}
+	char* result = (char*)malloc((size_t)utf8_length);
+	if (result == NULL) {
+		free(wide_path);
+		return NULL;
+	}
+	if (WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, wide_path, -1, result, utf8_length, NULL, NULL) == 0) {
+		free(wide_path);
+		free(result);
+		return NULL;
+	}
+	free(wide_path);
+	return result;
+}
+
 #else
+
+char* hsp_path_from_ansi(const char* path)
+{
+	if (path == NULL) return NULL;
+	size_t length = strlen(path) + 1;
+	char* result = (char*)malloc(length);
+	if (result != NULL) memcpy(result, path, length);
+	return result;
+}
 
 FILE* hsp_fopen_utf8(const char* path, const char* mode)
 {
