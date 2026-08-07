@@ -3301,17 +3301,30 @@ ppresult_t CToken::PP_Pack( int mode )
 	//		#pack,#epack解析
 	//			(mode:0=normal/1=encrypt)
 	int i;
+	char* pack_name;
+	char* converted_name = NULL;
 	if ( packbuf!=NULL ) {
 		i = GetToken();
 		if ( i != TK_STRING ) {
 			SetError("invalid pack name"); return PPRESULT_ERROR;
 		}
+		pack_name = (char*)s3;
+#if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8)
+		if (!pp_utf8) {
+			int len = (int)strlen(pack_name) * 4 + 1;
+			converted_name = (char*)malloc(len);
+			if (converted_name == NULL) return PPRESULT_ERROR;
+			ConvSJis2Utf8(pack_name, converted_name, len);
+			pack_name = converted_name;
+		}
+#endif
 		if (mode & 2) {
-			AddPackfile((char*)s3, mode&1);
+			AddPackfile(pack_name, mode&1);
 		}
 		else {
-			AddPackfileOrig((char*)s3, mode);
+			AddPackfileOrig(pack_name, mode);
 		}
+		free(converted_name);
 	}
 	return PPRESULT_SUCCESS;
 }
@@ -3324,6 +3337,8 @@ ppresult_t CToken::PP_PackOpt( void )
 	int i;
 	char tmp[1024];
 	char optname[1024];
+	char* optvalue;
+	char* converted_value = NULL;
 	if ( packbuf!=NULL ) {
 		i = GetToken();
 		if ( i != TK_OBJ ) {
@@ -3334,8 +3349,19 @@ ppresult_t CToken::PP_PackOpt( void )
 		if (( i != TK_OBJ )&&( i != TK_NUM )&&( i != TK_STRING )) {
 			SetError("illegal option parameter"); return PPRESULT_ERROR;
 		}
-		sprintf( tmp, ";!%s=%s", optname, (char *)s3 );
+		optvalue = (char*)s3;
+#if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8)
+		if (i == TK_STRING && !pp_utf8) {
+			int len = (int)strlen(optvalue) * 4 + 1;
+			converted_value = (char*)malloc(len);
+			if (converted_value == NULL) return PPRESULT_ERROR;
+			ConvSJis2Utf8(optvalue, converted_value, len);
+			optvalue = converted_value;
+		}
+#endif
+		sprintf( tmp, ";!%s=%s", optname, optvalue );
 		AddPackfile( tmp, 2 );
+		free(converted_value);
 	}
 	return PPRESULT_SUCCESS;
 }
