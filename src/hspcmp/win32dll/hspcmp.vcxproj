@@ -157,6 +157,7 @@
     <ClCompile Include="..\..\hsp3\filepack_write.cpp" />
     <ClCompile Include="..\..\hsp3\hsp3crypt.cpp" />
     <ClCompile Include="..\..\hsp3\hsp3utfcnv.cpp" />
+    <ClCompile Include="..\..\hsp3\hsp3pathio.cpp" />
     <ClCompile Include="..\..\hsp3\strbuf.cpp" />
     <ClCompile Include="..\..\hsp3\strnote.cpp" />
     <ClCompile Include="..\..\hsp3\win32gui\supio_win.cpp" />
@@ -180,6 +181,7 @@
     <ClInclude Include="..\..\hsp3\filepack.h" />
     <ClInclude Include="..\..\hsp3\hsp3crypt.h" />
     <ClInclude Include="..\..\hsp3\hsp3utfcnv.h" />
+    <ClInclude Include="..\..\hsp3\hsp3pathio.h" />
     <ClInclude Include="..\..\hsp3\strbuf.h" />
     <ClInclude Include="..\..\hsp3\strnote.h" />
     <ClInclude Include="..\..\hsp3\win32gui\supio_win.h" />
