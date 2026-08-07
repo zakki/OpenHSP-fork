@@ -2226,24 +2226,41 @@ ppresult_t CToken::PP_IncludeSub(char* word, int is_addition)
 ppresult_t CToken::PP_Include( int is_addition )
 {
 	char* word = (char*)s3;
+	char* converted_word = NULL;
 	int type = GetToken();
 	switch (type) {
 	case TK_STRING:
-		return PP_IncludeSub(word, is_addition);
+		break;
 	case TK_OBJ:
 		strcat(word,".as");
-		return PP_IncludeSub(word, is_addition);
-	default:
 		break;
+	default:
+		if (is_addition) {
+			SetError("invalid addition suffix");
+		}
+		else {
+			SetError("invalid include suffix");
+		}
+		return PPRESULT_ERROR;
 	}
 
-	if (is_addition) {
-		SetError("invalid addition suffix");
+	#if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8)
+	if (!pp_utf8) {
+		int len = (int)strlen(word) * 4 + 1;
+		converted_word = (char*)malloc(len);
+		if (converted_word == NULL) {
+			SetError("include path conversion failed");
+			return PPRESULT_ERROR;
+		}
+		ConvSJis2Utf8(word, converted_word, len);
+		word = converted_word;
 	}
-	else {
-		SetError("invalid include suffix");
+	#endif
+	{
+		ppresult_t result = PP_IncludeSub(word, is_addition);
+		free(converted_word);
+		return result;
 	}
-	return PPRESULT_ERROR;
 }
 
 
