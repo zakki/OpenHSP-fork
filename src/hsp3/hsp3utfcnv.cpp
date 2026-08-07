@@ -2,6 +2,7 @@
 //	hsp3utfcnv.cpp functions
 //
 #include "hsp3utfcnv.h"
+#include "hsp3pathio.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -206,13 +207,8 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 	FILE* hsp3_fp = NULL;
 #ifdef HSPWIN
 #ifdef HSPUTF8
-	HSPAPICHAR* hactmp1;
-#endif
-
-#ifdef HSPUTF8
 	// Windows UTF
-	hsp3_fp = _wfopen(chartoapichar(name, &hactmp1), L"rb");
-	freehac(&hactmp1);
+	hsp3_fp = hsp_fopen_utf8(name, "rb");
 #else
 	// Windows SJIS
 	hsp3_fp = fopen(name, "rb");
@@ -239,7 +235,7 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 
 #ifdef HSPUTF8
 			// Windows UTF
-			hsp3_fp = _wfopen(chartoapichar(fn, &hactmp1), L"rb");
+			hsp3_fp = hsp_fopen_utf8(fn, "rb");
 #else
 			// Windows SJIS
 			hsp3_fp = fopen(fn, "rb");
@@ -303,18 +299,14 @@ FILE* hsp3_fopenwrite(char* fname8, HSPPTRINT offset)
 #ifdef HSPWIN
 #ifdef HSPUTF8
 	// Windows UTF
-	HSPAPICHAR* hactmp1;
-	wchar_t *wfname;
-	wfname = chartoapichar(fname8, &hactmp1);
 	if (offset < 0) {
-		hsp3_fp = _wfopen(wfname, L"wb");
+		hsp3_fp = hsp_fopen_utf8(fname8, "wb");
 	}
 	else {
-		hsp3_fp = _wfopen(wfname, L"r+b");
+		hsp3_fp = hsp_fopen_utf8(fname8, "r+b");
 		if (hsp3_fp == NULL) return NULL;
 		hsp3_fseek(hsp3_fp, offset, SEEK_SET);
 	}
-	freehac(&hactmp1);
 #else
 	// Windows SJIS
 	if (offset < 0) {
@@ -601,7 +593,6 @@ int StrCopyLetter(char* source, char* dest)
 	}
 	return i;
 }
-
 
 
 
