@@ -20,6 +20,20 @@
 #include <direct.h>
 #endif
 
+#ifdef HSPCMP_PATH_UTF8
+static int copy_ansi_dirinfo_path(char* destination, size_t destination_size, const char* source)
+{
+	char* utf8_path = hsp_path_from_ansi(source);
+	if (utf8_path == NULL || strlen(utf8_path) >= destination_size) {
+		free(utf8_path);
+		return -1;
+	}
+	strcpy(destination, utf8_path);
+	free(utf8_path);
+	return 0;
+}
+#endif
+
 void dirinfo(char* p, int id)
 {
 	//		dirinfo命令の内容をstmpに設定する
@@ -29,7 +43,15 @@ void dirinfo(char* p, int id)
 
 	switch (id) {
 	case 0:				//    カレント(現在の)ディレクトリ
+	#ifdef HSPCMP_PATH_UTF8
+		{
+			char ansi_path[_MAX_PATH];
+			if (_getcwd(ansi_path, sizeof(ansi_path)) == NULL ||
+				copy_ansi_dirinfo_path(p, _MAX_PATH, ansi_path) != 0) p[0] = 0;
+		}
+	#else
 		_getcwd(p, _MAX_PATH);
+	#endif
 		break;
 	case 1:				//    実行ファイルがあるディレクトリ
 	{
@@ -48,14 +70,36 @@ void dirinfo(char* p, int id)
 		break;
 	}
 	case 2:				//    Windowsディレクトリ
+	#ifdef HSPCMP_PATH_UTF8
+		{
+			char ansi_path[_MAX_PATH];
+			GetWindowsDirectoryA(ansi_path, sizeof(ansi_path));
+			if (copy_ansi_dirinfo_path(p, _MAX_PATH, ansi_path) != 0) p[0] = 0;
+		}
+	#else
 		GetWindowsDirectory(p, _MAX_PATH);
+	#endif
 		break;
 	case 3:				//    Windowsのシステムディレクトリ
+	#ifdef HSPCMP_PATH_UTF8
+		{
+			char ansi_path[_MAX_PATH];
+			GetSystemDirectoryA(ansi_path, sizeof(ansi_path));
+			if (copy_ansi_dirinfo_path(p, _MAX_PATH, ansi_path) != 0) p[0] = 0;
+		}
+	#else
 		GetSystemDirectory(p, _MAX_PATH);
+	#endif
 		break;
 	default:
 		if (id & 0x10000) {
+	#ifdef HSPCMP_PATH_UTF8
+			char ansi_path[_MAX_PATH];
+			if (!SHGetSpecialFolderPathA(NULL, ansi_path, id & 0xffff, FALSE) ||
+				copy_ansi_dirinfo_path(p, _MAX_PATH, ansi_path) != 0) p[0] = 0;
+	#else
 			SHGetSpecialFolderPath(NULL, p, id & 0xffff, FALSE);
+	#endif
 			break;
 		}
 		*p = 0;
