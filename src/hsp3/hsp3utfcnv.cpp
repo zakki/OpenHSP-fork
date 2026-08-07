@@ -277,14 +277,14 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 #endif
     
 	// Linux
-	hsp3_fp = fopen(name, "rb");
+	hsp3_fp = hsp_fopen_utf8(name, "rb");
 #ifdef HSPDEBUG
 	if (hsp3_fp == NULL) {
 		//	hsptvフォルダを検索する
 		char fn[2048];
 		strcpy(fn, hsp3ext_getdir(5));		// tv folder
 		strcat(fn, name);
-		hsp3_fp = fopen(fn, "rb");
+		hsp3_fp = hsp_fopen_utf8(fn, "rb");
 	}
 #endif
 
@@ -336,10 +336,18 @@ FILE* hsp3_fopenwrite(char* fname8, HSPPTRINT offset)
 #endif
 	// Linux
 	if (offset < 0) {
+	#ifdef HSPNDK
 		hsp3_fp = fopen(fname, "w+b");
+	#else
+		hsp3_fp = hsp_fopen_utf8(fname, "w+b");
+	#endif
 	}
 	else {
+	#ifdef HSPNDK
 		hsp3_fp = fopen(fname, "r+b");
+	#else
+		hsp3_fp = hsp_fopen_utf8(fname, "r+b");
+	#endif
 		if (hsp3_fp == NULL) return NULL;
 		fseek(hsp3_fp, offset, SEEK_SET);
 	}
