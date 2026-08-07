@@ -84,6 +84,18 @@ static int copy_ansi_path_to_utf8(char* destination, size_t destination_size, co
 	return 0;
 }
 
+static int append_text(char* destination, size_t destination_size, const char* suffix)
+{
+	size_t destination_length;
+	size_t suffix_length;
+	if (destination == NULL || suffix == NULL || destination_size == 0) return -1;
+	destination_length = strlen(destination);
+	suffix_length = strlen(suffix);
+	if (destination_length >= destination_size || suffix_length >= destination_size - destination_length) return -1;
+	memcpy(destination + destination_length, suffix, suffix_length + 1);
+	return 0;
+}
+
 static int copy_ansi_path_directory_to_utf8(char* destination, size_t destination_size, const char* source)
 {
 	char* utf8_path;
@@ -207,7 +219,7 @@ EXPORT BOOL WINAPI hsc_ini ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 	strcpy(rname,path);
 	strcpy(oname,path);
 	cutext(oname);
-	strcat(oname,".ax");
+	if (append_text(oname, sizeof(oname), ".ax") != 0) return -1;
 	analysis_name = NULL;
 	analysis_mode = 0;
 	return 0;
@@ -353,10 +365,10 @@ p1が128(bit7)の場合はデフォルトで64bitランタイムを選択しま�
 
 	if (orgcompath==0) {
 		if (get_module_directory_utf8(compath, sizeof(compath)) != 0) return -1;
-		strcat( compath,"common\\" );
+		if (append_text(compath, sizeof(compath), "common\\") != 0) return -1;
 	}
 	strcpy( fname2, fname );
-	strcat( fname2, ".i" );
+	if (append_text(fname2, sizeof(fname2), ".i") != 0) return -1;
 	hsc3->SetCommonPath( compath );
 	ppopt = 0;
 	if (p1 & 1) ppopt |= HSC3_OPT_DEBUGMODE;
@@ -445,7 +457,7 @@ EXPORT BOOL WINAPI pack_view (HSPPTRINT p1, HSPPTRINT p2, HSPPTRINT p3, HSPPTRIN
 #ifdef DPM2_SUPPORT
 	char dpmname[_MAX_PATH];
 	strcpy(dpmname,fname);
-	strcat(dpmname, ".dpm");
+	if (append_text(dpmname, sizeof(dpmname), ".dpm") != 0) return -1;
 	char tmp[1024];
 
 	if (p1 == 0) p1 = -1;
@@ -563,7 +575,7 @@ EXPORT BOOL WINAPI hsc3_getsym(HSPPTRINT p1, HSPPTRINT p2, HSPPTRINT p3, HSPPTRI
 	hsc3->ResetError();
 	if (orgcompath == 0) {
 		if (get_module_directory_utf8(compath, sizeof(compath)) != 0) return -1;
-		strcat(compath, "common\\");
+	if (append_text(compath, sizeof(compath), "common\\") != 0) return -1;
 	}
 	hsc3->SetCommonPath(compath);
 	if (hsc3->GetCmdList(((int)p1 | 2))) return -1;
@@ -654,20 +666,20 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 
 #ifdef ICONINS_SUPPORT
 	if (get_module_directory_utf8(ici_opt, sizeof(ici_opt)) != 0) return -1;
-	strcat( ici_opt, "iconins.exe" );
+	if (append_text(ici_opt, sizeof(ici_opt), "iconins.exe") != 0) return -1;
 	{
 		char current_directory[_MAX_PATH];
 		DWORD current_length = GetCurrentDirectoryA(sizeof(current_directory), current_directory);
 		if (current_length == 0 || current_length >= sizeof(current_directory) ||
 			copy_ansi_path_to_utf8(ici_current, sizeof(ici_current), current_directory) != 0) return -1;
 	}
-	strcat( ici_current, "\\" );
+	if (append_text(ici_current, sizeof(ici_current), "\\") != 0) return -1;
 #endif
 
 	i = hsc3->OpenPackfile();
 	if (i) { Alert( "packfileが見つかりません" ); return -1; }
 	hsc3->GetPackfileOption( hspexe, "runtime", "hsprt" );
-	strcat( libpath, hspexe );
+	if (append_text(libpath, sizeof(libpath), hspexe) != 0) return -1;
 	strcpy( hspexe, libpath );
 	hsc3->GetPackfileOption( fname, "name", "hsptmp" );
 	cutext( fname );
@@ -693,9 +705,13 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 	if ( ici_upx[0] != 0 ) { ici_use_upx = 1; }
 
 	strcpy( ici_target, ici_current );
-	strcat( ici_target, fname );
-	if (type==2) strcat(ici_target,".scr");
-			else strcat(ici_target,".exe");
+	if (append_text(ici_target, sizeof(ici_target), fname) != 0) return -1;
+	if (type==2) {
+		if (append_text(ici_target, sizeof(ici_target), ".scr") != 0) return -1;
+	}
+	else {
+		if (append_text(ici_target, sizeof(ici_target), ".exe") != 0) return -1;
+	}
 #endif
 
 	hsc3->ClosePackfile();
@@ -707,7 +723,7 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 	st=dpmc_pack( 0 );
 	if ( st ) return -st;
 	st=dpmc_mkexe( type, hspexe, opt1, opt2, opt3 );
-	strcat( fname, ".dpm" );
+	if (append_text(fname, sizeof(fname), ".dpm") != 0) return -1;
 	hsp_remove_utf8( fname );
 #endif
 #ifdef DPM2_SUPPORT
@@ -726,7 +742,7 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 		return -1;
 	}
 	st = filepack.MakeEXEFile(type, hspexe, fname, myseed2, opt1, opt2, opt3);
-	strcat(fname, ".dpm");
+	if (append_text(fname, sizeof(fname), ".dpm") != 0) return -1;
 	hsp_remove_utf8(fname);
 #endif
 
@@ -734,37 +750,37 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 #ifdef ICONINS_SUPPORT
 	if ((ici_use_icon+ici_use_version+ici_use_manifest+ici_use_lang+ici_use_upx)>0) {
 
-		strcat( ici_opt, " -e\"" );
-		strcat( ici_opt, ici_target );
-		strcat( ici_opt, "\"" );
+		if (append_text(ici_opt, sizeof(ici_opt), " -e\"") != 0 ||
+			append_text(ici_opt, sizeof(ici_opt), ici_target) != 0 ||
+			append_text(ici_opt, sizeof(ici_opt), "\"") != 0) return -1;
 
 		if ( ici_use_icon ) {
-			strcat( ici_opt," -i\"" );
-			strcat( ici_opt, ici_current );
-			strcat( ici_opt, ici_icon );
-			strcat( ici_opt, "\"" );
+			if (append_text(ici_opt, sizeof(ici_opt), " -i\"") != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), ici_current) != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), ici_icon) != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), "\"") != 0) return -1;
 		}
 		if ( ici_use_version ) {
-			strcat( ici_opt," -v\"" );
-			strcat( ici_opt, ici_current );
-			strcat( ici_opt, ici_version );
-			strcat( ici_opt, "\"" );
+			if (append_text(ici_opt, sizeof(ici_opt), " -v\"") != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), ici_current) != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), ici_version) != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), "\"") != 0) return -1;
 		}
 		if ( ici_use_manifest ) {
-			strcat( ici_opt," -m\"" );
-			strcat( ici_opt, ici_current );
-			strcat( ici_opt, ici_manifest );
-			strcat( ici_opt, "\"" );
+			if (append_text(ici_opt, sizeof(ici_opt), " -m\"") != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), ici_current) != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), ici_manifest) != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), "\"") != 0) return -1;
 		}
 		if ( ici_use_lang ) {
-			strcat( ici_opt," -l\"" );
-			strcat( ici_opt, ici_lang );
-			strcat( ici_opt, "\"" );
+			if (append_text(ici_opt, sizeof(ici_opt), " -l\"") != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), ici_lang) != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), "\"") != 0) return -1;
 		}
 		if ( ici_use_upx ) {
-			strcat( ici_opt," -u\"" );
-			strcat( ici_opt, ici_upx );
-			strcat( ici_opt, "\"" );
+			if (append_text(ici_opt, sizeof(ici_opt), " -u\"") != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), ici_upx) != 0 ||
+				append_text(ici_opt, sizeof(ici_opt), "\"") != 0) return -1;
 		}
 		if ( p2 ) {
 			i = 1;
@@ -869,7 +885,7 @@ EXPORT BOOL WINAPI aht_source( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSPPT
 	hsc3->ResetError();
 	if (orgcompath==0) {
 		if (get_module_directory_utf8(compath, sizeof(compath)) != 0) return -1;
-		strcat( compath, fpath );
+		if (append_text(compath, sizeof(compath), fpath) != 0) return -1;
 	}
 	hsc3->SetCommonPath( compath );
 	st = hsc3->PreProcessAht( fn, ahtmodel, 0 );
@@ -1067,7 +1083,7 @@ EXPORT BOOL WINAPI aht_make ( int *p1, char *p2, HSPPTRINT p3, HSPPTRINT p4 )
 	hsc3->ResetError();
 	if (orgcompath==0) {
 		if (get_module_directory_utf8(compath, sizeof(compath)) != 0) return -1;
-		strcat( compath, ahtmodel->GetSourcePath() );
+		if (append_text(compath, sizeof(compath), ahtmodel->GetSourcePath()) != 0) return -1;
 	}
 	hsc3->SetCommonPath( compath );
 	st = hsc3->PreProcessAht( fname2, ahtmodel, 1 );
