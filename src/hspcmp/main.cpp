@@ -43,6 +43,28 @@ static int winexec_utf8(const char* command)
 }
 #endif
 
+static int copy_command_path(char* destination, size_t destination_size, const char* source)
+{
+	size_t length;
+	if (destination == NULL || source == NULL || destination_size == 0) return -1;
+	length = strlen(source);
+	if (length >= destination_size) return -1;
+	memcpy(destination, source, length + 1);
+	return 0;
+}
+
+static int append_command_text(char* destination, size_t destination_size, const char* suffix)
+{
+	size_t destination_length;
+	size_t suffix_length;
+	if (destination == NULL || suffix == NULL || destination_size == 0) return -1;
+	destination_length = strlen(destination);
+	suffix_length = strlen(suffix);
+	if (destination_length >= destination_size || suffix_length >= destination_size - destination_length) return -1;
+	memcpy(destination + destination_length, suffix, suffix_length + 1);
+	return 0;
+}
+
 /*----------------------------------------------------------*/
 
 static void usage1( void )
@@ -135,15 +157,24 @@ int main( int argc, char *argv[] )
 #else
 		if ((a1!='/')&&(a1!='-')) {
 #endif
-			strcpy(fname,arg);
+			if (copy_command_path(fname, sizeof(fname), arg) != 0) {
+				printf("Source path is too long.\n");
+				return 1;
+			}
 		} else {
 			a3=tolower(*(arg+2));
 			if (strncmp(arg, "--compath=", 10) == 0) {
-				strcpy( compath, arg + 10 );
+				if (copy_command_path(compath, sizeof(compath), arg + 10) != 0) {
+					printf("Common path is too long.\n");
+					return 1;
+				}
 				continue;
 			}
 			if (strncmp(arg, "--syspath=", 10) == 0) {
-				strcpy( syspath, arg + 10 );
+				if (copy_command_path(syspath, sizeof(syspath), arg + 10) != 0) {
+					printf("System path is too long.\n");
+					return 1;
+				}
 				continue;
 			}
 			switch (a2) {
@@ -166,7 +197,10 @@ int main( int argc, char *argv[] )
 			case 'm':
 				ppopt |= HSC3_OPT_EMSCRIPTEN; break;
 			case 'o':
-				strcpy(oname, arg + 2);
+				if (copy_command_path(oname, sizeof(oname), arg + 2) != 0) {
+					printf("Output path is too long.\n");
+					return 1;
+				}
 				break;
 			case 'e':
 				execobj = 1;
@@ -218,7 +252,10 @@ int main( int argc, char *argv[] )
 	if (hsphelp) {
 		int res;
 		HspHelpManager hman;
-		strcat(syspath, "hsphelp");
+		if (append_command_text(syspath, sizeof(syspath), "hsphelp") != 0) {
+			printf("Help path is too long.\n");
+			return 1;
+		}
 		res = hman.initalize(syspath);
 		if (res == 0) {
 			res = hman.searchIndex(helpkey);
@@ -242,15 +279,22 @@ int main( int argc, char *argv[] )
 	if (fname[0]==0) { printf("No file name selected.\n");return 1; }
 
 	if (oname[0]==0) {
-		strcpy( oname,fname ); cutext( oname );
+		if (copy_command_path(oname, sizeof(oname), fname) != 0) return 1;
+		cutext( oname );
 		if (strmap) {
+			if (strlen(oname) + strlen("strmap") + 2 > sizeof(oname)) return 1;
 			addext(oname, "strmap");
 		}
 		else {
+			if (strlen(oname) + strlen("ax") + 2 > sizeof(oname)) return 1;
 			addext(oname, "ax");
 		}
 	}
-	strcpy( fname2, fname ); cutext( fname2 ); addext( fname2,"i" );
+	if (copy_command_path(fname2, sizeof(fname2), fname) != 0) return 1;
+	cutext( fname2 );
+	if (strlen(fname2) + 2 >= sizeof(fname2)) return 1;
+	addext( fname2,"i" );
+	if (strlen(fname) + strlen("hsp") + 2 > sizeof(fname)) return 1;
 	addext( fname,"hsp" );			// 拡張子がなければ追加する
 
 	//		HSP64 check
@@ -301,8 +345,13 @@ int main( int argc, char *argv[] )
 			printf("Runtime[%s].\n",oname);
 		} else {
 			int result;
+			int command_length;
 			printf("Execute from %s runtime[%s](%d).\n",fname,oname,execobj);
-			sprintf(execmd,"%s./%s %s",syspath,oname,fname);
+			command_length = snprintf(execmd, sizeof(execmd), "%s./%s %s", syspath, oname, fname);
+			if (command_length < 0 || (size_t)command_length >= sizeof(execmd)) {
+				printf("Runtime command is too long.\n");
+				return 1;
+			}
 			//sprintf(execmd,"%s./%s %s >%s.hspres",syspath,oname,fname,syspath);
 			
 			result = system(execmd);
@@ -325,8 +374,14 @@ int main( int argc, char *argv[] )
 		if ( execobj & 8 ) {
 			printf("Runtime[%s].\n",oname);
 		} else {
-			sprintf( execmd, "%s %s", oname, fname );
-			st = winexec_utf8( execmd );
+			int command_length = snprintf(execmd, sizeof(execmd), "%s %s", oname, fname);
+			if (command_length < 0 || (size_t)command_length >= sizeof(execmd)) {
+				printf("Runtime command is too long.\n");
+				st = -1;
+			}
+			else {
+				st = winexec_utf8( execmd );
+			}
 			if ( st < 32 ) {
 				printf("Runtime file missing.\n");
 			}
