@@ -506,8 +506,12 @@ int FilePack::ExtractFile( HFPHED *hed, char *fname, char *savename, int encode 
 	bufsize = (int)obj->size;
 
 	HSP3Crypt* cm = GetCurrentCryptManager();
-	strcpy(namebuf_utf8, GetFolderName(obj));
-	strcat(namebuf_utf8, GetFileName(obj));
+	namebuf_utf8[0] = 0;
+	if (!hsp_pack_path_append(namebuf_utf8, sizeof(namebuf_utf8), GetFolderName(obj)) ||
+		!hsp_pack_path_append(namebuf_utf8, sizeof(namebuf_utf8), GetFileName(obj))) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 	int enc_crypt = cm->GetCRC32(namebuf_utf8, strlen(namebuf_utf8));			// ファイルパスを暗号キーにする
 	enc_crypt = cm->GetSalt(enc_crypt);
 	if (enc_crypt == 0) enc_crypt = 1;
