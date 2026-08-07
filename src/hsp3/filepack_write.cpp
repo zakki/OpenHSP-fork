@@ -181,8 +181,12 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 	hsp3_to_utf8(fname, fname_hsp3, HFP_PATH_MAX);
 	hsp3_to_utf8(foldername, foldername_hsp3, HFP_PATH_MAX);
 
-	strcpy(pathname, foldername);
-	strcat(pathname, fname);
+	pathname[0] = 0;
+	if (!hsp_pack_path_append(pathname, sizeof(pathname), foldername) ||
+		!hsp_pack_path_append(pathname, sizeof(pathname), fname)) {
+		Print((char*)"#Path is too long.");
+		return -1;
+	}
 
 	HSP3Crypt* cm = GetCurrentCryptManager();
 	enc_crypt = 0;
