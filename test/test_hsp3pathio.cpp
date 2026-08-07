@@ -48,6 +48,16 @@ int main()
 	free(compatibility_path);
 
 #if defined(HSPWIN) || defined(_WIN32)
+	const char cp932_path[] = "wide-\x93\xfa\x96\x7b\x8c\xea";
+	char* cp932_utf8 = hsp_path_from_cp932(cp932_path);
+	assert(cp932_utf8 != NULL);
+	assert(strcmp(cp932_utf8, "wide-日本語") == 0);
+	char* cp932_output = hsp_path_to_cp932(cp932_utf8);
+	assert(cp932_output != NULL);
+	assert(strcmp(cp932_output, cp932_path) == 0);
+	free(cp932_output);
+	free(cp932_utf8);
+
 	const wchar_t wide_path[] = L"wide-日本語-😀";
 	char* wide_path_utf8 = hsp_utf8_from_wide(wide_path);
 	assert(wide_path_utf8 != NULL);

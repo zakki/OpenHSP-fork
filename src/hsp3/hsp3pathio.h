@@ -35,6 +35,10 @@ int hsp_dirlist_utf8(const char* pattern, int flags, hsp_path_list_callback call
 // The returned buffer is allocated with malloc and must be released with free.
 char* hsp_path_from_ansi(const char* path);
 
+// Convert a legacy DLL CP932 string to UTF-8.
+// The returned buffer is allocated with malloc and must be released with free.
+char* hsp_path_from_cp932(const char* path);
+
 // Convert a Windows wide string at a UTF-16 boundary to UTF-8.
 // The returned buffer is allocated with malloc and must be released with free.
 #if defined(HSPWIN) || defined(_WIN32)
@@ -48,6 +52,10 @@ int hsp_exec_utf8(const char* command);
 // Convert an internal UTF-8 path to the legacy Windows ANSI contract.
 // Returns NULL when the path cannot be represented without loss.
 char* hsp_path_to_ansi(const char* path);
+
+// Convert an internal UTF-8 path to the legacy DLL CP932 contract.
+// Returns NULL when the path cannot be represented without loss.
+char* hsp_path_to_cp932(const char* path);
 
 // Extract a path component using the getpath-compatible mode flags.
 // Returns nonzero on success and zero for invalid UTF-8 or a small output buffer.

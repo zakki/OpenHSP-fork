@@ -288,15 +288,15 @@ FILE* hsp_fopen_utf8(const char* path, const char* mode)
 	return result;
 }
 
-char* hsp_path_from_ansi(const char* path)
+static char* hsp_path_from_codepage(const char* path, UINT codepage)
 {
 	if (path == NULL) return NULL;
 
-	int wide_length = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
+	int wide_length = MultiByteToWideChar(codepage, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
 	if (wide_length <= 0) return NULL;
 	wchar_t* wide_path = (wchar_t*)malloc(sizeof(wchar_t) * (size_t)wide_length);
 	if (wide_path == NULL) return NULL;
-	if (MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, path, -1, wide_path, wide_length) == 0) {
+	if (MultiByteToWideChar(codepage, MB_ERR_INVALID_CHARS, path, -1, wide_path, wide_length) == 0) {
 		free(wide_path);
 		return NULL;
 	}
@@ -320,13 +320,23 @@ char* hsp_path_from_ansi(const char* path)
 	return result;
 }
 
-char* hsp_path_to_ansi(const char* path)
+char* hsp_path_from_ansi(const char* path)
+{
+	return hsp_path_from_codepage(path, CP_ACP);
+}
+
+char* hsp_path_from_cp932(const char* path)
+{
+	return hsp_path_from_codepage(path, 932);
+}
+
+static char* hsp_path_to_codepage(const char* path, UINT codepage)
 {
 	wchar_t* wide_path = hsp_utf8_to_wide(path);
 	if (wide_path == NULL) return NULL;
 
 	BOOL used_default = FALSE;
-	int ansi_length = WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, wide_path, -1, NULL, 0, NULL, &used_default);
+	int ansi_length = WideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, wide_path, -1, NULL, 0, NULL, &used_default);
 	if (ansi_length <= 0 || used_default) {
 		free(wide_path);
 		return NULL;
@@ -337,13 +347,23 @@ char* hsp_path_to_ansi(const char* path)
 		return NULL;
 	}
 	used_default = FALSE;
-	if (WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, wide_path, -1, result, ansi_length, NULL, &used_default) == 0 || used_default) {
+	if (WideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, wide_path, -1, result, ansi_length, NULL, &used_default) == 0 || used_default) {
 		free(wide_path);
 		free(result);
 		return NULL;
 	}
 	free(wide_path);
 	return result;
+}
+
+char* hsp_path_to_ansi(const char* path)
+{
+	return hsp_path_to_codepage(path, CP_ACP);
+}
+
+char* hsp_path_to_cp932(const char* path)
+{
+	return hsp_path_to_codepage(path, 932);
 }
 
 #else
@@ -421,6 +441,11 @@ char* hsp_path_from_ansi(const char* path)
 	return result;
 }
 
+char* hsp_path_from_cp932(const char* path)
+{
+	return hsp_path_from_ansi(path);
+}
+
 char* hsp_path_to_ansi(const char* path)
 {
 	if (path == NULL || !hsp_utf8_is_valid((const unsigned char*)path)) return NULL;
@@ -428,6 +453,11 @@ char* hsp_path_to_ansi(const char* path)
 	char* result = (char*)malloc(length);
 	if (result != NULL) memcpy(result, path, length);
 	return result;
+}
+
+char* hsp_path_to_cp932(const char* path)
+{
+	return hsp_path_to_ansi(path);
 }
 
 FILE* hsp_fopen_utf8(const char* path, const char* mode)

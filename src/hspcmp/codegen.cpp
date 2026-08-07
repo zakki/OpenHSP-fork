@@ -27,7 +27,7 @@ static const char* hspcmp_message_path(const char* path, char** converted)
 {
 	*converted = NULL;
 	if (path == NULL) return "<null path>";
-	*converted = hsp_path_to_ansi(path);
+	*converted = hsp_path_to_cp932(path);
 	return *converted != NULL ? *converted : "<unrepresentable UTF-8 path>";
 }
 #endif
