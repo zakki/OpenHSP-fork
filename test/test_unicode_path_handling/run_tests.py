@@ -58,6 +58,15 @@ def write_fixture(path: Path, text: str, encoding: str) -> None:
         fixture.write(text)
 
 
+def require_marker(result: bytes, marker: bytes, description: str, output: Path) -> None:
+    if marker not in result:
+        raise RuntimeError(
+            "{} missing from {} ({} bytes)".format(
+                description, output, len(result)
+            )
+        )
+
+
 def run_compile(
     hspcmp: Path, common: Path, source: Path, output: Path, utf8_input: bool
 ) -> bytes:
@@ -88,8 +97,8 @@ def test_utf8_source_and_include(hspcmp: Path, common: Path, workdir: Path) -> N
 
     run_compile(hspcmp, common, source, output, utf8_input=True)
     result = output.read_bytes()
-    assert b"UTF8_INCLUDE_MARKER_" in result
-    assert source.name.encode("utf-8") in result
+    require_marker(result, b"UTF8_INCLUDE_MARKER_", "UTF-8 include marker", output)
+    require_marker(result, source.name.encode("utf-8"), "UTF-8 source filename", output)
 
 
 def test_cp932_source_and_include(hspcmp: Path, common: Path, workdir: Path) -> None:
@@ -228,8 +237,8 @@ def test_dll_compile_and_pack(dll_path: Path, common: Path, workdir: Path) -> No
         dll.call_path("hsc_objname", output)
         dll._check("hsc_comp", dll.hsc_comp(128, 0, 0, 0))
         result = output.read_bytes()
-        assert b"DLL_INCLUDE_MARKER" in result
-        assert source.name.encode("utf-8") in result
+        require_marker(result, b"DLL_INCLUDE_MARKER", "DLL include marker", output)
+        require_marker(result, source.name.encode("utf-8"), "DLL source filename", output)
 
         pack_dir = workdir / "PACK-日本語"
         pack_dir.mkdir()
