@@ -14,6 +14,8 @@ int main()
 	assert(output != NULL);
 	assert(fwrite(expected, 1, strlen(expected), output) == strlen(expected));
 	assert(fclose(output) == 0);
+	assert(hsp_file_exists_utf8(path));
+	assert(hsp_filesize_utf8(path) == (int64_t)strlen(expected));
 
 	char buffer[64] = {};
 	FILE* input = hsp_fopen_utf8(path, "rb");
@@ -24,6 +26,8 @@ int main()
 
 	const char invalid_utf8[] = "hsp3pathio-\xf0\x28\x8c\x28.tmp";
 	assert(hsp_fopen_utf8(invalid_utf8, "rb") == NULL);
+	assert(!hsp_file_exists_utf8(invalid_utf8));
+	assert(hsp_filesize_utf8(invalid_utf8) < 0);
 	char* compatibility_path = hsp_path_from_ansi("compatibility-日本語");
 	assert(compatibility_path != NULL);
 	assert(strcmp(compatibility_path, "compatibility-日本語") == 0);

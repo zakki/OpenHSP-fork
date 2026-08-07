@@ -306,10 +306,11 @@ int CMemBuf::PutFile( char *fname )
 	int length;
 	FILE *ff;
 
+	int64_t file_size = hsp_filesize_utf8(fname);
+	if (file_size < 0 || file_size > 0x7fffffff) return -1;
+	length = (int)file_size;
 	ff=hsp3_fopen( fname );
 	if (ff==NULL) return -1;
-	hsp3_fseek( ff,0,SEEK_END );
-	length=(int)ftell( ff );			// normal file size
 	hsp3_fclose(ff);
 	if (length < 0) return -1;
 
@@ -467,4 +468,3 @@ char *CMemBuf::GetFileName( void )
 	//
 	return name;
 }
-

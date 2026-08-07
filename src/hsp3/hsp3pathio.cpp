@@ -148,6 +148,7 @@ int hsp_getpath_utf8(const char* path, char* output, size_t output_size, int mod
 #if defined(HSPWIN) || defined(_WIN32)
 
 #include <windows.h>
+#include <sys/stat.h>
 
 static wchar_t* hsp_utf8_to_wide(const char* text)
 {
@@ -163,6 +164,29 @@ static wchar_t* hsp_utf8_to_wide(const char* text)
 		return NULL;
 	}
 	return result;
+}
+
+int64_t hsp_filesize_utf8(const char* path)
+{
+	wchar_t* wide_path = hsp_utf8_to_wide(path);
+	if (wide_path == NULL) return -1;
+
+	struct _stat64 status;
+	int result = _wstat64(wide_path, &status);
+	free(wide_path);
+	if (result != 0 || (status.st_mode & _S_IFMT) != _S_IFREG) return -1;
+	return (int64_t)status.st_size;
+}
+
+int hsp_file_exists_utf8(const char* path)
+{
+	wchar_t* wide_path = hsp_utf8_to_wide(path);
+	if (wide_path == NULL) return 0;
+
+	struct _stat64 status;
+	int result = _wstat64(wide_path, &status);
+	free(wide_path);
+	return result == 0;
 }
 
 FILE* hsp_fopen_utf8(const char* path, const char* mode)
@@ -215,6 +239,24 @@ char* hsp_path_from_ansi(const char* path)
 }
 
 #else
+
+#include <sys/stat.h>
+
+int64_t hsp_filesize_utf8(const char* path)
+{
+	if (!hsp_utf8_is_valid((const unsigned char*)path)) return -1;
+
+	struct stat status;
+	if (stat(path, &status) != 0 || !S_ISREG(status.st_mode)) return -1;
+	return (int64_t)status.st_size;
+}
+
+int hsp_file_exists_utf8(const char* path)
+{
+	if (!hsp_utf8_is_valid((const unsigned char*)path)) return 0;
+	struct stat status;
+	return stat(path, &status) == 0;
+}
 
 char* hsp_path_from_ansi(const char* path)
 {
