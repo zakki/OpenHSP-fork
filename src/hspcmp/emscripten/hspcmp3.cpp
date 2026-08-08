@@ -456,7 +456,7 @@ EXPORT BOOL hsc3_make ( BMSCR *bm, char *p1, int p2, int p3 )
 #else
 	myseed1 = (int)time(0);			// Windows以外のランダムシード値
 #endif
-	myseed2 = hsp3_flength(PACKFILE);
+	myseed2 = (HSPPTRINT)hsp_path_filesize(hsp_path::path_view(PACKFILE));
 
 	filepack.Reset();
 	filepack.SetErrorBuffer(hsc3->errbuf);

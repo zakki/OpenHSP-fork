@@ -19,6 +19,18 @@
 #include <direct.h>
 #endif
 
+#if defined(HSPCMP_PATH_UTF8) && defined(HSPWIN)
+static int copy_wide_dirinfo_path(char* destination, size_t destination_size, const wchar_t* source)
+{
+	hsp_path::utf8_string utf8_path = hsp_path_utf8_from_wide(source);
+	if (!utf8_path || strlen(utf8_path.c_str()) >= destination_size) {
+		return -1;
+	}
+	strcpy(destination, utf8_path.c_str());
+	return 0;
+}
+#endif
+
 static int append_path_text(char* destination, size_t destination_size, const char* text)
 {
 	if (destination == NULL || text == NULL || destination_size == 0) return -1;
@@ -35,25 +47,74 @@ void dirinfo(char* p, int id)
 	//		dirinfo命令の内容をstmpに設定する
 	//
 #ifdef HSPWIN
+#ifdef HSPCMP_PATH_UTF8
+	wchar_t fname[_MAX_PATH + 1];
+#else
 	char fname[_MAX_PATH + 1];
+#endif
 
 	switch (id) {
 	case 0:				//    カレント(現在の)ディレクトリ
+	#ifdef HSPCMP_PATH_UTF8
+		{
+			wchar_t wide_path[_MAX_PATH];
+			if (_wgetcwd(wide_path, sizeof(wide_path) / sizeof(wide_path[0])) == NULL ||
+				copy_wide_dirinfo_path(p, _MAX_PATH, wide_path) != 0) p[0] = 0;
+		}
+	#else
 		_getcwd(p, _MAX_PATH);
+	#endif
 		break;
 	case 1:				//    実行ファイルがあるディレクトリ
+	{
+#ifdef HSPCMP_PATH_UTF8
+		DWORD filename_length = GetModuleFileNameW(NULL, fname, _MAX_PATH);
+		hsp_path::utf8_string utf8_fname = filename_length > 0 && filename_length < _MAX_PATH
+			? hsp_path_utf8_from_wide(fname) : hsp_path::utf8_string();
+		if (utf8_fname) {
+			hspcmp_getpath(utf8_fname.c_str(), p, 32);
+		} else {
+			p[0] = 0;
+		}
+#else
 		GetModuleFileName(NULL, fname, _MAX_PATH);
 		getpath(fname, p, 32);
+#endif
 		break;
+	}
 	case 2:				//    Windowsディレクトリ
+	#ifdef HSPCMP_PATH_UTF8
+		{
+			wchar_t wide_path[_MAX_PATH];
+			UINT path_length = GetWindowsDirectoryW(wide_path, _MAX_PATH);
+			if (path_length == 0 || path_length >= _MAX_PATH ||
+				copy_wide_dirinfo_path(p, _MAX_PATH, wide_path) != 0) p[0] = 0;
+		}
+	#else
 		GetWindowsDirectory(p, _MAX_PATH);
+	#endif
 		break;
 	case 3:				//    Windowsのシステムディレクトリ
+	#ifdef HSPCMP_PATH_UTF8
+		{
+			wchar_t wide_path[_MAX_PATH];
+			UINT path_length = GetSystemDirectoryW(wide_path, _MAX_PATH);
+			if (path_length == 0 || path_length >= _MAX_PATH ||
+				copy_wide_dirinfo_path(p, _MAX_PATH, wide_path) != 0) p[0] = 0;
+		}
+	#else
 		GetSystemDirectory(p, _MAX_PATH);
+	#endif
 		break;
 	default:
 		if (id & 0x10000) {
+	#ifdef HSPCMP_PATH_UTF8
+			wchar_t wide_path[_MAX_PATH];
+			if (!SHGetSpecialFolderPathW(NULL, wide_path, id & 0xffff, FALSE) ||
+				copy_wide_dirinfo_path(p, _MAX_PATH, wide_path) != 0) p[0] = 0;
+	#else
 			SHGetSpecialFolderPath(NULL, p, id & 0xffff, FALSE);
+	#endif
 			break;
 		}
 		*p = 0;
@@ -484,7 +545,7 @@ int CAht::LoadProject( char *fname )
 	Reset();
 
 	res = 0;
-	fp=fopen( fname, "rb" );
+	fp=hsp_path_fopen(hsp_path::path_view(fname), "rb");
 	if (fp == NULL) return -1;
 
 	fread( &hed, 1, sizeof(HTPHED), fp );
@@ -697,7 +758,7 @@ int CAht::SaveProject( char *fname )
 	//	Output file
 	//
 	res = 0;
-	fp=fopen( fname, "wb" );
+	fp=hsp_path_fopen(hsp_path::path_view(fname), "w+b");
 	if (fp != NULL) {
 
 		strsize = strbuf->GetSize() & 15;
@@ -821,7 +882,7 @@ int CAht::BuildPartsSub( int id, char *fname )
 	}
 	note.Select( tmp.GetBuffer() );
 	maxline = note.GetMaxLine();
-	getpath( fname, p->name, 1+8+16 );			// 仮にファイル名を入れておく
+	hspcmp_getpath( fname, p->name, 1+8+16 );			// 仮にファイル名を入れておく
 
 	for(i=0;i<maxline;i++) {
 		pickptr = 0;

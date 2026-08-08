@@ -5,6 +5,9 @@
 #ifndef __supio_h
 #define __supio_h
 
+#include "../hsp3/hsp3config.h"
+#include "../hsp3/hsp3pathio.h"
+
 #ifdef HSPUTF8
 #define STRLEN utf8strlen
 #else
@@ -39,6 +42,10 @@
 #include "../hsp3/linux/supio_linux.h"
 #endif
 
+static inline int hspcmp_getpath(const char* source, char* output, int mode)
+{
+	return hsp_path_getpath(hsp_path::path_view(source), output, HSP_MAX_PATH, mode);
+}
+
 
 #endif
-

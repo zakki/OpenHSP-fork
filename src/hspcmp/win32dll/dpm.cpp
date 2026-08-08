@@ -182,7 +182,7 @@ static long chkfile( char *filename )
 
 	FILE *ff;
 	long filesize;
-	ff=fopen( filename,"rb" );
+	ff=hsp_path_fopen(hsp_path::path_view(filename), "rb");
 	if (ff==NULL) return -1;
 	filesize=0;
 	while(1) {
@@ -201,7 +201,13 @@ static char *gettvfolder( char *name )
 	static char p[_MAX_PATH];
 	char ifname[_MAX_PATH];
 	GetModuleFileName( NULL,ifname,_MAX_PATH );
-	getpath( ifname, p, 32 );
+	#ifdef HSPCMP_PATH_UTF8
+	hsp_path::utf8_string utf8_ifname = hsp_path_from_ansi(hsp_path::ansi_view(ifname));
+	if (!utf8_ifname) return NULL;
+	hspcmp_getpath( utf8_ifname.c_str(), p, 32 );
+	#else
+	hspcmp_getpath( ifname, p, 32 );
+	#endif
 	CutLastChr( p, '\\' );
 	strcat( p, "\\hsptv\\" );
 	strcat( p, name );
@@ -218,12 +224,12 @@ static void cpyfile( FILE *ff, char *filename, int encode )
 	int a;
 	FILE *ff2;
 
-	ff2 = fopen( filename, "rb" );
+	ff2 = hsp_path_fopen(hsp_path::path_view(filename), "rb");
 	if (ff2==NULL) {
 		char *name2;
 		name2 = gettvfolder( filename );
 		if ( name2 == NULL ) return;
-		ff2 = fopen( name2, "rb" );
+		ff2 = hsp_path_fopen(hsp_path::path_view(name2), "rb");
 		if ( ff2 == NULL ) return;
 	}
 
@@ -244,7 +250,7 @@ static int getfile( void )
 	long la;
 	int a1,a2;
 
-	fp=fopen(fname,"rb");
+	fp=hsp_path_fopen(hsp_path::path_view(fname), "rb");
 	if (fp==NULL) {
 		sprintf(tmp,"#No pack file [%s].\r\n",fname);
 		prt(tmp);
@@ -267,9 +273,9 @@ static int getfile( void )
 		return -1;
 	}
 
-	fp=fopen(fname,"rb");
+	fp=hsp_path_fopen(hsp_path::path_view(fname), "rb");
 	fseek(fp,fptr+optr,0);
-		fp2=fopen( aname,"wb" );
+		fp2=hsp_path_fopen(hsp_path::path_view(aname), "wb");
 		for(la=0;la<fs;la++) {
 			a2=fgetc(fp);if (a2<0) break;
 			fputc(a2,fp2);
@@ -291,7 +297,7 @@ static int viewfile( void )
 	int a1;
 	int ee;
 
-	fp=fopen(fname,"rb");
+	fp=hsp_path_fopen(hsp_path::path_view(fname), "rb");
 	if (fp==NULL) {
 		sprintf( tmp,"#No pack file [%s].\r\n",fname );
 		prt(tmp);
@@ -350,7 +356,7 @@ static int newfile( int mode )
 
 	//	open packfile list
 
-	fp2=fopen(aname,"rb");
+	fp2=hsp_path_fopen(hsp_path::path_view(aname), "rb");
 	if (fp2==NULL) {
 		sprintf(tmp,"#Listing file [%s] not found.\r\n",aname);
 		prt(tmp);
@@ -418,7 +424,7 @@ static int newfile( int mode )
 
 	//	write header
 
-	fp=fopen(fname,"wb");
+	fp=hsp_path_fopen(hsp_path::path_view(fname), "wb");
 	if (fp==NULL) {
 		free( mem_nam );
 		prt("#File write error.\r\n");
@@ -435,7 +441,7 @@ static int newfile( int mode )
 	//	write directories
 
 	a1=0;
-	fp2=fopen(aname,"rb");
+	fp2=hsp_path_fopen(hsp_path::path_view(aname), "rb");
 	while(1) {
 		if (fgets(s1,255,fp2)==NULL) break;
 		cutlast2(s1);
@@ -465,7 +471,7 @@ static int newfile( int mode )
 	//	write file image
 
 	a1=0;
-	fp2=fopen(aname,"rb");
+	fp2=hsp_path_fopen(hsp_path::path_view(aname), "rb");
 	while(1) {
 		if (fgets(s1,255,fp2)==NULL) break;
 		cutlast(s1);
@@ -513,14 +519,14 @@ static int makexe( int mode, char *hspexe, int opt1, int opt2, int opt3 )
 	//
 	strcpy( hrtfile, hspexe );
 	_splitpath( hrtfile, p_drive, p_dir, p_fname, p_ext );
-	fp=fopen( hrtfile, "rb" );
+	fp=hsp_path_fopen(hsp_path::path_view(hrtfile), "rb");
 	if (fp==NULL) {
 		sprintf( hrtfile,"%s%sruntime\\%s%s", p_drive, p_dir, p_fname, p_ext ); 
-		fp=fopen( hrtfile, "rb" );
+		fp=hsp_path_fopen(hsp_path::path_view(hrtfile), "rb");
 		//
 		if (fp==NULL) {
 			sprintf( hrtfile,"%s%s", p_fname, p_ext ); 
-			fp=fopen( hrtfile, "rb" );
+			fp=hsp_path_fopen(hsp_path::path_view(hrtfile), "rb");
 			if (fp==NULL) {
 				sprintf( tmp,"#No file [%s].\r\n",hspexe );
 				prt(tmp);
@@ -554,7 +560,7 @@ static int makexe( int mode, char *hspexe, int opt1, int opt2, int opt3 )
 
 	//		DPMのチェックサムを作成
 	//
-	fp=fopen(fname,"rb");
+	fp=hsp_path_fopen(hsp_path::path_view(fname), "rb");
 	if (fp==NULL) {
 		sprintf(tmp,"#No file [%s].\r\n",fname);
 		prt(tmp);
@@ -589,14 +595,14 @@ static int makexe( int mode, char *hspexe, int opt1, int opt2, int opt3 )
 	s4[28]='s';s4[29]=chksum&0xff;s4[30]=(chksum>>8)&0xff;
 	s4[31]='k'; ip = (int *)(s4+32); *ip = deckey;
 
-	fp2=fopen(fname,"rb");
-	fp=fopen( hrtfile, "rb");
+	fp2=hsp_path_fopen(hsp_path::path_view(fname), "rb");
+	fp=hsp_path_fopen(hsp_path::path_view(hrtfile), "rb");
 	if (fp==NULL) {
 		sprintf(tmp,"#No file [%s].\r\n",hspexe );
 		prt(tmp);
 		return -1;
 	}
-	fp3=fopen(sname,"wb");
+	fp3=hsp_path_fopen(hsp_path::path_view(sname), "wb");
 	if (fp3==NULL) {
 		sprintf(tmp,"#Write error [%s].\r\n",sname );
 		prt(tmp);
@@ -674,4 +680,3 @@ void dpmc_dpmkey( int key )
 	defseed1 = defseed1 & 0xff;
 	defseed2 = (defseed2 & 0xff)^0xaa;
 }
-

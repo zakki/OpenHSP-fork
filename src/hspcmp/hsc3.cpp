@@ -501,7 +501,7 @@ int CHsc3::GetRuntimeFromHeader( char *fname, char *res )
 	int ires;
 	char *data;
 
-	fp=fopen( fname, "rb" );
+	fp=hsp_path_fopen(hsp_path::path_view(fname), "rb");
 	if ( fp == NULL ) return -1;
 	hedsize = sizeof(hsphed);
 	fread( &hsphed, 1, hedsize, fp );
@@ -556,4 +556,3 @@ void CHsc3::Print(char* mes)
 	errbuf->PutStr(mes);
 	errbuf->PutStr("\r\n");
 }
-

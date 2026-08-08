@@ -19,6 +19,7 @@
 #include "strnote.h"
 #include "strbuf.h"
 #include "hsp3crypt.h"
+#include "hsp3pathio.h"
 #include "../hspcmp/membuf.h"
 
 #define _MALLOC malloc
@@ -37,6 +38,31 @@ static int hsp_pack_path_append(char* target, size_t target_size, const char* su
 #define WELCOMEMSG "DPM2 Manager 1.1"
 #define DPMFILEEXT ".dpm"
 #define DPMENCODE_DEFVAL 0
+
+#if HSP_PATHIO_DEFAULT_UTF8
+struct HSPPackDirListContext {
+	char** target;
+};
+
+static int hsp_pack_dirlist_callback(hsp_path::utf8_view name, void* user_data)
+{
+	HSPPackDirListContext* context = (HSPPackDirListContext*)user_data;
+	sbStrAdd(context->target, (char*)name.c_str());
+	sbStrAdd(context->target, (char*)"\r\n");
+	return 0;
+}
+
+static int hsp_pack_dirlist(char* pattern, char** target, int flags)
+{
+	HSPPackDirListContext context = { target };
+	return hsp_path_dirlist_utf8(hsp_path::utf8_view(pattern), flags, hsp_pack_dirlist_callback, &context);
+}
+#else
+static int hsp_pack_dirlist(char* pattern, char** target, int flags)
+{
+	return dirlist(pattern, target, flags);
+}
+#endif
 
 /*------------------------------------------------------------*/
 /*
@@ -89,13 +115,17 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 			char p_fdir[HSP_MAX_PATH];
 			int listmax;
 			char* flist = sbAlloc(0x4000);
-			dirlist(name, &flist, 5);
+			hsp_pack_dirlist(name, &flist, 5);
 			notelist.Select(flist);
 			listmax = notelist.GetMaxLine();
 			// ディレクトリを再帰する
 			for (int i = 0; i < listmax; i++) {
 				notelist.GetLine(ftmp, i);
-				getpath(name, fixname, 32);
+				if (!hsp_path_getpath(hsp_path::path_view(name), fixname, sizeof(fixname), 32)) {
+					sbFree(flist);
+					Print((char*)"#Path is too long or invalid.");
+					return -1;
+				}
 				if (!hsp_pack_path_append(fixname, sizeof(fixname), ftmp) ||
 					!hsp_pack_path_append(fixname, sizeof(fixname), "/*")) {
 					sbFree(flist);
@@ -108,16 +138,18 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 			sbFree(flist);
 
 			// すべてのファイルを追加する
-			getpath(name, p_fdir, 32);
+			if (!hsp_path_getpath(hsp_path::path_view(name), p_fdir, sizeof(p_fdir), 32)) {
+				Print((char*)"#Path is too long or invalid.");
+				return -1;
+			}
 			flist = sbAlloc(0x4000);
-			dirlist(name, &flist, 1);
+			hsp_pack_dirlist(name, &flist, 1);
 			notelist.Select(flist);
 			listmax = notelist.GetMaxLine();
 			for (int i = 0; i < listmax; i++) {
 				notelist.GetLine(ftmp, i);
-				fixname[0] = 0;
-				if (!hsp_pack_path_append(fixname, sizeof(fixname), p_fdir) ||
-					!hsp_pack_path_append(fixname, sizeof(fixname), ftmp)) {
+				strcpy(fixname, p_fdir);
+				if (!hsp_pack_path_append(fixname, sizeof(fixname), ftmp)) {
 					sbFree(flist);
 					Print((char*)"#Path is too long.");
 					return -1;

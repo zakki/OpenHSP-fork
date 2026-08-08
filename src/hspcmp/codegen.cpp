@@ -22,6 +22,17 @@
 
 #include "errormsg.h"
 
+#ifdef HSPCMP_DLL
+static const char* hspcmp_message_path(const char* path, char** converted)
+{
+	*converted = NULL;
+	if (path == NULL) return "<null path>";
+	hsp_path::ansi_string converted_path = hsp_path_to_ansi(hsp_path::utf8_view(path));
+	*converted = converted_path.release();
+	return *converted != NULL ? *converted : "<unrepresentable UTF-8 path>";
+}
+#endif
+
 //-------------------------------------------------------------
 //		Routines
 //-------------------------------------------------------------
@@ -2192,7 +2203,7 @@ void CToken::GenerateCodePP( char *buf )
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype == TK_STRING ) {
 			strcpy(cg_orgfilefull, cg_str);
-			getpath(cg_orgfilefull,cg_orgfile,8);
+			hspcmp_getpath(cg_orgfilefull,cg_orgfile,8);
 			if ( cg_debug ) {
 				i = PutDSBuf( cg_str );
 				PutDI( 254, i, cg_orgline );				// ファイル名をデバッグ情報として登録
@@ -3177,10 +3188,29 @@ int CToken::GenerateCode( CMemBuf *srcbuf, char *oname, int mode )
 		char tmp[8192];
 		CStrNote note;
 		CMemBuf srctmp;
+#ifdef HSPCMP_DLL
+		char* converted_cg_orgfile;
+		const char* message_cg_orgfile = hspcmp_message_path(cg_orgfile, &converted_cg_orgfile);
+#endif
 #ifdef JPNMSG
-		Mesf( "%s(%d) : error %d : %s (%d行目)", cg_orgfile, cg_orgline, res, cg_geterror((CGERROR)res), cg_orgline );
+		Mesf( "%s(%d) : error %d : %s (%d行目)",
+#ifdef HSPCMP_DLL
+			message_cg_orgfile,
 #else
-		Mesf("%s(%d) : error %d : %s (line %d)", cg_orgfile, cg_orgline, res, cg_geterror((CGERROR)res), cg_orgline);
+			cg_orgfile,
+#endif
+			cg_orgline, res, cg_geterror((CGERROR)res), cg_orgline );
+#else
+		Mesf("%s(%d) : error %d : %s (line %d)",
+#ifdef HSPCMP_DLL
+			message_cg_orgfile,
+#else
+			cg_orgfile,
+#endif
+			cg_orgline, res, cg_geterror((CGERROR)res), cg_orgline);
+#endif
+#ifdef HSPCMP_DLL
+		free(converted_cg_orgfile);
 #endif
 		if ( cg_errline > 0 ) {
 			note.Select( bakbuf.GetBuffer() );
@@ -3409,10 +3439,27 @@ void CToken::CG_MesLabelDefinition(int label_id)
 
 	LABOBJ* const labobj = lb->GetLabel(label_id);
 	if ( labobj->def_file ) {
+#ifdef HSPCMP_DLL
+		char* converted_def_file;
+		const char* message_def_file = hspcmp_message_path(labobj->def_file, &converted_def_file);
+#endif
 #ifdef JPNMSG
-		Mesf("#識別子「%s」の定義位置: line %d in [%s]", lb->GetName(label_id), labobj->def_line, labobj->def_file);
+		Mesf("#識別子「%s」の定義位置: line %d in [%s]", lb->GetName(label_id), labobj->def_line,
+#ifdef HSPCMP_DLL
+			message_def_file);
 #else
-		Mesf("#Identifier '%s' has already defined in line %d in [%s]", lb->GetName(label_id), labobj->def_line, labobj->def_file);
+			labobj->def_file);
+#endif
+#else
+		Mesf("#Identifier '%s' has already defined in line %d in [%s]", lb->GetName(label_id), labobj->def_line,
+#ifdef HSPCMP_DLL
+			message_def_file);
+#else
+			labobj->def_file);
+#endif
+#endif
+#ifdef HSPCMP_DLL
+		free(converted_def_file);
 #endif
 	}
 }

@@ -305,16 +305,19 @@ int CMemBuf::PutFile( char *fname )
 	int length;
 	FILE *ff;
 
-	ff=fopen( fname,"rb" );
-	if (ff==NULL) return -1;
-	fseek( ff,0,SEEK_END );
-	length=(int)ftell( ff );			// normal file size
-	fclose(ff);
-	if (length < 0) return -1;
+	int64_t file_size = hsp_path_filesize(hsp_path::path_view(fname));
+	if (file_size < 0 || file_size > 0x7fffffff) return -1;
+	length = (int)file_size;
+	ff = hsp_path_fopen(hsp_path::path_view(fname), "rb");
+	if (ff == NULL) return -1;
 
+	int original_size = cur;
 	p = PreparePtr( length+1 );
-	ff=fopen( fname,"rb" );
-	fread( p, 1, length, ff );
+	if (fread(p, 1, length, ff) != (size_t)length) {
+		fclose(ff);
+		ReduceSize(original_size);
+		return -1;
+	}
 	fclose(ff);
 	p[length]=0;
 	
@@ -451,7 +454,7 @@ int CMemBuf::SaveFile( char *fname )
 	//
 	FILE *fp;
 	int flen;
-	fp=fopen(fname,"wb");
+	fp=hsp_path_fopen(hsp_path::path_view(fname), "w+b");
 	if (fp==NULL) return -1;
 	flen = fwrite( mem_buf, 1, cur, fp );
 	fclose(fp);
@@ -466,4 +469,3 @@ char *CMemBuf::GetFileName( void )
 	//
 	return const_cast<char*>(name.c_str());
 }
-
