@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string>
 
 #if defined(HSPWIN) || defined(_WIN32)
 #include <wchar.h>
@@ -99,6 +100,12 @@ typedef owned<ansi_tag> ansi_string;
 // On Windows, the path is converted to UTF-16 before calling _wfopen.
 // On POSIX systems, the validated UTF-8 byte sequence is passed to fopen.
 FILE* hsp_path_fopen_utf8(hsp_path::utf8_view path, const char* mode);
+
+#if defined(HSPWIN) || defined(_WIN32)
+// Return the current module filename or directory as UTF-8.
+int hsp_path_get_module_filename_utf8(std::string& result);
+int hsp_path_get_module_directory_utf8(std::string& result);
+#endif
 
 // Open a file using the target's default internal path representation.
 FILE* hsp_path_fopen(hsp_path::path_view path, const char* mode);

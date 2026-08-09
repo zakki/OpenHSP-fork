@@ -10,6 +10,7 @@
 #include <string.h>
 #include <filesystem>
 #include <string>
+#include <vector>
 
 static bool hsp_path_utf8_is_valid(const unsigned char* text);
 
@@ -289,6 +290,36 @@ FILE* hsp_path_fopen_utf8(hsp_path::utf8_view path, const char* mode)
 		wide_mode.push_back((wchar_t)(unsigned char)*character);
 	}
 	return _wfopen(fs_path.c_str(), wide_mode.c_str());
+}
+
+int hsp_path_get_module_filename_utf8(std::string& result)
+{
+	std::vector<wchar_t> module_path(256);
+	DWORD length;
+	do {
+		length = GetModuleFileNameW(NULL, module_path.data(), (DWORD)module_path.size());
+		if (length == 0) return -1;
+		if (length + 1 < module_path.size()) break;
+		module_path.resize(module_path.size() * 2);
+	} while (true);
+
+	hsp_path::utf8_string utf8_path = hsp_path_utf8_from_wide(module_path.data());
+	if (!utf8_path) return -1;
+	result = utf8_path.c_str();
+	return 0;
+}
+
+int hsp_path_get_module_directory_utf8(std::string& result)
+{
+	if (hsp_path_get_module_filename_utf8(result) != 0) return -1;
+	try {
+		result = fs::u8path(result).parent_path().u8string();
+		return 0;
+	}
+	catch (const fs::filesystem_error&) {
+		result.clear();
+		return -1;
+	}
 }
 
 hsp_path::utf8_string hsp_path_from_ansi(hsp_path::ansi_view path)

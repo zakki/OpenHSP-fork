@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #ifdef HSPEMSCRIPTEN
 #ifndef _MAX_PATH
 #define _MAX_PATH       256
@@ -198,20 +199,22 @@ static char *gettvfolder( char *name )
 	//	get HSPTV resource folder path
 
 #ifdef HSPWIN
-	static char p[_MAX_PATH];
-	char ifname[_MAX_PATH];
-	GetModuleFileName( NULL,ifname,_MAX_PATH );
-	#ifdef HSPCMP_PATH_UTF8
-	hsp_path::utf8_string utf8_ifname = hsp_path_from_ansi(hsp_path::ansi_view(ifname));
-	if (!utf8_ifname) return NULL;
-	hspcmp_getpath( utf8_ifname.c_str(), p, 32 );
-	#else
-	hspcmp_getpath( ifname, p, 32 );
-	#endif
-	CutLastChr( p, '\\' );
-	strcat( p, "\\hsptv\\" );
-	strcat( p, name );
-	return p;
+	static std::string path;
+	std::string module_directory;
+	if (hsp_path_get_module_directory_utf8(module_directory) != 0) return NULL;
+	path = module_directory;
+	path += "\\hsptv\\";
+#ifdef HSPCMP_PATH_UTF8
+	path += name;
+#else
+	hsp_path::utf8_string utf8_name = hsp_path_from_ansi(hsp_path::ansi_view(name));
+	if (!utf8_name) return NULL;
+	std::string utf8_path = module_directory + "\\hsptv\\" + utf8_name.c_str();
+	hsp_path::ansi_string ansi_path = hsp_path_to_ansi(hsp_path::utf8_view(utf8_path.c_str()));
+	if (!ansi_path) return NULL;
+	path = ansi_path.c_str();
+#endif
+	return const_cast<char*>(path.c_str());
 #endif
 	return NULL;
 }

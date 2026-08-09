@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(HSPWIN)
+#include <string>
+#endif
+
 #if defined(HSPDEBUG) && !defined(HSPCMP)
 char* hsp3ext_getdir(int id);
 #endif
@@ -200,7 +204,6 @@ void freeac(char **ppc)
 #endif
 #endif
 
-
 //
 //		basic File I/O support
 //
@@ -216,32 +219,20 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 
 	if (hsp3_fp == NULL) {
 		//	hsptvフォルダを検索する
-		char fn[2048];
-		TCHAR fporg[_MAX_PATH];
-		TCHAR fporg_tmp[_MAX_PATH];
-		char* resp8;
-		GetModuleFileName(NULL, fporg, _MAX_PATH);
-		getpathW(fporg, fporg_tmp, 32);
-		apichartohspchar(fporg_tmp, &resp8);
-		strcpy(fn, resp8);
-		CutLastChr(fn, '\\');
-		freehc(&resp8);
-		strcat(fn, "\\hsptv\\");
-		if ((strlen(name) + strlen(fn)) < 2047) {
-			strcat(fn, name);
-
-#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
-			// Windows UTF
-#if defined(HSPCMP_PATH_UTF8) && !defined(HSPUTF8)
-			hsp_path::utf8_string utf8_fn = hsp_path_from_ansi(hsp_path::ansi_view(fn));
-			if (utf8_fn) hsp3_fp = hsp_path_fopen_utf8(utf8_fn.as_view(), "rb");
-#else
-			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn), "rb");
-#endif
-#else
-			// Windows SJIS
-			hsp3_fp = fopen(fn, "rb");
-#endif
+		std::string fn;
+		if (hsp_path_get_module_directory_utf8(fn) == 0) {
+			fn += "\\hsptv\\";
+		#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
+			fn += name;
+			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
+		#else
+			hsp_path::utf8_string utf8_name = hsp_path_from_ansi(hsp_path::ansi_view(name));
+			if (utf8_name) {
+				fn += utf8_name.c_str();
+				hsp_path::ansi_string ansi_fn = hsp_path_to_ansi(hsp_path::utf8_view(fn.c_str()));
+				if (ansi_fn) hsp3_fp = hsp_path_fopen(hsp_path::path_view(ansi_fn.c_str()), "rb");
+			}
+		#endif
 		}
 	}
 

@@ -37,12 +37,6 @@ void dirinfo(char* p, int id)
 	//		dirinfo命令の内容をstmpに設定する
 	//
 #ifdef HSPWIN
-#ifdef HSPCMP_PATH_UTF8
-	wchar_t fname[_MAX_PATH + 1];
-#else
-	char fname[_MAX_PATH + 1];
-#endif
-
 	switch (id) {
 	case 0:				//    カレント(現在の)ディレクトリ
 	#ifdef HSPCMP_PATH_UTF8
@@ -57,18 +51,16 @@ void dirinfo(char* p, int id)
 		break;
 	case 1:				//    実行ファイルがあるディレクトリ
 	{
-#ifdef HSPCMP_PATH_UTF8
-		DWORD filename_length = GetModuleFileNameW(NULL, fname, _MAX_PATH);
-		hsp_path::utf8_string utf8_fname = filename_length > 0 && filename_length < _MAX_PATH
-			? hsp_path_utf8_from_wide(fname) : hsp_path::utf8_string();
-		if (utf8_fname) {
-			hspcmp_getpath(utf8_fname.c_str(), p, 32);
-		} else {
+		std::string module_filename;
+		if (hsp_path_get_module_filename_utf8(module_filename) != 0) {
 			p[0] = 0;
+			break;
 		}
+#ifdef HSPCMP_PATH_UTF8
+		if (!hspcmp_getpath(module_filename.c_str(), p, 32)) p[0] = 0;
 #else
-		GetModuleFileName(NULL, fname, _MAX_PATH);
-		getpath(fname, p, 32);
+		hsp_path::ansi_string ansi_filename = hsp_path_to_ansi(hsp_path::utf8_view(module_filename.c_str()));
+		if (!ansi_filename || !hspcmp_getpath(ansi_filename.c_str(), p, 32)) p[0] = 0;
 #endif
 		break;
 	}

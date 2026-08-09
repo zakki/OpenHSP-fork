@@ -98,28 +98,6 @@ static int copy_ansi_path_directory_to_utf8(std::string& destination, const char
 	}
 }
 
-static int get_module_directory_utf8(std::string& destination)
-{
-	std::vector<wchar_t> module_path(256);
-	DWORD length;
-	do {
-		length = GetModuleFileNameW(NULL, module_path.data(), (DWORD)module_path.size());
-		if (length == 0) return -1;
-		if (length + 1 < module_path.size()) break;
-		module_path.resize(module_path.size() * 2);
-	} while (true);
-	hsp_path::utf8_string utf8_path = hsp_path_utf8_from_wide(module_path.data());
-	if (!utf8_path) return -1;
-	try {
-		destination = std::filesystem::u8path(utf8_path.c_str()).parent_path().u8string();
-		if (!destination.empty() && destination.back() != '\\') destination.push_back('\\');
-		return 0;
-	}
-	catch (const std::exception&) {
-		return -1;
-	}
-}
-
 static void cutext(std::string& path)
 {
 	std::filesystem::path fs_path = std::filesystem::u8path(path);
@@ -370,7 +348,8 @@ p1が128(bit7)の場合はデフォルトで64bitランタイムを選択しま�
 	hsc3->ResetError();
 
 	if (orgcompath==0) {
-		if (get_module_directory_utf8(compath) != 0) return -1;
+		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
+		if (!compath.empty() && compath.back() != '\\') compath.push_back('\\');
 		compath += "common\\";
 	}
 	fname2 = fname + ".i";
@@ -577,7 +556,8 @@ EXPORT BOOL WINAPI hsc3_getsym(HSPPTRINT p1, HSPPTRINT p2, HSPPTRINT p3, HSPPTRI
 	//
 	hsc3->ResetError();
 	if (orgcompath == 0) {
-		if (get_module_directory_utf8(compath) != 0) return -1;
+		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
+		if (!compath.empty() && compath.back() != '\\') compath.push_back('\\');
 	compath += "common\\";
 	}
 	hsc3->SetCommonPath(compath.c_str());
@@ -668,7 +648,8 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 	if (copy_ansi_path_directory_to_utf8(libpath, p1) != 0) return -1;
 
 #ifdef ICONINS_SUPPORT
-	if (get_module_directory_utf8(ici_opt) != 0) return -1;
+	if (hsp_path_get_module_directory_utf8(ici_opt) != 0) return -1;
+	if (!ici_opt.empty() && ici_opt.back() != '\\') ici_opt.push_back('\\');
 	ici_opt += "iconins.exe";
 	if (get_current_directory_utf8(ici_current) != 0) return -1;
 	ici_current += "\\";
@@ -903,7 +884,8 @@ EXPORT BOOL WINAPI aht_source( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSPPT
 	//		AHTを解析
 	hsc3->ResetError();
 	if (orgcompath==0) {
-		if (get_module_directory_utf8(compath) != 0) return -1;
+		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
+		if (!compath.empty() && compath.back() != '\\') compath.push_back('\\');
 		compath += fpath;
 	}
 	hsc3->SetCommonPath( compath.c_str() );
@@ -1101,7 +1083,8 @@ EXPORT BOOL WINAPI aht_make ( int *p1, char *p2, HSPPTRINT p3, HSPPTRINT p4 )
 	res = 0;
 	hsc3->ResetError();
 	if (orgcompath==0) {
-		if (get_module_directory_utf8(compath) != 0) return -1;
+		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
+		if (!compath.empty() && compath.back() != '\\') compath.push_back('\\');
 		compath += ahtmodel->GetSourcePath();
 	}
 	hsc3->SetCommonPath( compath.c_str() );
