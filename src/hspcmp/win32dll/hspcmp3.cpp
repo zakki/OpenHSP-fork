@@ -100,9 +100,13 @@ static int copy_ansi_path_directory_to_utf8(std::string& destination, const char
 
 static void cutext(std::string& path)
 {
-	std::filesystem::path fs_path = std::filesystem::u8path(path);
-	fs_path.replace_extension();
-	path = fs_path.u8string();
+	try {
+		std::filesystem::path fs_path = std::filesystem::u8path(path);
+		fs_path.replace_extension();
+		path = fs_path.u8string();
+	}
+	catch (const std::exception&) {
+	}
 }
 
 static int get_current_directory_utf8(std::string& destination)

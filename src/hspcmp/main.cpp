@@ -39,20 +39,28 @@ namespace fs = std::filesystem;
 
 static void cutext(std::string& path)
 {
-	fs::path fs_path = fs::u8path(path);
-	fs_path.replace_extension();
-	path = fs_path.u8string();
+	try {
+		fs::path fs_path = fs::u8path(path);
+		fs_path.replace_extension();
+		path = fs_path.u8string();
+	}
+	catch (const std::exception&) {
+	}
 }
 
 static void addext(std::string& path, const char* extension)
 {
-	fs::path fs_path = fs::u8path(path);
-	if (fs_path.extension().empty()) {
-		std::string suffix = ".";
-		suffix += extension;
-		fs_path += suffix;
+	try {
+		fs::path fs_path = fs::u8path(path);
+		if (fs_path.extension().empty()) {
+			std::string suffix = ".";
+			suffix += extension;
+			fs_path += suffix;
+		}
+		path = fs_path.u8string();
 	}
-	path = fs_path.u8string();
+	catch (const std::exception&) {
+	}
 }
 
 }

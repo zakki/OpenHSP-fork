@@ -61,13 +61,20 @@ static bool hspcmp_path_component(const char* source, int mode, std::string& res
 	}
 }
 
-static std::string hspcmp_join_paths(std::initializer_list<std::string> parts)
+static bool hspcmp_join_paths(std::initializer_list<std::string> parts, std::string& output)
 {
-	fs::path result;
-	for (const std::string& part : parts) {
-		if (!part.empty()) result /= fs::u8path(part);
+	try {
+		fs::path result;
+		for (const std::string& part : parts) {
+			if (!part.empty()) result /= fs::u8path(part);
+		}
+		output = result.u8string();
+		return true;
 	}
-	return result.u8string();
+	catch (const std::exception&) {
+		output.clear();
+		return false;
+	}
 }
 
 static bool hspcmp_is_absolute_path(const char* source)
@@ -306,7 +313,7 @@ int CToken::AddPackfile( char *name, int mode )
 	absolutePath = hspcmp_is_absolute_path(name);
 
 	if (absolutePath==false) {
-		fname = hspcmp_join_paths({ search_path, p_fdir, p_fname });
+		if (!hspcmp_join_paths({ search_path, p_fdir, p_fname }, fname)) return hspcmp_pack_path_error;
 	}
 	else {
 		fname = name;
@@ -357,7 +364,7 @@ int CToken::AddPackfileOrig(char* name, int mode)
 	absolutePath = hspcmp_is_absolute_path(name);
 
 	if (absolutePath == false) {
-		fname = hspcmp_join_paths({ search_path, p_fdir, p_fname });
+		if (!hspcmp_join_paths({ search_path, p_fdir, p_fname }, fname)) return hspcmp_pack_path_error;
 	}
 	else {
 		fname = name;
@@ -4228,14 +4235,23 @@ int CToken::ExpandFile( CMemBuf *buf, const char *fname, const char *refname )
 
 	valid_file = refname != NULL ? refname : "";
 	if ( fbuf.PutFile( fname ) < 0 ) {
-		cname = hspcmp_join_paths({ common_path, purename });
-		valid_file = hspcmp_join_paths({ common_path, refname != NULL ? refname : "" });
+		if (!hspcmp_join_paths({ common_path, purename }, cname) ||
+			!hspcmp_join_paths({ common_path, refname != NULL ? refname : "" }, valid_file)) {
+			Mes((char*)"#Invalid source path.");
+			return -1;
+		}
 		if ( fbuf.PutFile( cname.c_str() ) < 0 ) {
-			cname = hspcmp_join_paths({ search_path, purename });
-			valid_file = hspcmp_join_paths({ search_path, refname != NULL ? refname : "" });
+			if (!hspcmp_join_paths({ search_path, purename }, cname) ||
+				!hspcmp_join_paths({ search_path, refname != NULL ? refname : "" }, valid_file)) {
+				Mes((char*)"#Invalid source path.");
+				return -1;
+			}
 			if ( fbuf.PutFile( cname.c_str() ) < 0 ) {
-				cname = hspcmp_join_paths({ common_path, search_path, purename });
-				valid_file = hspcmp_join_paths({ common_path, search_path, refname != NULL ? refname : "" });
+				if (!hspcmp_join_paths({ common_path, search_path, purename }, cname) ||
+					!hspcmp_join_paths({ common_path, search_path, refname != NULL ? refname : "" }, valid_file)) {
+					Mes((char*)"#Invalid source path.");
+					return -1;
+				}
 				if ( fbuf.PutFile( cname.c_str() ) < 0 ) {
 					if ( fileadd == 0 ) {
 #ifdef HSPCMP_DLL
