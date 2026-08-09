@@ -864,7 +864,7 @@ int CAht::BuildPartsSub( int id, const char *fname )
 	}
 	note.Select( tmp.GetBuffer() );
 	maxline = note.GetMaxLine();
-	hspcmp_getpath( fname, p->name, 1+8+16 );			// 仮にファイル名を入れておく
+	hspcmp_getpath( fname, p->name, 1+8+16, sizeof(p->name) );			// 仮にファイル名を入れておく
 
 	for(i=0;i<maxline;i++) {
 		pickptr = 0;

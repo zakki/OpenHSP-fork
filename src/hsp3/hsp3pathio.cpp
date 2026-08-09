@@ -25,7 +25,7 @@ static bool hsp_path_make_fs_path(const char* text, fs::path& result)
 		result = fs::u8path(text);
 		return true;
 	}
-	catch (const fs::filesystem_error&) {
+	catch (const std::exception&) {
 		return false;
 	}
 }
@@ -35,7 +35,7 @@ static std::string hsp_path_to_utf8(const fs::path& path)
 	try {
 		return path.u8string();
 	}
-	catch (const fs::filesystem_error&) {
+	catch (const std::exception&) {
 		return std::string();
 	}
 }
@@ -186,21 +186,29 @@ int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_
 		if (!drive_relative) directory.push_back(separator);
 	}
 
-	std::string result;
+	// Select the base component first (filename-only, directory-only, or the
+	// full source), then let the mode&7 selector operate uniformly on that
+	// base so every mode-bit combination is honored instead of one branch
+	// silently discarding an earlier selection.
+	std::string base;
 	if (mode & 8) {
-		result = filename;
+		base = filename;
 	}
 	else if (mode & 32) {
-		result = directory;
+		base = directory;
+	}
+	else {
+		base = source;
 	}
 
+	std::string result;
 	switch (mode & 7) {
 	case 1:
 		if (mode & 8) {
 			result = name;
 		}
 		else {
-			result = source;
+			result = base;
 			if (!extension.empty() && result.size() >= extension.size() &&
 				result.compare(result.size() - extension.size(), extension.size(), extension) == 0) {
 				result.erase(result.size() - extension.size());
@@ -211,7 +219,7 @@ int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_
 		result = extension;
 		break;
 	default:
-		if ((mode & (8 | 32)) == 0) result = source;
+		result = base;
 		break;
 	}
 
@@ -264,7 +272,7 @@ hsp_path::utf8_string hsp_path_utf8_from_wide(const wchar_t* text)
 		memcpy(result, utf8.c_str(), utf8.size() + 1);
 		return hsp_path::utf8_string(result);
 	}
-	catch (const fs::filesystem_error&) {
+	catch (const std::exception&) {
 		return hsp_path::utf8_string();
 	}
 }
@@ -371,7 +379,7 @@ int hsp_path_get_module_directory_utf8(std::string& result)
 		result = fs::u8path(result).parent_path().u8string();
 		return 0;
 	}
-	catch (const fs::filesystem_error&) {
+	catch (const std::exception&) {
 		result.clear();
 		return -1;
 	}

@@ -45,6 +45,14 @@ static void cutext(std::string& path)
 		path = fs_path.u8string();
 	}
 	catch (const std::exception&) {
+		// Fall back to a manual strip so a conversion failure never leaves
+		// the extension in place (which could make the compiled output
+		// silently overwrite the source file).
+		size_t separator = path.find_last_of("/\\");
+		size_t dot = path.find_last_of('.');
+		if (dot != std::string::npos && (separator == std::string::npos || dot > separator)) {
+			path.erase(dot);
+		}
 	}
 }
 
@@ -60,6 +68,13 @@ static void addext(std::string& path, const char* extension)
 		path = fs_path.u8string();
 	}
 	catch (const std::exception&) {
+		size_t separator = path.find_last_of("/\\");
+		size_t dot = path.find_last_of('.');
+		bool has_extension = dot != std::string::npos && (separator == std::string::npos || dot > separator);
+		if (!has_extension) {
+			path += ".";
+			path += extension;
+		}
 	}
 }
 

@@ -2207,7 +2207,6 @@ void CToken::GenerateCodePP( char *buf )
 		cg_orgline = val;
 		GetTokenCG( GETTOKEN_DEFAULT );
 		if ( ttype == TK_STRING ) {
-			cg_orgfilefull = cg_str;
 			std::string cg_orgfile_utf8 = cg_str;
 #if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8) && !defined(HSPUTF8)
 			if (!pp_utf8) {
@@ -2215,10 +2214,11 @@ void CToken::GenerateCodePP( char *buf )
 				if (converted_path) cg_orgfile_utf8 = converted_path.c_str();
 			}
 #endif
+			cg_orgfilefull = cg_orgfile_utf8;
 			try {
 				cg_orgfile = fs::u8path(cg_orgfile_utf8).filename().u8string();
 			}
-			catch (const fs::filesystem_error&) {
+			catch (const std::exception&) {
 				size_t separator = cg_orgfile_utf8.find_last_of("/\\");
 				cg_orgfile = separator == std::string::npos
 					? cg_orgfile_utf8 : cg_orgfile_utf8.substr(separator + 1);

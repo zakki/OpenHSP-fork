@@ -3397,7 +3397,11 @@ ppresult_t CToken::PP_PackOpt( void )
 		if ( i != TK_OBJ ) {
 			SetError("illegal option name"); return PPRESULT_ERROR;
 		}
-		strncpy( optname, (char *)s3, 128 );
+		int option_name_length = snprintf(optname, sizeof(optname), "%s", (char *)s3);
+		if (option_name_length < 0 || (size_t)option_name_length >= sizeof(optname)) {
+			SetError("pack option name is too long");
+			return PPRESULT_ERROR;
+		}
 		i = GetToken();
 		if (( i != TK_OBJ )&&( i != TK_NUM )&&( i != TK_STRING )) {
 			SetError("illegal option parameter"); return PPRESULT_ERROR;
@@ -4797,6 +4801,7 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 		if (!pp_utf8) {      // UTF-8パスをSJISソースの文字列へ変換する
 			int len = (int)strlen(src) + 2;
 			utftmp = (char*)malloc(len);
+			if (utftmp == NULL) return NULL;
 			owns_utftmp = true;
 			ConvUtf82SJis((char*)src, utftmp, len);
 		}
@@ -4804,6 +4809,7 @@ char* CToken::to_hsp_string_literal(const char* src, bool filename) {
 		if (pp_utf8) {			// DLLの既存ACPパスをUTF-8へ変換する
 			int len = (int)strlen(src) * 4 + 1;
 			utftmp = (char*)malloc(len);
+			if (utftmp == NULL) return NULL;
 			owns_utftmp = true;
 			ConvSJis2Utf8((char*)src, utftmp, len);
 		}

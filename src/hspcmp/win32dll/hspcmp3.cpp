@@ -1473,8 +1473,7 @@ EXPORT BOOL WINAPI aht_parts( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSPPTR
 	ep2 = hei->HspFunc_prm_gets();			// パラメータ2:文字列
 	utf8_list = hsp_path_from_ansi(hsp_path::ansi_view(ep2));
 	if (!utf8_list) return -1;
-	aht->BuildParts( utf8_list.data(), path.c_str() );
-	return 0;
+	return aht->BuildParts( utf8_list.data(), path.c_str() ) < 0 ? -1 : 0;
 }
 
 
@@ -1493,6 +1492,8 @@ EXPORT BOOL WINAPI aht_getparts( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSP
 	int ep1;
 	int res;
 	char *p;
+	hsp_path::ansi_string ansi_name;
+	hsp_path::ansi_string ansi_classname;
 
 	if ( aht == NULL ) return -1;
 
@@ -1501,12 +1502,18 @@ EXPORT BOOL WINAPI aht_getparts( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSP
 	ap2 = hei->HspFunc_prm_getva( &pv2 );	// パラメータ3:変数
 	ap3 = hei->HspFunc_prm_getva( &pv3 );	// パラメータ4:変数
 
+	if (aht->GetParts(ep1) == NULL) return -1;
+
 	res = aht->GetPartsIconID(ep1);
 	hei->HspFunc_prm_setva( pv, ap, TYPE_INUM, &res );	// 変数に値を代入
 	p = aht->GetPartsName(ep1);
-	hei->HspFunc_prm_setva( pv2, ap2, TYPE_STRING, p );	// 変数に値を代入
+	ansi_name = hsp_path_to_ansi(hsp_path::utf8_view(p));
+	if (!ansi_name) return -1;
+	hei->HspFunc_prm_setva( pv2, ap2, TYPE_STRING, ansi_name.c_str() );	// 変数に値を代入
 	p = aht->GetPartsClassName(ep1);
-	hei->HspFunc_prm_setva( pv3, ap3, TYPE_STRING, p );	// 変数に値を代入
+	ansi_classname = hsp_path_to_ansi(hsp_path::utf8_view(p));
+	if (!ansi_classname) return -1;
+	hei->HspFunc_prm_setva( pv3, ap3, TYPE_STRING, ansi_classname.c_str() );	// 変数に値を代入
 
 	return 0;
 }

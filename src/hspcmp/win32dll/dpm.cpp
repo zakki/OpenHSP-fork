@@ -381,7 +381,7 @@ static int newfile( int mode )
 			res=chkfile(s1);
 			if (res<0) {
 				std::string name2;
-				bool found = gettvfolder(name2, s1) == 0 && chkfile((char*)name2.c_str()) >= 0;
+				bool found = gettvfolder(name2, s1) == 0 && (res = chkfile((char*)name2.c_str())) >= 0;
 				if (!found) {
 					sprintf(tmp,"#No File [%s]\r\n",s1);
 					prt(tmp);efl++;
@@ -510,7 +510,8 @@ static int makexe( int mode, const char *hspexe, int opt1, int opt2, int opt3 )
 
 	//		HSPヘッダーを検索
 	//
-	strcpy( hrtfile, hspexe );
+	int hrtfile_length = snprintf( hrtfile, sizeof(hrtfile), "%s", hspexe );
+	if (hrtfile_length < 0 || (size_t)hrtfile_length >= sizeof(hrtfile)) return -1;
 	_splitpath( hrtfile, p_drive, p_dir, p_fname, p_ext );
 	fp=hsp_path_fopen(hsp_path::path_view(hrtfile), "rb");
 	if (fp==NULL) {
@@ -628,10 +629,10 @@ static int makexe( int mode, const char *hspexe, int opt1, int opt2, int opt3 )
 void dpmc_ini( CMemBuf *mesbuf, const char *infile )
 {
 	prtini(mesbuf);
-	strcpy(fname,infile);
-	strcpy(bname,fname);
+	snprintf(fname, sizeof(fname), "%s", infile);
+	snprintf(bname, sizeof(bname), "%s", fname);
 	addext(fname,"dpm");
-	strcpy(aname,"packfile");
+	snprintf(aname, sizeof(aname), "%s", "packfile");
 	prt("Datafile Pack Manager ver.3.0 / onion software 1997-2012\r\n");
 	defseed1 = 0xaa; defseed2 = 0x55;			// data.dpm用のデフォルトSEED
 }

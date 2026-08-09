@@ -174,8 +174,9 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 			listmax = notelist.GetMaxLine();
 			for (int i = 0; i < listmax; i++) {
 				notelist.GetLine(ftmp, i);
-				strcpy(fixname, p_fdir);
-				if (!hsp_pack_path_append(fixname, sizeof(fixname), ftmp)) {
+				fixname[0] = 0;
+				if (!hsp_pack_path_append(fixname, sizeof(fixname), p_fdir) ||
+					!hsp_pack_path_append(fixname, sizeof(fixname), ftmp)) {
 					sbFree(flist);
 					Print((char*)"#Path is too long.");
 					return -1;

@@ -42,9 +42,9 @@
 #include "../hsp3/linux/supio_linux.h"
 #endif
 
-static inline int hspcmp_getpath(const char* source, char* output, int mode)
+static inline int hspcmp_getpath(const char* source, char* output, int mode, size_t output_size = HSP_MAX_PATH)
 {
-	return hsp_path_getpath(hsp_path::path_view(source), output, HSP_MAX_PATH, mode);
+	return hsp_path_getpath(hsp_path::path_view(source), output, output_size, mode);
 }
 
 
