@@ -186,7 +186,6 @@ public:
 	int ExpandLine( CMemBuf *buf, CMemBuf *src, char *refname );
 	int ExpandFile( CMemBuf *buf, const char *fname, const char *refname );
 	void FinishPreprocess( CMemBuf *buf );
-	void SetCommonPath( char *path );
 	void SetCommonPath( const char *path );
 	int SetAdditionMode( int mode );
 

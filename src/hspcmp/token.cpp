@@ -82,17 +82,6 @@ static inline int tstrcmp(const char* str1, const char* str2)
 
 static const int hspcmp_pack_path_error = -2;
 
-#ifdef HSPCMP_DLL
-static const char* hspcmp_message_path(const char* path, char** converted)
-{
-	*converted = NULL;
-	if (path == NULL) return "<null path>";
-	hsp_path::ansi_string converted_path = hsp_path_to_ansi(hsp_path::utf8_view(path));
-	*converted = converted_path.release();
-	return *converted != NULL ? *converted : "<unrepresentable UTF-8 path>";
-}
-#endif
-
 //-------------------------------------------------------------
 //		String Service
 //-------------------------------------------------------------
@@ -4345,11 +4334,6 @@ int CToken::SetAdditionMode( int mode )
 	return i;
 }
 
-
-void CToken::SetCommonPath( char *path )
-{
-	SetCommonPath((const char*)path);
-}
 
 void CToken::SetCommonPath( const char *path )
 {

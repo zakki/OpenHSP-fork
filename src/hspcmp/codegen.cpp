@@ -27,17 +27,6 @@ namespace {
 namespace fs = std::filesystem;
 }
 
-#ifdef HSPCMP_DLL
-static const char* hspcmp_message_path(const char* path, char** converted)
-{
-	*converted = NULL;
-	if (path == NULL) return "<null path>";
-	hsp_path::ansi_string converted_path = hsp_path_to_ansi(hsp_path::utf8_view(path));
-	*converted = converted_path.release();
-	return *converted != NULL ? *converted : "<unrepresentable UTF-8 path>";
-}
-#endif
-
 //-------------------------------------------------------------
 //		Routines
 //-------------------------------------------------------------
@@ -2215,10 +2204,11 @@ void CToken::GenerateCodePP( char *buf )
 			}
 #endif
 			cg_orgfilefull = cg_orgfile_utf8;
-			try {
-				cg_orgfile = fs::u8path(cg_orgfile_utf8).filename().u8string();
+			char cg_orgfile_buf[HSP_MAX_PATH];
+			if (hspcmp_getpath(cg_orgfile_utf8.c_str(), cg_orgfile_buf, 8, sizeof(cg_orgfile_buf))) {
+				cg_orgfile = cg_orgfile_buf;
 			}
-			catch (const std::exception&) {
+			else {
 				size_t separator = cg_orgfile_utf8.find_last_of("/\\");
 				cg_orgfile = separator == std::string::npos
 					? cg_orgfile_utf8 : cg_orgfile_utf8.substr(separator + 1);

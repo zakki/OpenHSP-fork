@@ -226,6 +226,22 @@ int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_
 	return hsp_path_copy_result(result, output, output_size);
 }
 
+int64_t hsp_path_filesize_utf8(hsp_path::utf8_view path)
+{
+	fs::path fs_path;
+	std::error_code error;
+	if (!hsp_path_make_fs_path(path.c_str(), fs_path) || !fs::is_regular_file(fs_path, error)) return -1;
+	uintmax_t size = fs::file_size(fs_path, error);
+	return error ? -1 : (int64_t)size;
+}
+
+int hsp_path_file_exists_utf8(hsp_path::utf8_view path)
+{
+	fs::path fs_path;
+	std::error_code error;
+	return hsp_path_make_fs_path(path.c_str(), fs_path) && fs::exists(fs_path, error) && !error;
+}
+
 #if defined(HSPWIN) || defined(_WIN32)
 
 #include <windows.h>
@@ -233,12 +249,15 @@ int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_
 
 static wchar_t* hsp_path_utf8_to_wide(const char* text)
 {
-	fs::path path;
-	if (!hsp_path_make_fs_path(text, path)) return NULL;
-	std::wstring native = path.native();
-	wchar_t* result = (wchar_t*)malloc(sizeof(wchar_t) * (native.size() + 1));
+	if (text == NULL || !hsp_path_utf8_is_valid((const unsigned char*)text)) return NULL;
+	int length = utf8_to_utf16_strict(NULL, text, 0);
+	if (length <= 0) return NULL;
+	wchar_t* result = (wchar_t*)malloc(sizeof(wchar_t) * (size_t)length);
 	if (result == NULL) return NULL;
-	memcpy(result, native.c_str(), sizeof(wchar_t) * (native.size() + 1));
+	if (utf8_to_utf16_strict(result, text, length) == 0) {
+		free(result);
+		return NULL;
+	}
 	return result;
 }
 
@@ -265,16 +284,15 @@ int hsp_path_exec_utf8(hsp_path::utf8_view command)
 hsp_path::utf8_string hsp_path_utf8_from_wide(const wchar_t* text)
 {
 	if (text == NULL) return hsp_path::utf8_string();
-	try {
-		std::string utf8 = fs::path(text).u8string();
-		char* result = (char*)malloc(utf8.size() + 1);
-		if (result == NULL) return hsp_path::utf8_string();
-		memcpy(result, utf8.c_str(), utf8.size() + 1);
-		return hsp_path::utf8_string(result);
-	}
-	catch (const std::exception&) {
+	int length = utf16_to_utf8_strict(NULL, text, 0);
+	if (length <= 0) return hsp_path::utf8_string();
+	char* result = (char*)malloc((size_t)length);
+	if (result == NULL) return hsp_path::utf8_string();
+	if (utf16_to_utf8_strict(result, text, length) == 0) {
+		free(result);
 		return hsp_path::utf8_string();
 	}
+	return hsp_path::utf8_string(result);
 }
 
 int hsp_path_dirlist_utf8(hsp_path::utf8_view pattern, int flags, hsp_path_list_callback callback, void* user_data)
@@ -312,22 +330,6 @@ int hsp_path_dirlist_utf8(hsp_path::utf8_view pattern, int flags, hsp_path_list_
 	}
 	FindClose(handle);
 	return result < 0 ? result : count;
-}
-
-int64_t hsp_path_filesize_utf8(hsp_path::utf8_view path)
-{
-	fs::path fs_path;
-	std::error_code error;
-	if (!hsp_path_make_fs_path(path.c_str(), fs_path) || !fs::is_regular_file(fs_path, error)) return -1;
-	uintmax_t size = fs::file_size(fs_path, error);
-	return error ? -1 : (int64_t)size;
-}
-
-int hsp_path_file_exists_utf8(hsp_path::utf8_view path)
-{
-	fs::path fs_path;
-	std::error_code error;
-	return hsp_path_make_fs_path(path.c_str(), fs_path) && fs::exists(fs_path, error) && !error;
 }
 
 int hsp_path_remove_utf8(hsp_path::utf8_view path)
@@ -447,22 +449,6 @@ int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::ansi_view name)
 
 #include <sys/stat.h>
 #include <glob.h>
-
-int64_t hsp_path_filesize_utf8(hsp_path::utf8_view path)
-{
-	fs::path fs_path;
-	std::error_code error;
-	if (!hsp_path_make_fs_path(path.c_str(), fs_path) || !fs::is_regular_file(fs_path, error)) return -1;
-	uintmax_t size = fs::file_size(fs_path, error);
-	return error ? -1 : (int64_t)size;
-}
-
-int hsp_path_file_exists_utf8(hsp_path::utf8_view path)
-{
-	fs::path fs_path;
-	std::error_code error;
-	return hsp_path_make_fs_path(path.c_str(), fs_path) && fs::exists(fs_path, error) && !error;
-}
 
 int hsp_path_remove_utf8(hsp_path::utf8_view path)
 {
