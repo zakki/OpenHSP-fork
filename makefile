@@ -460,8 +460,8 @@ OBJS_LINEAR_MATH = \
 	src/hsp3dish/extlib/src/LinearMath/btVector3.gpo
 
 TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed
-LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
-LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lcurl -lgpiod -lpthread -lffi
+LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lstdc++fs -lcurl -lgpiod -lpthread -lffi
+LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lstdc++fs -lcurl -lgpiod -lpthread -lffi
 LIBS_GP = \
 	libgameplay.a \
 	libBulletDynamics.a \
@@ -486,7 +486,7 @@ hsp3gp: $(OBJS_GP) $(LIBS_GP)
 	$(CXX) $(CFLAGS_GP) -c $< -o $*.gpo
 
 hspcmp: $(OBJS_CMP)
-	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) $(STRIPFLAGS) -o $@
+	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) $(STRIPFLAGS) -o $@ -lstdc++fs
 %.cmp.o: %.c
 	$(CC) $(CFLAGS_CMP) -c $< -o $@
 %.cmp.o: %.cpp
@@ -497,7 +497,7 @@ hspcmp: $(OBJS_CMP)
 	$(CXX) $(CFLAGS_CMP) -c $< -o $*.o
 
 hsp3cl: $(OBJS_CL)
-	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -lcurl -lgpiod -lpthread -lffi -o $@
+	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -lstdc++fs -lcurl -lgpiod -lpthread -lffi -o $@
 %.o: %.c
 	$(CC) $(CFLAGS_CL) -c $< -o $*.o
 %.o: %.cpp

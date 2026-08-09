@@ -116,14 +116,14 @@ all: $(TARGETS)
 
 .SUFFIXES: .cpp
 hsp3dish: $(OBJS)
-	$(CXX) $(CFLAGS_DISH) $(OBJS) $(LDFLAGS) -s -o $@
+	$(CXX) $(CFLAGS_DISH) $(OBJS) $(LDFLAGS) -lstdc++fs -s -o $@
 %.do: %.c
 	$(CC) $(CFLAGS_DISH) -c $< -o $*.do
 %.do: %.cpp
 	$(CXX) $(CFLAGS_DISH) -c $< -o $*.do
 
 hspcmp: $(OBJS_CMP)
-	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -s -o $@
+	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) -lstdc++fs -s -o $@
 %.cmp.o: %.c
 	$(CC) $(CFLAGS_CMP) -c $< -o $@
 %.cmp.o: %.cpp
@@ -134,7 +134,7 @@ hspcmp: $(OBJS_CMP)
 	$(CXX) $(CFLAGS_CMP) -c $< -o $*.o
 
 hsp3cl: $(OBJS_CL)
-	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -lcurl -s -o $@
+	$(CXX) $(CFLAGS_CL) $(OBJS_CL) -lm -lstdc++ -lstdc++fs -lcurl -s -o $@
 %.o: %.c
 	$(CC) $(CFLAGS_CL) -c $< -o $*.o
 %.o: %.cpp

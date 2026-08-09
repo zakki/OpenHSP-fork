@@ -1,5 +1,6 @@
 CXX ?= c++
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -Werror
+LDLIBS ?= -lstdc++fs
 
 TARGET := test_hsp3pathio
 SOURCES := ../test_hsp3pathio.cpp ../../src/hsp3/hsp3pathio.cpp
@@ -9,7 +10,7 @@ SOURCES := ../test_hsp3pathio.cpp ../../src/hsp3/hsp3pathio.cpp
 all: $(TARGET)
 
 $(TARGET): $(SOURCES)
-	$(CXX) $(CXXFLAGS) -I../../src/hsp3 $(SOURCES) -o $@
+	$(CXX) $(CXXFLAGS) -I../../src/hsp3 $(SOURCES) -o $@ $(LDLIBS)
 
 run: $(TARGET)
 	./$(TARGET)
