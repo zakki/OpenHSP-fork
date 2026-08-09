@@ -317,7 +317,7 @@ int CToken::AddPackfile( char *name, int mode )
 		note.Select( packbuf->GetBuffer() );
 		max = note.GetMaxLine();
 		for( i=0;i<max;i++ ) {
-			note.GetLine( tmp, i );
+			note.GetLine( tmp, i, sizeof(tmp) - 1 );
 			s = tmp;if ( *s=='+' ) s++;
 			if ( strcmp( s, packadd.c_str() ) == 0 ) return -1;
 		}
@@ -372,7 +372,7 @@ int CToken::AddPackfileOrig(char* name, int mode)
 		note.Select(packbuf->GetBuffer());
 		max = note.GetMaxLine();
 		for (i = 0; i < max; i++) {
-			note.GetLine(tmp, i);
+		note.GetLine(tmp, i, sizeof(tmp) - 1);
 			s = tmp; if (*s == '+') s++;
 			if (strcmp(s, packadd.c_str()) == 0) return -1;
 		}
