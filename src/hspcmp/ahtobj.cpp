@@ -900,6 +900,10 @@ int CAht::BuildParts( char *list, const char *path )
 
 	note.Select( list );
 	maxparts = note.GetMaxLine();
+	if (maxparts == 0) {
+		DisposeParts();
+		return 0;
+	}
 	DisposeParts();
 	mem_parts = (AHTPARTS *)mem_ini( sizeof(AHTPARTS) * maxparts );
 	for(i=0;i<maxparts;i++) {
