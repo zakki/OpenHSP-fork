@@ -2219,7 +2219,9 @@ void CToken::GenerateCodePP( char *buf )
 				cg_orgfile = fs::u8path(cg_orgfile_utf8).filename().u8string();
 			}
 			catch (const fs::filesystem_error&) {
-				cg_orgfile = cg_str;
+				size_t separator = cg_orgfile_utf8.find_last_of("/\\");
+				cg_orgfile = separator == std::string::npos
+					? cg_orgfile_utf8 : cg_orgfile_utf8.substr(separator + 1);
 			}
 			if ( cg_debug ) {
 				i = PutDSBuf( cg_str );
