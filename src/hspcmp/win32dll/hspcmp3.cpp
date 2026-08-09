@@ -90,7 +90,10 @@ static int copy_ansi_path_directory_to_utf8(std::string& destination, const char
 	if (!utf8_path) return -1;
 	try {
 		destination = std::filesystem::u8path(utf8_path.c_str()).parent_path().u8string();
-		if (!destination.empty() && destination.back() != '\\') destination.push_back('\\');
+		if (destination.empty() && utf8_path.c_str()[0] != 0) {
+			destination = utf8_path.c_str();
+		}
+		else if (!destination.empty() && destination.back() != '\\') destination.push_back('\\');
 		return 0;
 	}
 	catch (const std::exception&) {
