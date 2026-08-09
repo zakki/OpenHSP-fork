@@ -29,36 +29,10 @@ namespace fs = std::filesystem;
 
 static bool hspcmp_path_component(const char* source, int mode, std::string& result)
 {
-	if (source == NULL) return false;
-	try {
-		std::string text(source);
-		if (mode & 16) {
-			for (char& character : text) {
-				if (character >= 'A' && character <= 'Z') character = (char)(character - 'A' + 'a');
-			}
-		}
-		fs::path path = fs::u8path(text);
-		if (mode & 8) result = path.filename().u8string();
-		else if (mode & 32) {
-			result = path.parent_path().u8string();
-			if (!result.empty() && result.back() != '/' && result.back() != '\\') result.push_back('/');
-		}
-		switch (mode & 7) {
-		case 1:
-			result = (mode & 8) ? path.stem().u8string() : path.replace_extension().u8string();
-			break;
-		case 2:
-			result = path.extension().u8string();
-			break;
-		default:
-			if ((mode & (8 | 32)) == 0) result = path.u8string();
-			break;
-		}
-		return true;
-	}
-	catch (const std::exception&) {
-		return false;
-	}
+	char buffer[HSP_MAX_PATH];
+	if (!hspcmp_getpath(source, buffer, mode)) return false;
+	result = buffer;
+	return true;
 }
 
 static bool hspcmp_join_paths(std::initializer_list<std::string> parts, std::string& output)
