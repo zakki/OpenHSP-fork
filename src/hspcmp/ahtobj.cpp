@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <string>
 
 #include "../hsp3/hsp3config.h"
 #include "../hsp3/strnote.h"
@@ -30,17 +31,6 @@ static int copy_wide_dirinfo_path(char* destination, size_t destination_size, co
 	return 0;
 }
 #endif
-
-static int append_path_text(char* destination, size_t destination_size, const char* text)
-{
-	if (destination == NULL || text == NULL || destination_size == 0) return -1;
-	size_t destination_length = strlen(destination);
-	size_t text_length = strlen(text);
-	if (destination_length >= destination_size ||
-		text_length > destination_size - destination_length - 1) return -1;
-	memcpy(destination + destination_length, text, text_length + 1);
-	return 0;
-}
 
 void dirinfo(char* p, int id)
 {
@@ -912,9 +902,9 @@ int CAht::BuildPartsSub( int id, const char *fname )
 int CAht::BuildParts( char *list, const char *path )
 {
 	int i;
-	char fullpath[256];
 	char fname[256];
 	CStrNote note;
+	if (path == NULL) return -1;
 
 	note.Select( list );
 	maxparts = note.GetMaxLine();
@@ -922,15 +912,10 @@ int CAht::BuildParts( char *list, const char *path )
 	mem_parts = (AHTPARTS *)mem_ini( sizeof(AHTPARTS) * maxparts );
 	for(i=0;i<maxparts;i++) {
 		note.GetLine( fname, i, 255 );
-		fullpath[0] = 0;
-		if (append_path_text(fullpath, sizeof(fullpath), path) != 0 ||
-			append_path_text(fullpath, sizeof(fullpath), fname) != 0) {
-			DisposeParts();
-			maxparts = 0;
-			return -1;
-		}
+		std::string fullpath = path;
+		fullpath += fname;
 		//Alertf( "#%d [%s]",i, fullpath );
-		BuildPartsSub( i, fullpath );
+		BuildPartsSub( i, fullpath.c_str() );
 	}
 	return maxparts;
 }

@@ -6,7 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <cctype>
+#include <string>
 
 #ifdef HSPWIN
 #include <direct.h>
@@ -38,6 +40,30 @@ static int hsp_pack_path_append(char* target, size_t target_size, const char* su
 #define WELCOMEMSG "DPM2 Manager 1.1"
 #define DPMFILEEXT ".dpm"
 #define DPMENCODE_DEFVAL 0
+
+#if ( WIN32 || _WIN32 ) && ! __CYGWIN__
+# define FILEPACK_VSNPRINTF _vsnprintf
+#else
+# define FILEPACK_VSNPRINTF vsnprintf
+#endif
+
+static std::string format_message(const char* format, ...)
+{
+	size_t capacity = 256;
+	while (true) {
+		std::string result(capacity, '\0');
+		va_list args;
+		va_start(args, format);
+		int length = FILEPACK_VSNPRINTF(result.data(), result.size(), format, args);
+		va_end(args);
+		if (length >= 0 && static_cast<size_t>(length) < result.size()) {
+			result.resize(length);
+			return result;
+		}
+		if (length >= 0) capacity = static_cast<size_t>(length) + 1;
+		else capacity *= 2;
+	}
+}
 
 #if HSP_PATHIO_DEFAULT_UTF8
 struct HSPPackDirListContext {
@@ -197,9 +223,7 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 
 	length = hsp3_flength(name);
 	if (length <= 0) {
-		char msg[1024];
-		sprintf(msg, "#File not found [%s]", name);
-		Print(msg);
+		Print(format_message("#File not found [%s]", name).c_str());
 		return -1;
 	}
 
@@ -236,13 +260,11 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 	obj.slot = curnum;
 	obj.crypt = enc_crypt;
 
-	char msg[1024];
 #ifdef HSP64
-	sprintf(msg, "#%d %s (%lld)(%d)", wrtnum, name, length, enc_crypt);
+	Print(format_message("#%d %s (%lld)(%d)", wrtnum, name, length, enc_crypt).c_str());
 #else
-	sprintf(msg, "#%d %s (%d)(%d)", wrtnum, name, length, enc_crypt);
+	Print(format_message("#%d %s (%d)(%d)", wrtnum, name, length, enc_crypt).c_str());
 #endif
-	Print(msg);
 
 	wrtpos += length;
 	wrtnum++;
@@ -485,9 +507,7 @@ int FilePack::ExtractFile( HFPHED *hed, const char *fname, char *savename, int e
 
 	obj = SearchFileObject( hed, fname );
 	if (obj == NULL) {
-		char msg[1024];
-		sprintf(msg, "#Not found [%s](%d).", fname, encode);
-		Print(msg);
+		Print(format_message("#Not found [%s](%d).", fname, encode).c_str());
 		return -1;
 	}
 
@@ -544,9 +564,7 @@ int FilePack::ExtractFile( HFPHED *hed, const char *fname, char *savename, int e
 	_fcloseall();
 #endif
 
-	char msg[1024];
-	sprintf(msg, "#%s extracted.(%d)", sname, bufsize);
-	Print(msg);
+	Print(format_message("#%s extracted.(%d)", sname, bufsize).c_str());
 
 	return 0;
 }
@@ -573,13 +591,11 @@ void FilePack::PrintFiles(void)
 	HFPOBJ* obj;
 	obj = GetCurrentObjectHeader();
 	for (i = 0; i < hed->max_file; i++) {
-		char msg[1024];
 		char name[HFP_PATH_MAX];
 		char foldername[HFP_PATH_MAX];
 		utf8_to_hsp3(name, GetFileName(obj), HFP_PATH_MAX);
 		utf8_to_hsp3(foldername, GetFolderName(obj), HFP_PATH_MAX);
-		sprintf(msg, "#%d [%s%s] %d", i, foldername, name, (int)obj->size);
-		Print(msg);
+		Print(format_message("#%d [%s%s] %d", i, foldername, name, (int)obj->size).c_str());
 		obj++;
 	}
 }
@@ -591,7 +607,7 @@ void FilePack::SetErrorBuffer(CMemBuf* err)
 }
 
 
-void FilePack::Print(char* mes)
+void FilePack::Print(const char* mes)
 {
 	if (errbuf) {
 		errbuf->PutStr(mes);
@@ -622,7 +638,6 @@ int FilePack::MakeEXEFile(int mode, const char* hspexe, const char* basename, in
 	char c;
 	int* ip;
 	int chksum, sum, sumseed, sumsize;
-	char tmp[1024];
 
 	//		HSPランタイムを検索
 	//
@@ -652,8 +667,7 @@ int FilePack::MakeEXEFile(int mode, const char* hspexe, const char* basename, in
 			}
 			fp = hsp3_fopen(hrtfile);
 			if (fp == NULL) {
-				snprintf(tmp, sizeof(tmp), "#No file [%s].", hspexe);
-				Print(tmp);
+				Print(format_message("#No file [%s].", hspexe).c_str());
 				return -1;
 			}
 		}
@@ -675,8 +689,7 @@ int FilePack::MakeEXEFile(int mode, const char* hspexe, const char* basename, in
 		Print("#Not found hsp index.");
 		return -1;
 	}
-	sprintf(tmp, "#Found hsp index in $%05lx/$%05lx.", sidx, x1);
-	Print(tmp);
+	Print(format_message("#Found hsp index in $%05lx/$%05lx.", sidx, x1).c_str());
 
 	//		作成される実行ファイル名
 	//
@@ -708,8 +721,7 @@ int FilePack::MakeEXEFile(int mode, const char* hspexe, const char* basename, in
 	}
 	fp = hsp3_fopen(dpmname);
 	if (fp == NULL) {
-		snprintf(tmp, sizeof(tmp), "#No file [%s].", dpmname);
-		Print(tmp);
+		Print(format_message("#No file [%s].", dpmname).c_str());
 		return -1;
 	}
 	sum = 0; sumsize = 0;
@@ -739,22 +751,19 @@ int FilePack::MakeEXEFile(int mode, const char* hspexe, const char* basename, in
 
 	fp2 = hsp3_fopen(dpmname);
 	if (fp2 == NULL) {
-		snprintf(tmp, sizeof(tmp), "#No file [%s].", dpmname);
-		Print(tmp);
+		Print(format_message("#No file [%s].", dpmname).c_str());
 		return -1;
 	}
 	fp = hsp3_fopen(hrtfile);
 	if (fp == NULL) {
 		hsp3_fclose(fp2);
-		snprintf(tmp, sizeof(tmp), "#No file [%s].", hspexe);
-		Print(tmp);
+		Print(format_message("#No file [%s].", hspexe).c_str());
 		return -1;
 	}
 	fp3 = hsp3_fopenwrite(sname);
 	if (fp3 == NULL) {
 		hsp3_fclose(fp2); hsp3_fclose(fp);
-		snprintf(tmp, sizeof(tmp), "#Write error [%s].", sname);
-		Print(tmp);
+		Print(format_message("#Write error [%s].", sname).c_str());
 		return -1;
 	}
 
@@ -778,7 +787,6 @@ int FilePack::MakeEXEFile(int mode, const char* hspexe, const char* basename, in
 	_fcloseall();
 #endif
 
-	snprintf(tmp, sizeof(tmp), "Make custom execute file [%s].", sname);
-	Print(tmp);
+	Print(format_message("Make custom execute file [%s].", sname).c_str());
 	return 0;
 }

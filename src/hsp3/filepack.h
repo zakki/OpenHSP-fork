@@ -126,7 +126,7 @@ public:
 	HFPOBJ *SearchFileObject(const char* name);
 	void SetErrorBuffer(CMemBuf *err);
 
-	void Print(char* mes);
+	void Print(const char* mes);
 	char *GetString(HFPHED *hed, int ptr);
 	char* GetFileName(HFPOBJ* obj);
 	char* GetFolderName(HFPOBJ* obj);
