@@ -136,8 +136,32 @@ int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_
 	std::string extension = hsp_path_to_utf8(fs_source.extension());
 	std::string name = hsp_path_to_utf8(fs_source.stem());
 	std::string directory = hsp_path_to_utf8(fs_source.parent_path());
+	bool drive_relative = source.size() >= 3 && source[1] == ':' &&
+		source[2] != '/' && source[2] != '\\';
+	if (drive_relative) {
+		directory = source.substr(0, 2);
+		filename = source.substr(2);
+		std::string dot_filename = filename;
+		size_t dot = dot_filename.rfind('.');
+		if (dot == 0) {
+			extension = dot_filename;
+			name.clear();
+		}
+		else {
+			name = dot == std::string::npos ? dot_filename : dot_filename.substr(0, dot);
+			extension = dot == std::string::npos ? std::string() : dot_filename.substr(dot);
+		}
+	}
+	else if (filename.size() > 0 && filename[0] == '.' && filename.find('.', 1) == std::string::npos) {
+		extension = filename;
+		name.clear();
+	}
 	if (!directory.empty() && directory.back() != '/' && directory.back() != '\\') {
-		directory.push_back('/');
+		char separator = '/';
+		for (const char* character = path.c_str(); *character != 0; ++character) {
+			if (*character == '/' || *character == '\\') separator = *character;
+		}
+		if (!drive_relative) directory.push_back(separator);
 	}
 
 	std::string result;
@@ -154,7 +178,11 @@ int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_
 			result = name;
 		}
 		else {
-			result = hsp_path_to_utf8(fs_source.replace_extension());
+			result = source;
+			if (!extension.empty() && result.size() >= extension.size() &&
+				result.compare(result.size() - extension.size(), extension.size(), extension) == 0) {
+				result.erase(result.size() - extension.size());
+			}
 		}
 		break;
 	case 2:
@@ -275,9 +303,14 @@ int hsp_path_file_exists_utf8(hsp_path::utf8_view path)
 int hsp_path_remove_utf8(hsp_path::utf8_view path)
 {
 	fs::path fs_path;
+	if (!hsp_path_make_fs_path(path.c_str(), fs_path)) return -1;
+#if defined(HSPWIN) || defined(_WIN32)
+	return _wremove(fs_path.c_str());
+#else
 	std::error_code error;
-	if (!hsp_path_make_fs_path(path.c_str(), fs_path) || !fs::remove(fs_path, error) || error) return -1;
+	if (!fs::remove(fs_path, error) || error) return -1;
 	return 0;
+#endif
 }
 
 FILE* hsp_path_fopen_utf8(hsp_path::utf8_view path, const char* mode)

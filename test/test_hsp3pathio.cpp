@@ -68,6 +68,20 @@ int main()
 	assert(strcmp(component, ".hsp") == 0);
 	assert(hsp_path_getpath(hsp_path::path_view("dir/日本語-😀.hsp"), component, sizeof(component), 32));
 	assert(strcmp(component, "dir/") == 0);
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view(".bashrc"), component, sizeof(component), 1 | 8));
+	assert(strcmp(component, "") == 0);
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view(".bashrc"), component, sizeof(component), 2));
+	assert(strcmp(component, ".bashrc") == 0);
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view(".bashrc"), component, sizeof(component), 1));
+	assert(strcmp(component, "") == 0);
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:foo.hsp"), component, sizeof(component), 8));
+	assert(strcmp(component, "foo.hsp") == 0);
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:foo.hsp"), component, sizeof(component), 32));
+	assert(strcmp(component, "C:") == 0);
+#if defined(HSPWIN) || defined(_WIN32)
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("dir\\file.hsp"), component, sizeof(component), 32));
+	assert(strcmp(component, "dir\\") == 0);
+#endif
 	assert(!hsp_path_getpath(hsp_path::path_view("dir/日本語-😀.hsp"), component, 4, 8));
 	assert(!hsp_path_getpath_utf8(hsp_path::utf8_view(invalid_utf8), component, sizeof(component), 8));
 	std::string long_path(512, 'a');
