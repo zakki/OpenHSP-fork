@@ -70,6 +70,17 @@ static std::string hspcmp_join_paths(std::initializer_list<std::string> parts)
 	return result.u8string();
 }
 
+static bool hspcmp_is_absolute_path(const char* source)
+{
+	if (source == NULL) return false;
+	size_t length = strlen(source);
+	if (source[0] == '/') return true;
+#ifdef HSPWIN
+	if (source[0] == '\\' || (length >= 2 && source[1] == ':')) return true;
+#endif
+	return false;
+}
+
 }
 
 #ifdef HSPWIN
@@ -292,12 +303,7 @@ int CToken::AddPackfile( char *name, int mode )
 	if (!hspcmp_path_component(name, 32, p_fdir) || !hspcmp_path_component(name, 8, p_fname)) {
 		return hspcmp_pack_path_error;
 	}
-	try {
-		absolutePath = fs::u8path(name).is_absolute();
-	}
-	catch (const std::exception&) {
-		return hspcmp_pack_path_error;
-	}
+	absolutePath = hspcmp_is_absolute_path(name);
 
 	if (absolutePath==false) {
 		fname = hspcmp_join_paths({ search_path, p_fdir, p_fname });
@@ -348,12 +354,7 @@ int CToken::AddPackfileOrig(char* name, int mode)
 	if (!hspcmp_path_component(name, 32, p_fdir) || !hspcmp_path_component(name, 8, p_fname)) {
 		return hspcmp_pack_path_error;
 	}
-	try {
-		absolutePath = fs::u8path(name).is_absolute();
-	}
-	catch (const std::exception&) {
-		return hspcmp_pack_path_error;
-	}
+	absolutePath = hspcmp_is_absolute_path(name);
 
 	if (absolutePath == false) {
 		fname = hspcmp_join_paths({ search_path, p_fdir, p_fname });
