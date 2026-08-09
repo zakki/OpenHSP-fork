@@ -200,16 +200,12 @@ static char *gettvfolder( char *name )
 
 #ifdef HSPWIN
 	static std::string path;
-	std::string module_directory;
-	if (hsp_path_get_module_directory_utf8(module_directory) != 0) return NULL;
-	path = module_directory;
-	path += "\\hsptv\\";
+	std::string utf8_path;
 #ifdef HSPCMP_PATH_UTF8
-	path += name;
+	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::utf8_view(name)) != 0) return NULL;
+	path = utf8_path;
 #else
-	hsp_path::utf8_string utf8_name = hsp_path_from_ansi(hsp_path::ansi_view(name));
-	if (!utf8_name) return NULL;
-	std::string utf8_path = module_directory + "\\hsptv\\" + utf8_name.c_str();
+	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::ansi_view(name)) != 0) return NULL;
 	hsp_path::ansi_string ansi_path = hsp_path_to_ansi(hsp_path::utf8_view(utf8_path.c_str()));
 	if (!ansi_path) return NULL;
 	path = ansi_path.c_str();

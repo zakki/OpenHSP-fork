@@ -397,6 +397,22 @@ hsp_path::ansi_string hsp_path_to_ansi(hsp_path::utf8_view path)
 	return hsp_path::ansi_string(result);
 }
 
+int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::utf8_view name)
+{
+	if (name.c_str() == NULL || !hsp_path_utf8_is_valid((const unsigned char*)name.c_str())) return -1;
+	if (hsp_path_get_module_directory_utf8(result) != 0) return -1;
+	result += "\\hsptv\\";
+	result += name.c_str();
+	return 0;
+}
+
+int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::ansi_view name)
+{
+	hsp_path::utf8_string utf8_name = hsp_path_from_ansi(name);
+	if (!utf8_name) return -1;
+	return hsp_path_get_hsptv_path_utf8(result, utf8_name.as_view());
+}
+
 #else
 
 #include <sys/stat.h>

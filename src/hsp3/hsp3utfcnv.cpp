@@ -220,20 +220,18 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 	if (hsp3_fp == NULL) {
 		//	hsptvフォルダを検索する
 		std::string fn;
-		if (hsp_path_get_module_directory_utf8(fn) == 0) {
-			fn += "\\hsptv\\";
-		#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
-			fn += name;
+#if defined(HSPUTF8)
+		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::utf8_view(name)) == 0)
 			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
-		#else
-			hsp_path::utf8_string utf8_name = hsp_path_from_ansi(hsp_path::ansi_view(name));
-			if (utf8_name) {
-				fn += utf8_name.c_str();
-				hsp_path::ansi_string ansi_fn = hsp_path_to_ansi(hsp_path::utf8_view(fn.c_str()));
-				if (ansi_fn) hsp3_fp = hsp_path_fopen(hsp_path::path_view(ansi_fn.c_str()), "rb");
-			}
-		#endif
+#elif defined(HSPCMP_PATH_UTF8)
+		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::ansi_view(name)) == 0)
+			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
+#else
+		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::ansi_view(name)) == 0) {
+			hsp_path::ansi_string ansi_fn = hsp_path_to_ansi(hsp_path::utf8_view(fn.c_str()));
+			if (ansi_fn) hsp3_fp = hsp_path_fopen(hsp_path::path_view(ansi_fn.c_str()), "rb");
 		}
+#endif
 	}
 
 #endif
