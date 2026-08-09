@@ -405,6 +405,9 @@ EXPORT BOOL hsc3_make ( BMSCR *bm, char *p1, int p2, int p3 )
 	//		hsc3_make "myname"  (type6)
 	//
 	char libpath[HSP_MAX_PATH];
+	char runtime_name[HSP_MAX_PATH];
+	char dpmname[HSP_MAX_PATH + 5];
+	int dpmname_length;
 	int i,type;
 	int opt3a,opt3b;
 	int st;
@@ -412,17 +415,21 @@ EXPORT BOOL hsc3_make ( BMSCR *bm, char *p1, int p2, int p3 )
 	if ( hsc3==NULL ) Alert( "#No way." );
 	hsc3->ResetError();
 
-	strcpy( libpath, p1 );
+	int libpath_length = snprintf(libpath, sizeof(libpath), "%s", p1);
+	if (libpath_length < 0 || (size_t)libpath_length >= sizeof(libpath)) return -1;
 	GetFilePath( libpath );
 
 	i = hsc3->OpenPackfile();
 	if (i) { Alert( "packfileが見つかりません" ); return -1; }
-	if (hsc3->GetPackfileOption( hspexe, sizeof(hspexe), "runtime", "hsprt" ) != 0) {
+	if (hsc3->GetPackfileOption( runtime_name, sizeof(runtime_name), "runtime", "hsprt" ) != 0) {
 		hsc3->ClosePackfile();
 		return -1;
 	}
-	strcat( libpath, hspexe );
-	strcpy( hspexe, libpath );
+	int runtime_path_length = snprintf(hspexe, sizeof(hspexe), "%s%s", libpath, runtime_name);
+	if (runtime_path_length < 0 || (size_t)runtime_path_length >= sizeof(hspexe)) {
+		hsc3->ClosePackfile();
+		return -1;
+	}
 	if (hsc3->GetPackfileOption( fname, sizeof(fname), "name", "hsptmp" ) != 0) {
 		hsc3->ClosePackfile();
 		return -1;
@@ -446,8 +453,11 @@ EXPORT BOOL hsc3_make ( BMSCR *bm, char *p1, int p2, int p3 )
 	st=dpmc_pack( 0 );
 	if ( st ) return -st;
 	st=dpmc_mkexe( type, hspexe, opt1, opt2, opt3 );
-	strcat( fname, ".dpm" );
-	delfile( fname );
+	dpmname_length = snprintf(dpmname, sizeof(dpmname), "%s.dpm", fname);
+	if (dpmname_length < 0 || (size_t)dpmname_length >= sizeof(dpmname)) {
+		return -1;
+	}
+	delfile( dpmname );
 #endif
 #ifdef DPM2_SUPPORT
 	int myseed1,myseed2;
@@ -465,8 +475,11 @@ EXPORT BOOL hsc3_make ( BMSCR *bm, char *p1, int p2, int p3 )
 		return -1;
 	}
 	st = filepack.MakeEXEFile(type, hspexe, fname, myseed2, opt1, opt2, opt3);
-	strcat(fname, ".dpm");
-	delfile( fname );
+	dpmname_length = snprintf(dpmname, sizeof(dpmname), "%s.dpm", fname);
+	if (dpmname_length < 0 || (size_t)dpmname_length >= sizeof(dpmname)) {
+		return -1;
+	}
+	delfile( dpmname );
 #endif
 	return -st;
 }

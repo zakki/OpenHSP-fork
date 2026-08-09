@@ -60,55 +60,70 @@ extern void getpath(char* source, char* output, int mode);
 static bool hsp_path_utf8_is_valid(const unsigned char* text)
 {
 	if (text == NULL) return false;
+	auto valid_continuations = [](const unsigned char* bytes, size_t available, size_t count,
+		unsigned char first_min, unsigned char first_max) {
+		if (available < count) return false;
+		for (size_t i = 0; i < count; ++i) {
+			unsigned char byte = bytes[i];
+			if (byte == 0) return false;
+			if (i == 0) {
+				if (byte < first_min || byte > first_max) return false;
+			}
+			else if (byte < 0x80 || byte > 0xbf) {
+				return false;
+			}
+		}
+		return true;
+	};
 
-	while (*text != 0) {
+	size_t remaining = strlen((const char*)text);
+	while (remaining != 0) {
 		unsigned char c = *text++;
+		--remaining;
 		if (c <= 0x7f) continue;
 
 		if (c >= 0xc2 && c <= 0xdf) {
-			if (text[0] < 0x80 || text[0] > 0xbf) return false;
+			if (!valid_continuations(text, remaining, 1, 0x80, 0xbf)) return false;
 			text += 1;
+			remaining -= 1;
 			continue;
 		}
 
 		if (c == 0xe0) {
-			if (text[0] < 0xa0 || text[0] > 0xbf ||
-				text[1] < 0x80 || text[1] > 0xbf) return false;
+			if (!valid_continuations(text, remaining, 2, 0xa0, 0xbf)) return false;
 			text += 2;
+			remaining -= 2;
 			continue;
 		}
 		if ((c >= 0xe1 && c <= 0xec) || (c >= 0xee && c <= 0xef)) {
-			if (text[0] < 0x80 || text[0] > 0xbf ||
-				text[1] < 0x80 || text[1] > 0xbf) return false;
+			if (!valid_continuations(text, remaining, 2, 0x80, 0xbf)) return false;
 			text += 2;
+			remaining -= 2;
 			continue;
 		}
 		if (c == 0xed) {
-			if (text[0] < 0x80 || text[0] > 0x9f ||
-				text[1] < 0x80 || text[1] > 0xbf) return false;
+			if (!valid_continuations(text, remaining, 2, 0x80, 0x9f)) return false;
 			text += 2;
+			remaining -= 2;
 			continue;
 		}
 
 		if (c == 0xf0) {
-			if (text[0] < 0x90 || text[0] > 0xbf ||
-				text[1] < 0x80 || text[1] > 0xbf ||
-				text[2] < 0x80 || text[2] > 0xbf) return false;
+			if (!valid_continuations(text, remaining, 3, 0x90, 0xbf)) return false;
 			text += 3;
+			remaining -= 3;
 			continue;
 		}
 		if (c >= 0xf1 && c <= 0xf3) {
-			if (text[0] < 0x80 || text[0] > 0xbf ||
-				text[1] < 0x80 || text[1] > 0xbf ||
-				text[2] < 0x80 || text[2] > 0xbf) return false;
+			if (!valid_continuations(text, remaining, 3, 0x80, 0xbf)) return false;
 			text += 3;
+			remaining -= 3;
 			continue;
 		}
 		if (c == 0xf4) {
-			if (text[0] < 0x80 || text[0] > 0x8f ||
-				text[1] < 0x80 || text[1] > 0xbf ||
-				text[2] < 0x80 || text[2] > 0xbf) return false;
+			if (!valid_continuations(text, remaining, 3, 0x80, 0x8f)) return false;
 			text += 3;
+			remaining -= 3;
 			continue;
 		}
 
@@ -139,8 +154,15 @@ int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_
 	bool drive_relative = source.size() >= 2 && source[1] == ':' &&
 		(source.size() == 2 || (source[2] != '/' && source[2] != '\\'));
 	if (drive_relative) {
-		directory = source.substr(0, 2);
-		filename = source.substr(2);
+		size_t separator = source.find_last_of("/\\");
+		if (separator == std::string::npos || separator < 2) {
+			directory = source.substr(0, 2);
+			filename = source.substr(2);
+		}
+		else {
+			directory = source.substr(0, separator + 1);
+			filename = source.substr(separator + 1);
+		}
 		std::string dot_filename = filename;
 		size_t dot = dot_filename.rfind('.');
 		if (dot == 0) {

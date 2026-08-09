@@ -76,16 +76,22 @@ int main()
 	assert(strcmp(component, "") == 0);
 	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:foo.hsp"), component, sizeof(component), 8));
 	assert(strcmp(component, "foo.hsp") == 0);
-	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:foo.hsp"), component, sizeof(component), 32));
-	assert(strcmp(component, "C:") == 0);
 	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:"), component, sizeof(component), 32));
 	assert(strcmp(component, "C:") == 0);
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:dir/foo.hsp"), component, sizeof(component), 8));
+	assert(strcmp(component, "foo.hsp") == 0);
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:dir/foo.hsp"), component, sizeof(component), 32));
+	assert(strcmp(component, "C:dir/") == 0);
 #if defined(HSPWIN) || defined(_WIN32)
 	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("dir\\file.hsp"), component, sizeof(component), 32));
 	assert(strcmp(component, "dir\\") == 0);
 #endif
 	assert(!hsp_path_getpath(hsp_path::path_view("dir/日本語-😀.hsp"), component, 4, 8));
 	assert(!hsp_path_getpath_utf8(hsp_path::utf8_view(invalid_utf8), component, sizeof(component), 8));
+	const char truncated_utf8_3[] = "truncated-\xe2\x82";
+	const char truncated_utf8_4[] = "truncated-\xf0\x9f\x98";
+	assert(!hsp_path_getpath_utf8(hsp_path::utf8_view(truncated_utf8_3), component, sizeof(component), 8));
+	assert(!hsp_path_getpath_utf8(hsp_path::utf8_view(truncated_utf8_4), component, sizeof(component), 8));
 	std::string long_path(512, 'a');
 	long_path += "/long-日本語-😀.hsp";
 	std::vector<char> long_component(long_path.size() + 1, 0);

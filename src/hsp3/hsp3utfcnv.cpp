@@ -224,7 +224,7 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::utf8_view(name)) == 0)
 			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
 #elif defined(HSPCMP_PATH_UTF8)
-		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::ansi_view(name)) == 0)
+		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::utf8_view(name)) == 0)
 			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
 #else
 		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::ansi_view(name)) == 0) {
