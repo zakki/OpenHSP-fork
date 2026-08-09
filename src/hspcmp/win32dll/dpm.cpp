@@ -194,25 +194,24 @@ static long chkfile( char *filename )
 	return filesize;
 }
 
-static char *gettvfolder( char *name )
+static int gettvfolder(std::string& path, char* name)
 {
 	//	get HSPTV resource folder path
 
 #ifdef HSPWIN
-	static std::string path;
 	std::string utf8_path;
 #ifdef HSPCMP_PATH_UTF8
-	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::utf8_view(name)) != 0) return NULL;
+	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::utf8_view(name)) != 0) return -1;
 	path = utf8_path;
 #else
-	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::ansi_view(name)) != 0) return NULL;
+	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::ansi_view(name)) != 0) return -1;
 	hsp_path::ansi_string ansi_path = hsp_path_to_ansi(hsp_path::utf8_view(utf8_path.c_str()));
-	if (!ansi_path) return NULL;
+	if (!ansi_path) return -1;
 	path = ansi_path.c_str();
 #endif
-	return const_cast<char*>(path.c_str());
+	return 0;
 #endif
-	return NULL;
+	return -1;
 }
 
 
@@ -225,10 +224,9 @@ static void cpyfile( FILE *ff, char *filename, int encode )
 
 	ff2 = hsp_path_fopen(hsp_path::path_view(filename), "rb");
 	if (ff2==NULL) {
-		char *name2;
-		name2 = gettvfolder( filename );
-		if ( name2 == NULL ) return;
-		ff2 = hsp_path_fopen(hsp_path::path_view(name2), "rb");
+		std::string name2;
+		if (gettvfolder(name2, filename) != 0) return;
+		ff2 = hsp_path_fopen(hsp_path::path_view(name2.c_str()), "rb");
 		if ( ff2 == NULL ) return;
 	}
 
@@ -382,13 +380,9 @@ static int newfile( int mode )
 
 			res=chkfile(s1);
 			if (res<0) {
-				char *name2;
-				name2 = gettvfolder( s1 );
-				if ( name2 != NULL ) {
-					res = chkfile( name2 );
-					if ( res < 0 ) name2 = NULL;
-				}
-				if ( name2 == NULL ) {
+				std::string name2;
+				bool found = gettvfolder(name2, s1) == 0 && chkfile((char*)name2.c_str()) >= 0;
+				if (!found) {
 					sprintf(tmp,"#No File [%s]\r\n",s1);
 					prt(tmp);efl++;
 					break;
