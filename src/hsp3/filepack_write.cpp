@@ -252,7 +252,7 @@ HSPPTRINT FilePack::RegisterFile(char* name, int pcrypt, int orig)
 }
 
 
-int FilePack::RegisterFromPacklist( char *name, int def_crypt)
+int FilePack::RegisterFromPacklist( const char *name, int def_crypt)
 {
 	//	regist from file list
 	//
@@ -349,7 +349,7 @@ int FilePack::CopyFileToDPM( FILE *ff, char *filename, HFPSIZE psize, int encode
 }
 
 
-int FilePack::SavePackFile( char *name, char *packname, int encode, int opt_encode )
+int FilePack::SavePackFile( const char *name, const char *packname, int encode, int opt_encode )
 {
 	//	HFPファイルを作成
 	//
@@ -470,7 +470,7 @@ int FilePack::SavePackFile( char *name, char *packname, int encode, int opt_enco
 }
 
 
-int FilePack::ExtractFile( HFPHED *hed, char *fname, char *savename, int encode )
+int FilePack::ExtractFile( HFPHED *hed, const char *fname, char *savename, int encode )
 {
 	HFPOBJ *obj;
 	FILE *ff;
@@ -552,7 +552,7 @@ int FilePack::ExtractFile( HFPHED *hed, char *fname, char *savename, int encode 
 }
 
 
-int FilePack::ExtractFile( char *fname, char *savename, int encode )
+int FilePack::ExtractFile( const char *fname, char *savename, int encode )
 {
 	HFPOBJ *obj = SearchFileObject(fname);
 	if (obj == NULL) {
@@ -600,7 +600,7 @@ void FilePack::Print(char* mes)
 }
 
 
-int FilePack::MakeEXEFile(int mode, char* hspexe, char* basename, int deckey, int opt1, int opt2, int opt3 )
+int FilePack::MakeEXEFile(int mode, const char* hspexe, const char* basename, int deckey, int opt1, int opt2, int opt3 )
 {
 	//		EXEファイルにHFPを埋め込み
 	//		mode : 0=normal

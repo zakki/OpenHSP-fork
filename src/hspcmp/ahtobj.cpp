@@ -535,7 +535,7 @@ char *CAht::GetStdBuffer( void )
 }
 
 
-int CAht::LoadProject( char *fname )
+int CAht::LoadProject( const char *fname )
 {
 	FILE *fp;
 	char *p;
@@ -730,7 +730,7 @@ void CAht::SaveProjectSub( AHTMODEL *model )
 }
 
 
-int CAht::SaveProject( char *fname )
+int CAht::SaveProject( const char *fname )
 {
 	FILE *fp;
 	HTPOBJ *obj;
@@ -859,7 +859,7 @@ void CAht::PickLineBuffer( char *out )
 }
 
 
-int CAht::BuildPartsSub( int id, char *fname )
+int CAht::BuildPartsSub( int id, const char *fname )
 {
 	//		簡易ahtパース
 	//
@@ -909,7 +909,7 @@ int CAht::BuildPartsSub( int id, char *fname )
 }
 
 
-int CAht::BuildParts( char *list, char *path )
+int CAht::BuildParts( char *list, const char *path )
 {
 	int i;
 	char fullpath[256];
@@ -980,7 +980,7 @@ void CAht::DisposeMakeBuffer( void )
 }
 
 
-int CAht::SaveMakeBuffer( char *fname )
+int CAht::SaveMakeBuffer( const char *fname )
 {
 	//		初期化スクリプトバッファ+スクリプトバッファを保存
 	//

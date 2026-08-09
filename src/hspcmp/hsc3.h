@@ -5,6 +5,8 @@
 #ifndef __hsc3_h
 #define __hsc3_h
 
+#include <string>
+
 #define HSC3TITLE "HSP script preprocessor"
 #define HSC3TITLE2 "HSP code generator"
 
@@ -47,13 +49,13 @@ public:
 	char *GetError( void );
 	int GetErrorSize( void );
 	void ResetError( void );
-	int PreProcess( char *fname, char *outname, int option, char *rname, void *ahtoption=NULL );
-	int PreProcessAht( char *fname, void *ahtoption, int mode=0 );
+	int PreProcess( const char *fname, const char *outname, int option, const char *rname, void *ahtoption=NULL );
+	int PreProcessAht( const char *fname, void *ahtoption, int mode=0 );
 	void PreProcessEnd( void );
-	int Compile(char* fname, char* outname, int mode);
-	int CompileStrMap(char* fname, char* outname, int mode);
-	int CompileLabelOut(char* fname, int mode);
-	void SetCommonPath( char *path );
+	int Compile(const char* fname, const char* outname, int mode);
+	int CompileStrMap(const char* fname, const char* outname, int mode);
+	int CompileLabelOut(const char* fname, int mode);
+	void SetCommonPath( const char* path );
 
 	//		Service
 	void Print(char* mes);
@@ -61,10 +63,11 @@ public:
 	int OpenPackfile( void );
 	void ClosePackfile( void );
 	int GetPackfileOption( char *out, int out_size, char *keyword, char *defval );
+	int GetPackfileOption( std::string& out, const char* keyword, const char* defval );
 	int GetPackfileOptionInt( char *keyword, int defval );
-	int GetRuntimeFromHeader( char *fname, char *res );
-	int SaveOutbuf( char *fname );
-	int SaveAHTOutbuf( char *fname );
+	int GetRuntimeFromHeader( const char *fname, char *res );
+	int SaveOutbuf( const char *fname );
+	int SaveAHTOutbuf( const char *fname );
 	int GetHeaderOption(void);
 
 	//		Analyse
@@ -89,7 +92,7 @@ private:
 	int process_option;
 	void AddSystemMacros( CToken *tk, int option );
 
-	char common_path[512];			// common path
+	std::string common_path;			// common path
 
 	//		for Header info
 	int hed_option;

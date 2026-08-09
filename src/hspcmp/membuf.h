@@ -51,8 +51,8 @@ public:
 	void PutCR( void );
 	void PutData( void *data, int sz );
 	void PutStrf( char *format, ... );
-	int PutFile( char *fname );
-	int SaveFile( char *fname );
+	int PutFile( const char *fname );
+	int SaveFile( const char *fname );
 	char *GetFileName( void );
 	int GetSize( void ) { return cur; }
 	void ReduceSize( int new_cur );

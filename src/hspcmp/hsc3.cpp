@@ -123,7 +123,7 @@ CHsc3::CHsc3( void )
 	anabuf = NULL;
 	lb_info = NULL;
 	addkw = NULL;
-	common_path[0] = 0;
+	common_path.clear();
 	analyse_mode = 0;
 	analyse_line = 0;
 	analyse_caseflag = 0;
@@ -179,7 +179,7 @@ void CHsc3::AddSystemMacros( CToken *tk, int option )
 }
 
 
-int CHsc3::PreProcessAht( char *fname, void *ahtoption, int mode )
+int CHsc3::PreProcessAht( const char *fname, void *ahtoption, int mode )
 {
 	//		Preprocess execute (AHT)
 	//		(終了時にPreProcessEndを呼ぶこと)
@@ -191,7 +191,7 @@ int CHsc3::PreProcessAht( char *fname, void *ahtoption, int mode )
 	lb_info = NULL;
 	ahtbuf = NULL;
 	tk.SetErrorBuf( errbuf );
-	tk.SetCommonPath( common_path );
+	tk.SetCommonPath( common_path.c_str() );
 	tk.SetAHT( (AHTMODEL *)ahtoption );
 	outbuf = new CMemBuf;
 
@@ -214,7 +214,7 @@ int CHsc3::PreProcessAht( char *fname, void *ahtoption, int mode )
 	問題なさそう、一応対処。
 */
 
-int CHsc3::PreProcess( char *fname, char *outname, int option, char *rname, void *ahtoption )
+int CHsc3::PreProcess( const char *fname, const char *outname, int option, const char *rname, void *ahtoption )
 {
 	//		Preprocess execute
 	//		(終了時にPreProcessEndを呼ぶこと)
@@ -237,7 +237,7 @@ int CHsc3::PreProcess( char *fname, char *outname, int option, char *rname, void
 	ahtbuf = NULL;
 
 	tk.SetErrorBuf( errbuf );
-	tk.SetCommonPath( common_path );
+	tk.SetCommonPath( common_path.c_str() );
 	tk.LabelRegist2( hsp_prestr );
 	AddSystemMacros( &tk, option );
 
@@ -349,7 +349,7 @@ int CHsc3::GetHeaderOption(void)
 }
 
 
-int CHsc3::Compile( char *fname, char *outname, int mode )
+int CHsc3::Compile( const char *fname, const char *outname, int mode )
 {
 	//		Compile
 	//
@@ -367,7 +367,7 @@ int CHsc3::Compile( char *fname, char *outname, int mode )
 	if ( lb_info != NULL ) tk.SetLabelInfo( lb_info );		// プリプロセッサのラベル情報
 
 	tk.SetErrorBuf( errbuf );
-	tk.SetCommonPath( common_path );
+	tk.SetCommonPath( common_path.c_str() );
 	tk.LabelRegist( hsp_prestr, 1 );
 	tk.SetHeaderOption( hed_option, hed_runtime );
 	tk.SetCmpOption( cmpopt );
@@ -396,22 +396,21 @@ int CHsc3::Compile( char *fname, char *outname, int mode )
 }
 
 
-int CHsc3::CompileStrMap(char* fname, char* outname, int mode)
+int CHsc3::CompileStrMap(const char* fname, const char* outname, int mode)
 {
 	return Compile(fname, outname, mode | HSC3_MODE_STRMAP);
 }
 
 
-int CHsc3::CompileLabelOut(char* fname, int mode)
+int CHsc3::CompileLabelOut(const char* fname, int mode)
 {
 	return Compile(fname, "", mode | HSC3_MODE_LABOUT);
 }
 
 
-void CHsc3::SetCommonPath( char *path )
+void CHsc3::SetCommonPath( const char *path )
 {
-	if ( path==NULL ) { common_path[0]=0; return; }
-	strcpy( common_path, path );
+	common_path = path != NULL ? path : "";
 }
 
 
@@ -422,7 +421,7 @@ int CHsc3::GetCmdList( int option, char* match )
 	CMemBuf outbuf;
 
 	tk.SetErrorBuf(errbuf);
-	tk.SetCommonPath(common_path);
+	tk.SetCommonPath(common_path.c_str());
 	tk.LabelRegist3(hsp_prestr);			// 標準キーワード
 	tk.LabelRegist3(hsp_prepp);			// プリプロセッサキーワード
 	AddSystemMacros(&tk, option);
@@ -474,6 +473,25 @@ int CHsc3::GetPackfileOption( char *out, int out_size, char *keyword, char *defv
 	return 0;
 }
 
+int CHsc3::GetPackfileOption(std::string& out, const char* keyword, const char* defval)
+{
+	if (keyword == NULL || defval == NULL || pfbuf == NULL) return -1;
+	out = defval;
+	CStrNote note;
+	note.Select(pfbuf->GetBuffer());
+	for (int i = 0; i < note.GetMaxLine(); ++i) {
+		char* line = note.GetLineDirect(i);
+		std::string text = line != NULL ? line : "";
+		note.ResumeLineDirect();
+		if (text.size() < 2 || text[0] != ';' || text[1] != '!') continue;
+		size_t separator = text.find('=', 2);
+		if (separator != std::string::npos && text.compare(2, separator - 2, keyword) == 0) {
+			out = text.substr(separator + 1);
+		}
+	}
+	return 0;
+}
+
 
 int CHsc3::GetPackfileOptionInt( char *keyword, int defval )
 {
@@ -492,7 +510,7 @@ void CHsc3::ClosePackfile( void )
 }
 
 
-int CHsc3::GetRuntimeFromHeader( char *fname, char *res )
+int CHsc3::GetRuntimeFromHeader( const char *fname, char *res )
 {
 	FILE *fp;
 	HSPHED hsphed;
@@ -529,7 +547,7 @@ int CHsc3::GetRuntimeFromHeader( char *fname, char *res )
 }
 
 
-int CHsc3::SaveOutbuf( char *fname )
+int CHsc3::SaveOutbuf( const char *fname )
 {
 	int res;
 	res = outbuf->SaveFile( fname );
@@ -540,7 +558,7 @@ int CHsc3::SaveOutbuf( char *fname )
 }
 
 
-int CHsc3::SaveAHTOutbuf( char *fname )
+int CHsc3::SaveAHTOutbuf( const char *fname )
 {
 	int res;
 	res = ahtbuf->SaveFile( fname );

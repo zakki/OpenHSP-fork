@@ -119,10 +119,10 @@ public:
 
 	//		Reference
 	void SetId( int val ) { id = val; }
-	void SetSource( char *filename );
-	void SetSourcePath( char *filename );
+	void SetSource( const char *filename );
+	void SetSourcePath( const char *filename );
 
-	void SetName( char *name );
+	void SetName( const char *name );
 	void SetClass( char *name );
 	void SetAuthor( char *name );
 	void SetVersion( char *name );

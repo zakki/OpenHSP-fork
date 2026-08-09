@@ -490,7 +490,7 @@ static int newfile( int mode )
 }
 
 
-static int makexe( int mode, char *hspexe, int opt1, int opt2, int opt3 )
+static int makexe( int mode, const char *hspexe, int opt1, int opt2, int opt3 )
 {
 	//	make custom EXE file
 	//		mode : 0=normal
@@ -632,7 +632,7 @@ static int makexe( int mode, char *hspexe, int opt1, int opt2, int opt3 )
 
 /*----------------------------------------------------------*/
 
-void dpmc_ini( CMemBuf *mesbuf, char *infile )
+void dpmc_ini( CMemBuf *mesbuf, const char *infile )
 {
 	prtini(mesbuf);
 	strcpy(fname,infile);
@@ -655,7 +655,7 @@ int dpmc_pack( int mode )
 	return 0;
 }
 
-int dpmc_mkexe( int mode, char *hspexe, int opt1, int opt2, int opt3 )
+int dpmc_mkexe( int mode, const char *hspexe, int opt1, int opt2, int opt3 )
 {
 	if ( makexe(mode,hspexe,opt1,opt2,opt3) ) return 1;
 	return 0;

@@ -296,7 +296,7 @@ void CMemBuf::PutStrf( char *format, ... )
 }
 
 
-int CMemBuf::PutFile( char *fname )
+int CMemBuf::PutFile( const char *fname )
 {
 	//		バッファに指定ファイルの内容を追加
 	//		(return:ファイルサイズ(-1=error))
@@ -447,7 +447,7 @@ int CMemBuf::SearchIndexedData(char* data, int size)
 }
 
 
-int CMemBuf::SaveFile( char *fname )
+int CMemBuf::SaveFile( const char *fname )
 {
 	//		バッファをファイルにセーブ
 	//		(return:ファイルサイズ(-1=error))

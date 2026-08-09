@@ -19,8 +19,9 @@
 #endif
 #include <string.h>
 #include <ctype.h>
-#ifdef HSPWIN
+#include <filesystem>
 #include <string>
+#ifdef HSPWIN
 #include <vector>
 #include "../hsp3/hsp3pathio.h"
 #endif
@@ -32,26 +33,28 @@
 #include "token.h"
 #include "hsmanager.h"
 
-static int copy_command_path(char* destination, size_t destination_size, const char* source)
+namespace {
+
+namespace fs = std::filesystem;
+
+static void cutext(std::string& path)
 {
-	size_t length;
-	if (destination == NULL || source == NULL || destination_size == 0) return -1;
-	length = strlen(source);
-	if (length >= destination_size) return -1;
-	memcpy(destination, source, length + 1);
-	return 0;
+	fs::path fs_path = fs::u8path(path);
+	fs_path.replace_extension();
+	path = fs_path.u8string();
 }
 
-static int append_command_text(char* destination, size_t destination_size, const char* suffix)
+static void addext(std::string& path, const char* extension)
 {
-	size_t destination_length;
-	size_t suffix_length;
-	if (destination == NULL || suffix == NULL || destination_size == 0) return -1;
-	destination_length = strlen(destination);
-	suffix_length = strlen(suffix);
-	if (destination_length >= destination_size || suffix_length >= destination_size - destination_length) return -1;
-	memcpy(destination + destination_length, suffix, suffix_length + 1);
-	return 0;
+	fs::path fs_path = fs::u8path(path);
+	if (fs_path.extension().empty()) {
+		std::string suffix = ".";
+		suffix += extension;
+		fs_path += suffix;
+	}
+	path = fs_path.u8string();
+}
+
 }
 
 /*----------------------------------------------------------*/
@@ -102,12 +105,12 @@ int main( int argc, char *argv[] )
 	char *opt_lk = NULL;
 	char *opt_ls = NULL;
 	int opt_lsref, opt_lsmode;
-	char fname[HSP_MAX_PATH];
-	char fname2[HSP_MAX_PATH];
-	char oname[HSP_MAX_PATH];
-	char compath[HSP_MAX_PATH];
-	char syspath[HSP_MAX_PATH];
-	char helpkey[256];
+	std::string fname;
+	std::string fname2;
+	std::string oname;
+	std::string compath;
+	std::string syspath;
+	std::string helpkey;
 	CHsc3 *hsc3=NULL;
 
 #ifdef HSPWIN
@@ -126,16 +129,10 @@ int main( int argc, char *argv[] )
 
 	st = 0; ppopt = 0; cmpopt = 0; utfopt = 0; pponly = 0; strmap = 0; hsphelp = 0; opt_lsref = 0; opt_lsmode = 0; hsp64 = 1;
 	execobj = 0;
-	fname[0]=0;
-	fname2[0]=0;
-	oname[0]=0;
-	syspath[0]=0;
-	helpkey[0] = 0;
-
 #ifdef HSPLINUX
-	strcpy( compath,"common/" );
+	compath = "common/";
 #else
-	strcpy( compath,"common\\" );
+	compath = "common\\";
 #endif
 
 	for (b=1;b<argc;b++) {
@@ -150,24 +147,15 @@ int main( int argc, char *argv[] )
 #else
 		if ((a1!='/')&&(a1!='-')) {
 #endif
-			if (copy_command_path(fname, sizeof(fname), arg) != 0) {
-				printf("Source path is too long.\n");
-				return 1;
-			}
+			fname = arg;
 		} else {
 			a3=tolower(*(arg+2));
 			if (strncmp(arg, "--compath=", 10) == 0) {
-				if (copy_command_path(compath, sizeof(compath), arg + 10) != 0) {
-					printf("Common path is too long.\n");
-					return 1;
-				}
+				compath = arg + 10;
 				continue;
 			}
 			if (strncmp(arg, "--syspath=", 10) == 0) {
-				if (copy_command_path(syspath, sizeof(syspath), arg + 10) != 0) {
-					printf("System path is too long.\n");
-					return 1;
-				}
+				syspath = arg + 10;
 				continue;
 			}
 			switch (a2) {
@@ -190,10 +178,7 @@ int main( int argc, char *argv[] )
 			case 'm':
 				ppopt |= HSC3_OPT_EMSCRIPTEN; break;
 			case 'o':
-				if (copy_command_path(oname, sizeof(oname), arg + 2) != 0) {
-					printf("Output path is too long.\n");
-					return 1;
-				}
+				oname = arg + 2;
 				break;
 			case 'e':
 				execobj = 1;
@@ -205,7 +190,7 @@ int main( int argc, char *argv[] )
 				break;
 			case 'h':
 				hsphelp = 1;
-				strcpy(helpkey, arg + 2);
+				helpkey = arg + 2;
 				break;
 			case 'l':
 				if (a3 == 'k') {
@@ -245,20 +230,17 @@ int main( int argc, char *argv[] )
 	if (hsphelp) {
 		int res;
 		HspHelpManager hman;
-		if (append_command_text(syspath, sizeof(syspath), "hsphelp") != 0) {
-			printf("Help path is too long.\n");
-			return 1;
-		}
-		res = hman.initalize(syspath);
+		syspath += "hsphelp";
+		res = hman.initalize(syspath.c_str());
 		if (res == 0) {
-			res = hman.searchIndex(helpkey);
+			res = hman.searchIndex(helpkey.c_str());
 		}
 		puts(hman.getMessage());
 		return res;
 	}
 
 	hsc3 = new CHsc3;
-	hsc3->SetCommonPath(compath);
+	hsc3->SetCommonPath(compath.c_str());
 
 	//		keyword main
 	if (opt_lk) {
@@ -269,25 +251,21 @@ int main( int argc, char *argv[] )
 		return st;
 	}
 
-	if (fname[0]==0) { printf("No file name selected.\n");return 1; }
+	if (fname.empty()) { printf("No file name selected.\n");return 1; }
 
-	if (oname[0]==0) {
-		if (copy_command_path(oname, sizeof(oname), fname) != 0) return 1;
+	if (oname.empty()) {
+		oname = fname;
 		cutext( oname );
 		if (strmap) {
-			if (strlen(oname) + strlen("strmap") + 2 > sizeof(oname)) return 1;
 			addext(oname, "strmap");
 		}
 		else {
-			if (strlen(oname) + strlen("ax") + 2 > sizeof(oname)) return 1;
 			addext(oname, "ax");
 		}
 	}
-	if (copy_command_path(fname2, sizeof(fname2), fname) != 0) return 1;
+	fname2 = fname;
 	cutext( fname2 );
-	if (strlen(fname2) + 2 >= sizeof(fname2)) return 1;
 	addext( fname2,"i" );
-	if (strlen(fname) + strlen("hsp") + 2 > sizeof(fname)) return 1;
 	addext( fname,"hsp" );			// 拡張子がなければ追加する
 
 	//		HSP64 check
@@ -301,14 +279,14 @@ int main( int argc, char *argv[] )
 
 		//		通常のコンパイル
 		hsc3->InitAnalysisInfo(opt_lsmode | opt_lsref, opt_ls);
-		st = hsc3->PreProcess(fname, fname2, ppopt, fname);
+		st = hsc3->PreProcess(fname.c_str(), fname2.c_str(), ppopt, fname.c_str());
 		if ((pponly == 0) && (st == 0)) {
 			if (hsp64) {
 				if (hsc3->GetHeaderOption() & HEDINFO_HSP64) {
 					cmpopt |= HSC3_MODE_RUNTIME64 | HSC3_MODE_UTF8;
 				}
 			}
-			st = hsc3->CompileLabelOut(fname2, cmpopt);
+			st = hsc3->CompileLabelOut(fname2.c_str(), cmpopt);
 		}
 		if (st >= 0) {
 			puts(hsc3->GetAnalysisInfo());
@@ -326,28 +304,28 @@ int main( int argc, char *argv[] )
 
 	if ( execobj ) {
 		//		ランタイムを起動
-		char execmd[4096];
-		st = hsc3->GetRuntimeFromHeader( fname, oname );
+		std::string execmd;
+		std::string runtime_name(HSP_MAX_PATH, '\0');
+		st = hsc3->GetRuntimeFromHeader( fname.c_str(), runtime_name.data() );
 		if ( st != 1 ) {
-			strcpy( oname, "hsp3.exe" );			// デフォルトランタイム
+			oname = "hsp3.exe";			// デフォルトランタイム
+		}
+		else {
+			runtime_name.resize(strlen(runtime_name.c_str()));
+			oname = runtime_name;
 		}
 
 #if defined(HSPLINUX)||defined(HSPMAC)
 		cutext( oname );
 		if ( execobj & 8 ) {
-			printf("Runtime[%s].\n",oname);
+			printf("Runtime[%s].\n",oname.c_str());
 		} else {
 			int result;
-			int command_length;
-			printf("Execute from %s runtime[%s](%d).\n",fname,oname,execobj);
-			command_length = snprintf(execmd, sizeof(execmd), "%s./%s %s", syspath, oname, fname);
-			if (command_length < 0 || (size_t)command_length >= sizeof(execmd)) {
-				printf("Runtime command is too long.\n");
-				return 1;
-			}
+			printf("Execute from %s runtime[%s](%d).\n",fname.c_str(),oname.c_str(),execobj);
+			execmd = syspath + "./" + oname + " " + fname;
 			//sprintf(execmd,"%s./%s %s >%s.hspres",syspath,oname,fname,syspath);
 			
-			result = system(execmd);
+			result = system(execmd.c_str());
 			if ( WIFEXITED(result) ) {
 				result = WEXITSTATUS(result);
 				printf("hsed: Process end %d.\n",result);
@@ -365,16 +343,10 @@ int main( int argc, char *argv[] )
 		}
 #else
 		if ( execobj & 8 ) {
-			printf("Runtime[%s].\n",oname);
+			printf("Runtime[%s].\n",oname.c_str());
 		} else {
-			int command_length = snprintf(execmd, sizeof(execmd), "%s %s", oname, fname);
-			if (command_length < 0 || (size_t)command_length >= sizeof(execmd)) {
-				printf("Runtime command is too long.\n");
-				st = -1;
-			}
-			else {
-				st = hsp_path_exec_utf8( hsp_path::utf8_view(execmd) );
-			}
+			execmd = oname + " " + fname;
+			st = hsp_path_exec_utf8( hsp_path::utf8_view(execmd.c_str()) );
 			if ( st < 32 ) {
 				printf("Runtime file missing.\n");
 			}
@@ -383,14 +355,14 @@ int main( int argc, char *argv[] )
 
 	} else {
 		//		通常のコンパイル
-		st = hsc3->PreProcess( fname, fname2, ppopt, fname );
+		st = hsc3->PreProcess( fname.c_str(), fname2.c_str(), ppopt, fname.c_str() );
 		if (( pponly == 0 )&&( st == 0 )) {
 			if (hsp64) {
 				if (hsc3->GetHeaderOption() & HEDINFO_HSP64) {
 					cmpopt |= HSC3_MODE_RUNTIME64 | HSC3_MODE_UTF8;
 				}
 			}
-			st = hsc3->Compile( fname2, oname, cmpopt );
+			st = hsc3->Compile( fname2.c_str(), oname.c_str(), cmpopt );
 		}
 		puts( hsc3->GetError() );
 		hsc3->PreProcessEnd();

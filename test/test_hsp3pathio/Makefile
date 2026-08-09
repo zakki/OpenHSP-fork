@@ -1,5 +1,5 @@
 CXX ?= c++
-CXXFLAGS ?= -std=c++11 -Wall -Wextra -Werror
+CXXFLAGS ?= -std=c++17 -Wall -Wextra -Werror
 
 TARGET := test_hsp3pathio
 SOURCES := ../test_hsp3pathio.cpp ../../src/hsp3/hsp3pathio.cpp

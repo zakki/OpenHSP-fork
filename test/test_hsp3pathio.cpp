@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <type_traits>
+#include <string>
+#include <vector>
 
 #include "../src/hsp3/hsp3pathio.h"
 
@@ -68,6 +70,12 @@ int main()
 	assert(strcmp(component, "dir/") == 0);
 	assert(!hsp_path_getpath(hsp_path::path_view("dir/日本語-😀.hsp"), component, 4, 8));
 	assert(!hsp_path_getpath_utf8(hsp_path::utf8_view(invalid_utf8), component, sizeof(component), 8));
+	std::string long_path(512, 'a');
+	long_path += "/long-日本語-😀.hsp";
+	std::vector<char> long_component(long_path.size() + 1, 0);
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view(long_path.c_str()),
+		long_component.data(), long_component.size(), 8));
+	assert(strcmp(long_component.data(), "long-日本語-😀.hsp") == 0);
 
 	assert(hsp_path_remove(hsp_path::path_view(path)) == 0);
 	assert(!hsp_path_file_exists(hsp_path::path_view(path)));
