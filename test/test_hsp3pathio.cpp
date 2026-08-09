@@ -78,6 +78,8 @@ int main()
 	assert(strcmp(component, "foo.hsp") == 0);
 	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:foo.hsp"), component, sizeof(component), 32));
 	assert(strcmp(component, "C:") == 0);
+	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:"), component, sizeof(component), 32));
+	assert(strcmp(component, "C:") == 0);
 #if defined(HSPWIN) || defined(_WIN32)
 	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("dir\\file.hsp"), component, sizeof(component), 32));
 	assert(strcmp(component, "dir\\") == 0);

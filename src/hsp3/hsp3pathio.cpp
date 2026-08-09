@@ -136,8 +136,8 @@ int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_
 	std::string extension = hsp_path_to_utf8(fs_source.extension());
 	std::string name = hsp_path_to_utf8(fs_source.stem());
 	std::string directory = hsp_path_to_utf8(fs_source.parent_path());
-	bool drive_relative = source.size() >= 3 && source[1] == ':' &&
-		source[2] != '/' && source[2] != '\\';
+	bool drive_relative = source.size() >= 2 && source[1] == ':' &&
+		(source.size() == 2 || (source[2] != '/' && source[2] != '\\'));
 	if (drive_relative) {
 		directory = source.substr(0, 2);
 		filename = source.substr(2);
