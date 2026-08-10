@@ -184,7 +184,9 @@ class Suite:
     def execute(self, case_id: str, operation: str, character_class: str,
                 locus: str, source: str, initial: dict[str, bytes],
                 expected: dict[str, bool], run_dir_name: str = "run",
-                ax_dir_name: str = "build", dpm_builder=None) -> None:
+                ax_dir_name: str = "build", dpm_builder=None,
+                run_argument: Optional[str] = None,
+                expected_rejection: bool = False) -> None:
         rel = Path(self.target.name) / case_id
         artifact = self.output / rel
         artifact.mkdir(parents=True, exist_ok=True)
@@ -225,17 +227,28 @@ class Suite:
                 ax_path = ax_dir / "case.ax"
                 if ax_path != ax_build:
                     shutil.copy2(ax_build, ax_path)
-                run_command = [self.target.runtime, ax_path]
+                argument = str(ax_path) if run_argument is None else run_argument
+                run_command = [self.target.runtime, argument]
                 executed = run(run_command, run_dir)
                 run_code = executed.returncode
                 (artifact / "runtime.bin").write_bytes(executed.stdout)
                 (artifact / "runtime.txt").write_text(log_text(executed.stdout), encoding="utf-8")
                 stage = "runtime"
                 problems = []
-                if run_code:
-                    problems.append(f"runtime exited with {run_code}")
-                if b"RESULT PASS" not in executed.stdout:
-                    problems.append("RESULT PASS marker missing")
+                if expected_rejection:
+                    if run_code == 0xFFFFFFFF:
+                        status = "KNOWN_LIMITATION"
+                        detail = "rejected safely with -1"
+                    elif run_code is not None and run_code >= 0xC0000000:
+                        status = "CRASH"
+                        detail = f"unsafe Windows exception exit 0x{run_code:08X}"
+                    else:
+                        problems.append(f"expected safe -1 rejection, got {run_code}")
+                else:
+                    if run_code:
+                        problems.append(f"runtime exited with {run_code}")
+                    if b"RESULT PASS" not in executed.stdout:
+                        problems.append("RESULT PASS marker missing")
                 for name, should_exist in expected.items():
                     present = (run_dir / name).is_file()
                     if present != should_exist:
@@ -256,8 +269,9 @@ class Suite:
                     if (run_dir / "copied.dat").read_bytes() != b"DPM_ASSET":
                         problems.append("DPM copy did not take precedence over disk file")
                 if problems:
+                    status = "FAIL"
                     detail = "; ".join(problems)
-                else:
+                elif not expected_rejection:
                     status, detail = "PASS", "all checks passed"
         except Exception as error:
             status, stage, detail = "INFRA", stage, f"{type(error).__name__}: {error}"
@@ -293,7 +307,7 @@ class Suite:
     def boundary_cases(self) -> None:
         for cls, token in TOKENS.items():
             if self.target.source_encoding == "cp932" and not cp932_ok(token):
-                for locus in ("cwd", "ax-path"):
+                for locus in ("cwd", "ax-path", "ax-path-space"):
                     self.unsupported(f"launch-{locus}-{cls}", "launch", cls, locus,
                                      "path is not representable by the baseline encoding")
                 continue
@@ -302,6 +316,25 @@ class Suite:
                          run_dir_name=token)
             self.execute(f"launch-ax-path-{cls}", "launch", cls, "ax-path", source, {}, {},
                          ax_dir_name=token)
+            self.execute(f"launch-ax-path-space-{cls}", "launch", cls, "ax-path-space",
+                         source, {}, {}, ax_dir_name="space " + token,
+                         expected_rejection=not self.target.utf8_input)
+
+        # Long arguments are known inputs and must be rejected without crashing
+        # or hanging, even when the referenced AX does not exist.
+        for length in (261, 512, 1024, 4094, 4096):
+            argument = "A" * (length - 3) + ".ax"
+            self.execute(f"launch-limit-ascii-{length}", "launch-limit", "ascii",
+                         "argument-length", 'mes "RESULT PASS"\nend\n', {}, {},
+                         run_argument=argument, expected_rejection=True)
+
+        # This existing path remains below the Windows character limit and the
+        # baseline CP932 byte limit, while exceeding the current UTF-8 byte cap.
+        long_component = "日" * 70
+        self.execute("launch-limit-multibyte-existing", "launch-limit", "cp932",
+                     "utf8-byte-length", 'mes "RESULT PASS"\nend\n', {}, {},
+                     ax_dir_name=long_component,
+                     expected_rejection=self.target.utf8_input)
 
     def make_dpm(self, token: str, automatic: bool):
         asset_name = token + ".txt"
@@ -368,6 +401,10 @@ def compare(baseline: list[Result], candidate: list[Result]) -> list[dict[str, s
             verdict = "REGRESSION"
         elif cs == "PASS":
             verdict = "IMPROVEMENT"
+        elif bs in ("FAIL", "CRASH") and cs == "KNOWN_LIMITATION":
+            verdict = "IMPROVEMENT"
+        elif bs == "KNOWN_LIMITATION" and cs in ("FAIL", "CRASH"):
+            verdict = "REGRESSION"
         else:
             verdict = "SHARED_LIMITATION"
         rows.append({"case_id": case_id, "baseline": bs, "candidate": cs, "verdict": verdict})

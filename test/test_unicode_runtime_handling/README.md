@@ -20,6 +20,12 @@ names. They exercise `bload`, `bsave`, offsets, `noteload`, `notesave`, `exist`,
 `bcopy`, `delete`, `mkdir`, `chdir`, and `dirlist`, plus Unicode working
 directories and AX launch paths.
 
+Launch-boundary cases also cover spaces, safely rejected missing arguments at
+261/512/1024/4094/4096 bytes, and an existing multibyte path that fits the
+legacy CP932 limit but exceeds the development runtime's current UTF-8 byte
+limit. Expected `-1` rejection is recorded as `KNOWN_LIMITATION`; a timeout,
+access violation, or stack-corruption exit remains a failure.
+
 Normal DPM files are built separately by each target's own compiler. Explicit
 `chdpm` and automatic `data.dpm` loading exercise `exist`, `bload`, and `bcopy`
 from packed assets. Cross-version and encrypted-DPM compatibility are outside

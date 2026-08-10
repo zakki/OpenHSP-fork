@@ -273,15 +273,9 @@ int hsp3cl_init( char *startfile )
 	h_dbgwin = NULL;
 	dbgwnd = NULL;
 
-	ss = strsp_cmds( startfile );
-	i = (int)( ss - startfile );
-	ss = startfile;
-	if ( i > 0 && ss[i-1] == 32 ) i--;
-	if ( *ss == 0x22 ) {
-		ss++;i-=2;
-	}
-	if ( i < 0 || i > _MAX_PATH ) return -1;
-	strncpy( fname, ss, i );
+	i = startfile == NULL ? 0 : (int)strlen(startfile);
+	if ( i > _MAX_PATH ) return -1;
+	if ( i > 0 ) memcpy(fname, startfile, (size_t)i);
 	fname[i] = 0;
 	hsp->SetFileName( fname );
 
