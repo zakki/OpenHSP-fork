@@ -21,7 +21,9 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 CHARACTERS = {
     "ascii": "ascii_A1",
+    "ascii_space": "space ascii_A1",
     "cp932": "日本語_表ソ能",
+    "cp932_space": "空白 日本語_表ソ能",
     "bmp": "BMP_☃",
     "supplementary": "EXT_😀",
 }
@@ -171,7 +173,9 @@ class TargetSuite:
     def execute(self, case_id: str, interface: str, character_class: str,
                 encoding: str, locus: str, command: Sequence[str], cwd: Path,
                 checks: Iterable[Tuple[Path, Optional[bytes], str]], work: Path,
-                expected_failure: bool = False) -> None:
+                expected_failure: bool = False,
+                expected_status: str = "EXPECTED_REJECTION",
+                accepted_status: str = "FAIL") -> None:
         relative = Path(self.target.name) / case_id
         directory = self.run_dir / relative
         directory.mkdir(parents=True, exist_ok=True)
@@ -187,11 +191,22 @@ class TargetSuite:
             (directory / "output.txt").write_text(decoded_log(completed.stdout),
                                                     encoding="utf-8")
             if expected_failure and exit_code:
-                status, detail = "PASS", f"rejected as expected with {exit_code}"
+                if exit_code == 0xFFFFFFFF:
+                    status, detail = expected_status, "rejected safely with -1"
+                elif exit_code == 128 or exit_code >= 0xC0000000 or b"WORKER_CRASH" in completed.stdout:
+                    status, detail = "CRASH", f"unsafe exception exit {exit_code}"
+                else:
+                    status, detail = expected_status, f"rejected safely with {exit_code}"
             elif expected_failure:
-                detail = "invalid input was unexpectedly accepted"
+                status = accepted_status
+                detail = "invalid input was accepted"
             elif exit_code:
-                detail = f"process exited with {exit_code}"
+                if exit_code == 0xFFFFFFFF:
+                    detail = "process exited with -1"
+                elif exit_code == 128 or exit_code >= 0xC0000000 or b"WORKER_CRASH" in completed.stdout:
+                    status, detail = "CRASH", f"unsafe exception exit {exit_code}"
+                else:
+                    detail = f"process exited with {exit_code}"
             else:
                 problems = []
                 for path, marker, description in checks:
@@ -353,7 +368,61 @@ class TargetSuite:
                    "--compath=" + common_path_argument(self.target.common),
                    str(source)]
         self.execute(case_id, "cli", "ascii", "utf8", kind, command, work,
-                     [], work, expected_failure=True)
+                     [], work, expected_failure=True,
+                     accepted_status="KNOWN_LIMITATION" if kind == "invalid-utf8" else "FAIL")
+
+    def path_limit_case(self, interface: str, length: int) -> None:
+        case_id = f"{interface}-known-limit-missing-source-{length}"
+        work = self.case_work(case_id)
+        work.mkdir(parents=True, exist_ok=True)
+        source = work / ("A" * (length - 4) + ".hsp")
+        output = work / "unexpected.ax"
+        if interface == "cli":
+            command = [str(self.target.hspcmp), "-d", "-i", "-u",
+                       "-o" + str(output),
+                       "--compath=" + common_path_argument(self.target.common),
+                       str(source)]
+        else:
+            if self.target.dll is None:
+                self.unsupported(case_id, interface, "ascii", "utf8", "path-limit",
+                                 "SKIPPED", "hspcmp DLL is not configured")
+                return
+            worker = self.workers[pe_bits(self.target.dll)]
+            command = [str(worker), "compile", str(self.target.dll), str(source),
+                       common_path_argument(self.target.common), str(output),
+                       "unused", "1"]
+        self.execute(case_id, interface, "ascii", "utf8", "path-limit",
+                     command, work, [], work, expected_failure=True,
+                     expected_status="KNOWN_LIMITATION")
+
+    def multibyte_path_limit_case(self, interface: str) -> None:
+        case_id = f"{interface}-known-limit-existing-multibyte-source"
+        work = self.case_work(case_id)
+        source_dir = work / ("日" * 70)
+        source_dir.mkdir(parents=True, exist_ok=True)
+        source = source_dir / "main.hsp"
+        output = work / "result.ax"
+        encoding = "cp932" if self.target.name == "baseline" else "utf-8"
+        write_fixture(source, 'mes "MULTIBYTE_PATH_LIMIT"\n', encoding)
+        if interface == "cli":
+            command = [str(self.target.hspcmp), "-d", "-u"]
+            if encoding == "utf-8":
+                command.append("-i")
+            command += ["-o" + str(output),
+                        "--compath=" + common_path_argument(self.target.common),
+                        str(source)]
+        else:
+            if self.target.dll is None:
+                self.unsupported(case_id, interface, "cp932", encoding, "path-limit",
+                                 "SKIPPED", "hspcmp DLL is not configured")
+                return
+            worker = self.workers[pe_bits(self.target.dll)]
+            command = [str(worker), "compile", str(self.target.dll), str(source),
+                       common_path_argument(self.target.common), str(output), "unused",
+                       "1" if encoding == "utf-8" else "0"]
+        self.execute(case_id, interface, "cp932", encoding, "path-limit",
+                     command, source_dir,
+                     [(output, b"MULTIBYTE_PATH_LIMIT", "compiled marker")], work)
 
     def all_cases(self) -> List[Result]:
         for interface in ("cli", "dll"):
@@ -368,6 +437,10 @@ class TargetSuite:
             self.pack_case(character_class, extract=True)
         self.negative_case("missing-source")
         self.negative_case("invalid-utf8")
+        for interface in ("cli", "dll"):
+            for length in (261, 512, 1024, 4094, 4096):
+                self.path_limit_case(interface, length)
+            self.multibyte_path_limit_case(interface)
         if self.work_root.exists():
             shutil.rmtree(self.work_root)
         return self.results
@@ -402,10 +475,18 @@ def compare(baseline: List[Result], candidate: List[Result]) -> List[Dict[str, s
             verdict = "INFRA_ERROR"
         elif bs == cs == "PASS":
             verdict = "SAME_PASS"
+        elif bs == cs == "EXPECTED_REJECTION":
+            verdict = "SAME_EXPECTED_REJECTION"
         elif bs == "PASS":
             verdict = "REGRESSION"
         elif cs == "PASS":
             verdict = "IMPROVEMENT"
+        elif bs == "CRASH" and cs == "KNOWN_LIMITATION":
+            verdict = "IMPROVEMENT"
+        elif bs == "KNOWN_LIMITATION" and cs == "CRASH":
+            verdict = "REGRESSION"
+        elif cs == "CRASH" and bs != "CRASH":
+            verdict = "REGRESSION"
         elif bs == cs:
             verdict = "SHARED_LIMITATION"
         elif cs.startswith("UNSUPPORTED"):

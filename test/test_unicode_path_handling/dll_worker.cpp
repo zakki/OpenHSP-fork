@@ -10,6 +10,7 @@
 
 using HspInt = intptr_t;
 using PathFn = int(WINAPI *)(void *, char *, HspInt, HspInt);
+using MessageFn = int(WINAPI *)(char *, HspInt, HspInt, HspInt);
 using IntFn = int(WINAPI *)(HspInt, HspInt, HspInt, HspInt);
 
 static FARPROC load_export(HMODULE module, const char *name) {
@@ -59,7 +60,7 @@ static int worker_main(int argc, wchar_t **argv) {
     PathFn hsc_compath = path_fn("hsc_compath");
     PathFn hsc_objname = path_fn("hsc_objname");
     IntFn hsc_comp = int_fn("hsc_comp");
-    PathFn hsc_getmes = path_fn("hsc_getmes");
+    MessageFn hsc_getmes = reinterpret_cast<MessageFn>(load_export(module, "hsc_getmes"));
     IntFn hsc_bye = int_fn("hsc_bye");
     PathFn pack_ini = path_fn("pack_ini");
     IntFn pack_make = int_fn("pack_make");
@@ -74,7 +75,7 @@ static int worker_main(int argc, wchar_t **argv) {
 
     auto message = [&]() {
         char buffer[32768] = {};
-        hsc_getmes(nullptr, buffer, 0, 0);
+        hsc_getmes(buffer, 0, 0, 0);
         std::fwrite(buffer, 1, std::strlen(buffer), stderr);
         if (buffer[0] && buffer[std::strlen(buffer) - 1] != '\n')
             std::fputc('\n', stderr);

@@ -31,8 +31,10 @@ python test/test_unicode_path_handling/run_tests.py ^
 The matrix distinguishes these filename and source-string ranges:
 
 - strict ASCII: `ascii_A1`
+- ASCII with a space: `space ascii_A1`
 - Windows CP932/ANSI: `日本語_表ソ能` (`表`, `ソ`, and `能` have `0x5c` as
   their second CP932 byte)
+- CP932 with a space: `空白 日本語_表ソ能`
 - BMP outside CP932: `BMP_☃` (U+2603)
 - supplementary plane: `EXT_😀` (U+1F600)
 
@@ -44,6 +46,12 @@ part of this suite.
 
 Missing-source and malformed-UTF-8 controls verify diagnostic behavior and
 that a compiler error does not prevent later cases from running.
+CLI and DLL boundary cases also pass missing source arguments at
+261/512/1024/4094/4096 bytes. Safe rejection is recorded separately as
+`KNOWN_LIMITATION`; access violations and worker exceptions are `CRASH`, so a
+crash cannot be mistaken for a successful negative test.
+An existing source path made from repeated multibyte characters stays within
+the Windows character limit while crossing internal byte-oriented limits.
 
 The legacy DLL API accepts Windows ACP/CP932 `char *` paths. BMP and
 supplementary-plane paths that cannot be represented by that contract are

@@ -197,7 +197,8 @@ class Suite:
         ax_dir.mkdir(parents=True, exist_ok=True)
         source_path = build / "case.hsp"
         ax_build = build / "case.ax"
-        source = source.replace("__RUN_DIR__", str(run_dir))
+        hsp_run_dir = str(run_dir).replace("\\", "\\\\")
+        source = source.replace("__RUN_DIR__", hsp_run_dir)
         source = ('onerror goto *runtime_error\n' + source +
                   '\n*runtime_error\nmes "RESULT FAIL HSP_ERROR"\nend\n')
         source_path.write_bytes(source.encode(self.target.source_encoding))
@@ -284,7 +285,7 @@ class Suite:
                              source, initial, expected)
             absolute_name = token + "_absolute.dat"
             absolute_source = (f'sdim data,16\npoke data,0,65\n'
-                               f'bsave "__RUN_DIR__\\{absolute_name}",data,1\n'
+                               f'bsave "__RUN_DIR__\\\\{absolute_name}",data,1\n'
                                'mes "RESULT PASS"\nend\n')
             self.execute(f"file-absolute-{cls}", "absolute", cls, "absolute-path",
                          absolute_source, {}, {absolute_name: True})
