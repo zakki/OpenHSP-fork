@@ -21,6 +21,7 @@
 #include "hsp3config.h"
 #include "supio.h"
 #include "filepack.h"
+#include "hsp3pathio.h"
 #include "hsp3crypt.h"
 
 #define _MALLOC malloc
@@ -421,11 +422,19 @@ int FilePack::LoadPackFile( const char *fname, int encode, HFPSIZE dpmoffset, in
 		if ((a1 == 0x5c) || (a1 == '/')) addcurrent = false;
 		if ((a1 != 0)&&(fname[1]==':')) addcurrent = false;
 		if (addcurrent) {
+#ifdef HSPUTF8
+			std::string current_directory;
+			if (hsp_path_get_current_directory_utf8(current_directory) != 0) return -2;
+			if (current_directory.size() + 1 + strlen(fname) > HFP_PATH_MAX) return -2;
+			strcpy(dpmname, current_directory.c_str());
+#else
 			_getcwd(dpmname, HFP_PATH_MAX);
+#endif
 			strcat(dpmname, "/");
 		}
 	}
 #endif
+	if (strlen(dpmname) + strlen(fname) > HFP_PATH_MAX) return -2;
 	strcat(dpmname, fname);
 	//strcat(dpmname, DPMFILEEXT);
 	dpmname[HFP_PATH_MAX] = 0;

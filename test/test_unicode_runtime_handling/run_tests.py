@@ -378,6 +378,15 @@ class Suite:
                 self.execute(f"dpm-{mode}-{cls}", "dpm", cls, "dpm", source, initial,
                              {"copied.dat": True}, dpm_builder=self.make_dpm(token, mode == "automatic"))
 
+        # Isolate relative automatic-DPM lookup from DPM/entry-name encoding:
+        # only the process current directory varies across character classes.
+        asset = TOKENS["ascii"] + ".txt"
+        source = f'''exist "{asset}"\nif strsize!=9 : mes "RESULT FAIL dpm-cwd-exist" : end\nmes "RESULT PASS"\nend\n'''
+        for cls, token in TOKENS.items():
+            self.execute(f"dpm-cwd-{cls}", "dpm", cls, "cwd", source,
+                         {asset: b"DISK_ASSET"}, {}, run_dir_name=token,
+                         dpm_builder=self.make_dpm(TOKENS["ascii"], True))
+
     def all(self) -> list[Result]:
         self.file_cases()
         self.boundary_cases()

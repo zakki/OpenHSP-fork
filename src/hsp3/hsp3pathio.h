@@ -105,6 +105,7 @@ FILE* hsp_path_fopen_utf8(hsp_path::utf8_view path, const char* mode);
 // Return the current module filename or directory as UTF-8.
 int hsp_path_get_module_filename_utf8(std::string& result);
 int hsp_path_get_module_directory_utf8(std::string& result);
+int hsp_path_get_current_directory_utf8(std::string& result);
 int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::utf8_view name);
 int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::ansi_view name);
 #endif

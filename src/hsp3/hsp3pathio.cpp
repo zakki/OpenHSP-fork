@@ -387,6 +387,21 @@ int hsp_path_get_module_directory_utf8(std::string& result)
 	}
 }
 
+int hsp_path_get_current_directory_utf8(std::string& result)
+{
+	result.clear();
+	DWORD length = GetCurrentDirectoryW(0, NULL);
+	if (length == 0) return -1;
+	std::vector<wchar_t> current_directory((size_t)length);
+	DWORD actual_length = GetCurrentDirectoryW(length, current_directory.data());
+	if (actual_length == 0 || actual_length >= length) return -1;
+
+	hsp_path::utf8_string utf8_path = hsp_path_utf8_from_wide(current_directory.data());
+	if (!utf8_path) return -1;
+	result = utf8_path.c_str();
+	return 0;
+}
+
 hsp_path::utf8_string hsp_path_from_ansi(hsp_path::ansi_view path)
 {
 	if (path.c_str() == NULL) return hsp_path::utf8_string();
