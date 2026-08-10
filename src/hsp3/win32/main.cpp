@@ -34,8 +34,12 @@ int main( int argc, char *argv[] )
 	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
 	if (szArglist) {
 		if (nArgs > 1) {
-			utf16_to_hsp3(utf8filename, szArglist[1], 4095);
-			p = utf8filename;
+			if (utf16_to_hsp3(utf8filename, szArglist[1], 4095)) {
+				p = utf8filename;
+			}
+			else {
+				p = "";
+			}
 		}
 	}
 #endif

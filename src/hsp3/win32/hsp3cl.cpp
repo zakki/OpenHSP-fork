@@ -276,10 +276,11 @@ int hsp3cl_init( char *startfile )
 	ss = strsp_cmds( startfile );
 	i = (int)( ss - startfile );
 	ss = startfile;
-	if ( ss[i-1] == 32 ) i--;
+	if ( i > 0 && ss[i-1] == 32 ) i--;
 	if ( *ss == 0x22 ) {
 		ss++;i-=2;
 	}
+	if ( i < 0 || i > _MAX_PATH ) return -1;
 	strncpy( fname, ss, i );
 	fname[i] = 0;
 	hsp->SetFileName( fname );
