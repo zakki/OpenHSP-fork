@@ -53,13 +53,7 @@ static bool hspcmp_join_paths(std::initializer_list<std::string> parts, std::str
 
 static bool hspcmp_is_absolute_path(const char* source)
 {
-	if (source == NULL) return false;
-	size_t length = strlen(source);
-	if (source[0] == '/') return true;
-#ifdef HSPWIN
-	if (source[0] == '\\' || (length >= 2 && source[1] == ':')) return true;
-#endif
-	return false;
+	return hsp_path_is_absolute(source) != 0;
 }
 
 }
@@ -286,6 +280,13 @@ int CToken::AddPackfile( char *name, int mode )
 
 	if ( mode<2 ) {
 #ifdef HSPWIN
+		// Not strcase(): on Windows, HSPCMP_PATH_UTF8 builds keep packadd
+		// UTF-8 encoded, but strcase() here resolves to supio_win.cpp's
+		// Shift-JIS-oriented lead-byte skip logic, which can misalign on
+		// UTF-8 continuation bytes and skip case-folding an ASCII letter
+		// that follows a multibyte character. This ASCII-only pass is
+		// immune to that since it never treats bytes as multibyte lead/
+		// trail pairs.
 		for (char& character : packadd) {
 			if (character >= 'A' && character <= 'Z') character = (char)(character - 'A' + 'a');
 		}
@@ -336,6 +337,7 @@ int CToken::AddPackfileOrig(char* name, int mode)
 	packadd = fname;
 	if (mode < 2) {
 #ifdef HSPWIN
+		// See the comment in AddPackfile(): strcase() is not UTF-8 safe here.
 		for (char& character : packadd) {
 			if (character >= 'A' && character <= 'Z') character = (char)(character - 'A' + 'a');
 		}

@@ -133,6 +133,36 @@ static bool hsp_path_utf8_is_valid(const unsigned char* text)
 	return true;
 }
 
+void hsp_path_cut_extension(std::string& path)
+{
+	try {
+		fs::path fs_path = fs::u8path(path);
+		fs_path.replace_extension();
+		path = fs_path.u8string();
+	}
+	catch (const std::exception&) {
+		// Fall back to a manual strip so a conversion failure never leaves
+		// the extension in place (which could make the compiled output
+		// silently overwrite the source file).
+		size_t separator = path.find_last_of("/\\");
+		size_t dot = path.find_last_of('.');
+		if (dot != std::string::npos && (separator == std::string::npos || dot > separator)) {
+			path.erase(dot);
+		}
+	}
+}
+
+int hsp_path_is_absolute(const char* path)
+{
+	if (path == NULL || path[0] == 0) return 0;
+	if (path[0] == '/') return 1;
+#if defined(HSPWIN) || defined(_WIN32)
+	if (path[0] == '\\') return 1;
+	if (path[1] == ':') return 1;
+#endif
+	return 0;
+}
+
 int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_size, int mode)
 {
 	fs::path fs_source;

@@ -416,11 +416,8 @@ int FilePack::LoadPackFile( const char *fname, int encode, HFPSIZE dpmoffset, in
 	*dpmname = 0;
 #ifdef HSPWIN
 	if (dpmoffset == 0) {
-		bool addcurrent = true;
-		char a1 = *fname;
 		//	fnameがフルパスの場合はパスを補完しない
-		if ((a1 == 0x5c) || (a1 == '/')) addcurrent = false;
-		if ((a1 != 0)&&(fname[1]==':')) addcurrent = false;
+		bool addcurrent = !hsp_path_is_absolute(fname);
 		if (addcurrent) {
 #ifdef HSPUTF8
 			std::string current_directory;

@@ -360,7 +360,6 @@ private:
 	void GenerateCodePP_comfunc( void );
 	void GenerateCodePP_defvars( int fixedvalue );
 
-	void GenerateLabelTag(char* name, int flag, int type, char* fname, int line);
 	void GenerateLabelTag(char* name, int flag, int type, const char* fname, int line);
 	void GenerateLabelListAndTag(int labelid, int flag = 0);
 	void GenerateLabelListAndTag(char* name, int flag = 0);

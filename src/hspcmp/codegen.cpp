@@ -3508,11 +3508,6 @@ int	CToken::SaveStringMap(const char* fname)
 }
 
 
-void CToken::GenerateLabelTag(char* name, int flag, int type, char* fname, int line)
-{
-	GenerateLabelTag(name, flag, type, (const char*)fname, line);
-}
-
 void CToken::GenerateLabelTag(char* name, int flag, int type, const char* fname, int line)
 {
 	//	クロスリファレンス用のメッセージを出力する
@@ -3556,7 +3551,7 @@ void CToken::GenerateLabelListAndTag(int labelid, int flag)
 	lab = lb->GetLabel(labelid);
 	if (lab == NULL) return;
 
-	GenerateLabelTag(lab->name, flag, lab->type, (char*)lab->def_file, lab->def_line);
+	GenerateLabelTag(lab->name, flag, lab->type, lab->def_file, lab->def_line);
 }
 
 

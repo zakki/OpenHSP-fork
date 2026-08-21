@@ -72,6 +72,11 @@ extern char *hsp_prestr[];
 static FilePack filepack;		// File Pack Manager
 #endif
 
+static void ensure_trailing_backslash(std::string& path)
+{
+	if (!path.empty() && path.back() != '\\') path.push_back('\\');
+}
+
 static int copy_ansi_path_to_utf8(std::string& destination, const char* source)
 {
 	hsp_path::utf8_string utf8_path;
@@ -84,16 +89,16 @@ static int copy_ansi_path_to_utf8(std::string& destination, const char* source)
 
 static int copy_ansi_path_directory_to_utf8(std::string& destination, const char* source)
 {
-	hsp_path::utf8_string utf8_path;
-	if (source == NULL) return -1;
-	utf8_path = hsp_path_from_ansi(hsp_path::ansi_view(source));
-	if (!utf8_path) return -1;
+	std::string utf8_path;
+	if (copy_ansi_path_to_utf8(utf8_path, source) != 0) return -1;
 	try {
-		destination = std::filesystem::u8path(utf8_path.c_str()).parent_path().u8string();
-		if (destination.empty() && utf8_path.c_str()[0] != 0) {
-			destination = utf8_path.c_str();
+		destination = std::filesystem::u8path(utf8_path).parent_path().u8string();
+		if (destination.empty() && !utf8_path.empty()) {
+			destination = utf8_path;
 		}
-		else if (!destination.empty() && destination.back() != '\\') destination.push_back('\\');
+		else {
+			ensure_trailing_backslash(destination);
+		}
 		return 0;
 	}
 	catch (const std::exception&) {
@@ -103,29 +108,7 @@ static int copy_ansi_path_directory_to_utf8(std::string& destination, const char
 
 static void cutext(std::string& path)
 {
-	try {
-		std::filesystem::path fs_path = std::filesystem::u8path(path);
-		fs_path.replace_extension();
-		path = fs_path.u8string();
-	}
-	catch (const std::exception&) {
-	}
-}
-
-static int get_current_directory_utf8(std::string& destination)
-{
-	std::vector<wchar_t> buffer(256);
-	DWORD length;
-	do {
-		length = GetCurrentDirectoryW((DWORD)buffer.size(), buffer.data());
-		if (length == 0) return -1;
-		if (length < buffer.size()) break;
-		buffer.resize(length + 1);
-	} while (true);
-	hsp_path::utf8_string utf8_path = hsp_path_utf8_from_wide(buffer.data());
-	if (!utf8_path) return -1;
-	destination = utf8_path.c_str();
-	return 0;
+	hsp_path_cut_extension(path);
 }
 
 #if defined( __GNUC__ ) && defined( __cplusplus )
@@ -356,7 +339,7 @@ p1が128(bit7)の場合はデフォルトで64bitランタイムを選択しま�
 
 	if (orgcompath==0) {
 		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
-		if (!compath.empty() && compath.back() != '\\') compath.push_back('\\');
+		ensure_trailing_backslash(compath);
 		compath += "common\\";
 	}
 	fname2 = fname + ".i";
@@ -564,8 +547,8 @@ EXPORT BOOL WINAPI hsc3_getsym(HSPPTRINT p1, HSPPTRINT p2, HSPPTRINT p3, HSPPTRI
 	hsc3->ResetError();
 	if (orgcompath == 0) {
 		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
-		if (!compath.empty() && compath.back() != '\\') compath.push_back('\\');
-	compath += "common\\";
+		ensure_trailing_backslash(compath);
+		compath += "common\\";
 	}
 	hsc3->SetCommonPath(compath.c_str());
 	if (hsc3->GetCmdList(((int)p1 | 2))) return -1;
@@ -656,9 +639,9 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 
 #ifdef ICONINS_SUPPORT
 	if (hsp_path_get_module_directory_utf8(ici_opt) != 0) return -1;
-	if (!ici_opt.empty() && ici_opt.back() != '\\') ici_opt.push_back('\\');
+	ensure_trailing_backslash(ici_opt);
 	ici_opt += "iconins.exe";
-	if (get_current_directory_utf8(ici_current) != 0) return -1;
+	if (hsp_path_get_current_directory_utf8(ici_current) != 0) return -1;
 	ici_current += "\\";
 #endif
 
@@ -892,7 +875,7 @@ EXPORT BOOL WINAPI aht_source( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSPPT
 	hsc3->ResetError();
 	if (orgcompath==0) {
 		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
-		if (!compath.empty() && compath.back() != '\\') compath.push_back('\\');
+		ensure_trailing_backslash(compath);
 		compath += fpath;
 	}
 	hsc3->SetCommonPath( compath.c_str() );
@@ -1091,7 +1074,7 @@ EXPORT BOOL WINAPI aht_make ( int *p1, char *p2, HSPPTRINT p3, HSPPTRINT p4 )
 	hsc3->ResetError();
 	if (orgcompath==0) {
 		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
-		if (!compath.empty() && compath.back() != '\\') compath.push_back('\\');
+		ensure_trailing_backslash(compath);
 		compath += ahtmodel->GetSourcePath();
 	}
 	hsc3->SetCommonPath( compath.c_str() );

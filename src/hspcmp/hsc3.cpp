@@ -444,32 +444,11 @@ int CHsc3::OpenPackfile( void )
 
 int CHsc3::GetPackfileOption( char *out, int out_size, char *keyword, char *defval )
 {
-	int max,i;
-	char tmp[512];
-	char *s;
-	char a1;
 	if (out == NULL || out_size <= 0 || defval == NULL || keyword == NULL) return -1;
-	CStrNote note;
-	note.Select( pfbuf->GetBuffer() );
-	max = note.GetMaxLine();
-	if ((int)strlen(defval) >= out_size) return -1;
-	strcpy(out, defval);
-	for( i=0;i<max;i++ ) {
-		note.GetLine( tmp, i, sizeof(tmp) - 1 );
-		if (( tmp[0]==';' )&&( tmp[1]=='!' )) {
-			s = tmp+2;while(1) {
-				a1 = *s;if (( a1==0 )||( a1=='=' )) break;
-				s++;
-			}
-			if ( a1 != 0 ) {
-				s[0]=0;
-				if ( strcmp( tmp+2, keyword )==0 ) {
-					if ((int)strlen(s + 1) >= out_size) return -1;
-					strcpy(out, s + 1);
-				}
-			}
-		}
-	}
+	std::string result;
+	if (GetPackfileOption(result, keyword, defval) != 0) return -1;
+	if ((int)result.size() >= out_size) return -1;
+	strcpy(out, result.c_str());
 	return 0;
 }
 

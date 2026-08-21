@@ -148,6 +148,17 @@ int hsp_path_exec_utf8(hsp_path::utf8_view command);
 // Returns an invalid value when the path cannot be represented without loss.
 hsp_path::ansi_string hsp_path_to_ansi(hsp_path::utf8_view path);
 
+// Remove the extension from a UTF-8 path in place. Falls back to a manual
+// strip (rather than leaving the extension untouched) when the path cannot
+// be parsed as filesystem UTF-8, since silently keeping the extension could
+// make a compiled output path collide with its source file.
+void hsp_path_cut_extension(std::string& path);
+
+// Return nonzero when path is an absolute filesystem path in the target's
+// path convention: a leading '/' on every platform, plus a leading '\\' or
+// a drive-letter prefix ("C:...") on Windows.
+int hsp_path_is_absolute(const char* path);
+
 // Extract a path component using the getpath-compatible mode flags.
 // Returns nonzero on success and zero for invalid UTF-8 or a small output buffer.
 int hsp_path_getpath_utf8(hsp_path::utf8_view path, char* output, size_t output_size, int mode);

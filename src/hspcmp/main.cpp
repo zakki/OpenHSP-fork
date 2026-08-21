@@ -23,10 +23,10 @@
 #include <string>
 #ifdef HSPWIN
 #include <vector>
-#include "../hsp3/hsp3pathio.h"
 #endif
 
 #include "../hsp3/hsp3config.h"
+#include "../hsp3/hsp3pathio.h"
 #include "supio.h"
 
 #include "hsc3.h"
@@ -39,21 +39,7 @@ namespace fs = std::filesystem;
 
 static void cutext(std::string& path)
 {
-	try {
-		fs::path fs_path = fs::u8path(path);
-		fs_path.replace_extension();
-		path = fs_path.u8string();
-	}
-	catch (const std::exception&) {
-		// Fall back to a manual strip so a conversion failure never leaves
-		// the extension in place (which could make the compiled output
-		// silently overwrite the source file).
-		size_t separator = path.find_last_of("/\\");
-		size_t dot = path.find_last_of('.');
-		if (dot != std::string::npos && (separator == std::string::npos || dot > separator)) {
-			path.erase(dot);
-		}
-	}
+	hsp_path_cut_extension(path);
 }
 
 static void addext(std::string& path, const char* extension)
