@@ -2228,7 +2228,7 @@ ppresult_t CToken::PP_IncludeSub(char* word, int is_addition)
 ppresult_t CToken::PP_Include( int is_addition )
 {
 	char* word = (char*)s3;
-	char* converted_word = NULL;
+	hsp_path::utf8_string converted_word;
 	int type = GetToken();
 	switch (type) {
 	case TK_STRING:
@@ -2248,21 +2248,15 @@ ppresult_t CToken::PP_Include( int is_addition )
 
 	#if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8)
 	if (!pp_utf8) {
-		int len = (int)strlen(word) * 4 + 1;
-		converted_word = (char*)malloc(len);
-		if (converted_word == NULL) {
+		converted_word = hsp_path_from_ansi(hsp_path::ansi_view(word));
+		if (!converted_word) {
 			SetError("include path conversion failed");
 			return PPRESULT_ERROR;
 		}
-		ConvSJis2Utf8(word, converted_word, len);
-		word = converted_word;
+		word = converted_word.data();
 	}
 	#endif
-	{
-		ppresult_t result = PP_IncludeSub(word, is_addition);
-		free(converted_word);
-		return result;
-	}
+	return PP_IncludeSub(word, is_addition);
 }
 
 
@@ -3338,7 +3332,7 @@ ppresult_t CToken::PP_Pack( int mode )
 	//			(mode:0=normal/1=encrypt)
 	int i;
 	char* pack_name;
-	char* converted_name = NULL;
+	hsp_path::utf8_string converted_name;
 	if ( packbuf!=NULL ) {
 		i = GetToken();
 		if ( i != TK_STRING ) {
@@ -3347,11 +3341,9 @@ ppresult_t CToken::PP_Pack( int mode )
 		pack_name = (char*)s3;
 #if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8)
 		if (!pp_utf8) {
-			int len = (int)strlen(pack_name) * 4 + 1;
-			converted_name = (char*)malloc(len);
-			if (converted_name == NULL) return PPRESULT_ERROR;
-			ConvSJis2Utf8(pack_name, converted_name, len);
-			pack_name = converted_name;
+			converted_name = hsp_path_from_ansi(hsp_path::ansi_view(pack_name));
+			if (!converted_name) return PPRESULT_ERROR;
+			pack_name = converted_name.data();
 		}
 #endif
 		int pack_result;
@@ -3363,10 +3355,8 @@ ppresult_t CToken::PP_Pack( int mode )
 		}
 		if (pack_result == hspcmp_pack_path_error) {
 			SetError("pack path is too long or invalid UTF-8");
-			free(converted_name);
 			return PPRESULT_ERROR;
 		}
-		free(converted_name);
 	}
 	return PPRESULT_SUCCESS;
 }
@@ -3380,7 +3370,7 @@ ppresult_t CToken::PP_PackOpt( void )
 	char tmp[1024];
 	char optname[1024];
 	char* optvalue;
-	char* converted_value = NULL;
+	hsp_path::utf8_string converted_value;
 	if ( packbuf!=NULL ) {
 		i = GetToken();
 		if ( i != TK_OBJ ) {
@@ -3398,25 +3388,20 @@ ppresult_t CToken::PP_PackOpt( void )
 		optvalue = (char*)s3;
 #if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8)
 		if (i == TK_STRING && !pp_utf8) {
-			int len = (int)strlen(optvalue) * 4 + 1;
-			converted_value = (char*)malloc(len);
-			if (converted_value == NULL) return PPRESULT_ERROR;
-			ConvSJis2Utf8(optvalue, converted_value, len);
-			optvalue = converted_value;
+			converted_value = hsp_path_from_ansi(hsp_path::ansi_view(optvalue));
+			if (!converted_value) return PPRESULT_ERROR;
+			optvalue = converted_value.data();
 		}
 #endif
 		int option_length = snprintf( tmp, sizeof(tmp), ";!%s=%s", optname, optvalue );
 		if ( option_length < 0 || (size_t)option_length >= sizeof(tmp) ) {
 			SetError("pack option is too long");
-			free(converted_value);
 			return PPRESULT_ERROR;
 		}
 		if (AddPackfile(tmp, 2) == hspcmp_pack_path_error) {
 			SetError("pack option path is too long or invalid UTF-8");
-			free(converted_value);
 			return PPRESULT_ERROR;
 		}
-		free(converted_value);
 	}
 	return PPRESULT_SUCCESS;
 }
