@@ -59,26 +59,6 @@ int main()
 
 //----------------------------------------------------------
 
-static int GetFilePath( char *bname )
-{
-	//		フルパス名から、ファイルパスの取得(\を残す)
-	//
-	int a,b,len;
-	char a1;
-	b=-1;
-	len=strlen(bname);
-	for(a=0;a<len;a++) {
-		a1=bname[a];
-		if (a1=='/') b=a;
-		if (a1<0) a++; 
-	}
-	if (b<0) return 1;
-	bname[b+1]=0;
-	return 0;
-}
-
-//----------------------------------------------------------
-
 EXPORT BOOL hsc_ini ( BMSCR *bm, char *p1, int p2, int p3 )
 {
 	//
@@ -415,9 +395,7 @@ EXPORT BOOL hsc3_make ( BMSCR *bm, char *p1, int p2, int p3 )
 	if ( hsc3==NULL ) Alert( "#No way." );
 	hsc3->ResetError();
 
-	int libpath_length = snprintf(libpath, sizeof(libpath), "%s", p1);
-	if (libpath_length < 0 || (size_t)libpath_length >= sizeof(libpath)) return -1;
-	GetFilePath( libpath );
+	if (!hspcmp_getpath(p1, libpath, 32, sizeof(libpath))) return -1;
 
 	i = hsc3->OpenPackfile();
 	if (i) { Alert( "packfileが見つかりません" ); return -1; }
