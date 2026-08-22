@@ -49,14 +49,21 @@ static inline int hspcmp_getpath(const char* source, char* output, int mode, siz
 
 #ifdef HSPCMP_DLL
 // Convert a UTF-8 path to the legacy ACP contract for DLL error/message output.
-static inline const char* hspcmp_message_path(const char* path, char** converted)
-{
-	*converted = NULL;
-	if (path == NULL) return "<null path>";
-	hsp_path::ansi_string converted_path = hsp_path_to_ansi(hsp_path::utf8_view(path));
-	*converted = converted_path.release();
-	return *converted != NULL ? *converted : "<unrepresentable UTF-8 path>";
-}
+class hspcmp_message_path {
+public:
+	explicit hspcmp_message_path(const char* path)
+		: converted_(path != NULL ? hsp_path_to_ansi(hsp_path::utf8_view(path)) : hsp_path::ansi_string())
+	{
+		if (path == NULL) value_ = "<null path>";
+		else value_ = converted_ ? converted_.c_str() : "<unrepresentable UTF-8 path>";
+	}
+
+	const char* c_str() const { return value_; }
+
+private:
+	hsp_path::ansi_string converted_;
+	const char* value_;
+};
 #endif
 
 #endif

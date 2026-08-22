@@ -3198,13 +3198,12 @@ int CToken::GenerateCode( CMemBuf *srcbuf, const char *oname, int mode )
 		CStrNote note;
 		CMemBuf srctmp;
 #ifdef HSPCMP_DLL
-		char* converted_cg_orgfile;
-		const char* message_cg_orgfile = hspcmp_message_path(cg_orgfile.c_str(), &converted_cg_orgfile);
+		hspcmp_message_path message_cg_orgfile(cg_orgfile.c_str());
 #endif
 #ifdef JPNMSG
 		Mesf( "%s(%d) : error %d : %s (%d行目)",
 #ifdef HSPCMP_DLL
-			message_cg_orgfile,
+			message_cg_orgfile.c_str(),
 #else
 			cg_orgfile.c_str(),
 #endif
@@ -3212,14 +3211,11 @@ int CToken::GenerateCode( CMemBuf *srcbuf, const char *oname, int mode )
 #else
 		Mesf("%s(%d) : error %d : %s (line %d)",
 #ifdef HSPCMP_DLL
-			message_cg_orgfile,
+			message_cg_orgfile.c_str(),
 #else
 			cg_orgfile.c_str(),
 #endif
 			cg_orgline, res, cg_geterror((CGERROR)res), cg_orgline);
-#endif
-#ifdef HSPCMP_DLL
-		free(converted_cg_orgfile);
 #endif
 		if ( cg_errline > 0 ) {
 			note.Select( bakbuf.GetBuffer() );
@@ -3449,26 +3445,22 @@ void CToken::CG_MesLabelDefinition(int label_id)
 	LABOBJ* const labobj = lb->GetLabel(label_id);
 	if ( labobj->def_file ) {
 #ifdef HSPCMP_DLL
-		char* converted_def_file;
-		const char* message_def_file = hspcmp_message_path(labobj->def_file, &converted_def_file);
+		hspcmp_message_path message_def_file(labobj->def_file);
 #endif
 #ifdef JPNMSG
 		Mesf("#識別子「%s」の定義位置: line %d in [%s]", lb->GetName(label_id), labobj->def_line,
 #ifdef HSPCMP_DLL
-			message_def_file);
+			message_def_file.c_str());
 #else
 			labobj->def_file);
 #endif
 #else
 		Mesf("#Identifier '%s' has already defined in line %d in [%s]", lb->GetName(label_id), labobj->def_line,
 #ifdef HSPCMP_DLL
-			message_def_file);
+			message_def_file.c_str());
 #else
 			labobj->def_file);
 #endif
-#endif
-#ifdef HSPCMP_DLL
-		free(converted_def_file);
 #endif
 	}
 }

@@ -213,10 +213,8 @@ void CToken::LineError( char *mes, int line, char *fname )
 	//
 	char tmp[256];
 #ifdef HSPCMP_DLL
-	char* converted_fname;
-	const char* message_fname = hspcmp_message_path(fname, &converted_fname);
-	snprintf( tmp, sizeof(tmp), "#Error:%s in line %d [%s]\r\n", mes, line, message_fname );
-	free( converted_fname );
+	hspcmp_message_path message_fname(fname);
+	snprintf( tmp, sizeof(tmp), "#Error:%s in line %d [%s]\r\n", mes, line, message_fname.c_str() );
 #else
 	sprintf( tmp, "#Error:%s in line %d [%s]\r\n", mes, line, fname );
 #endif
@@ -3974,26 +3972,22 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char *refname )
 			if (a1 == 0xbf) {
 				if (pp_utf8 == 0) {
 #ifdef HSPCMP_DLL
-					char* converted_refname;
-					const char* message_refname = hspcmp_message_path(refname, &converted_refname);
+					hspcmp_message_path message_refname(refname);
 #endif
 #ifdef JPNMSG
 					Mesf("#ファイルに予期しない BOM があります [%s]",
 #ifdef HSPCMP_DLL
-						message_refname);
+						message_refname.c_str());
 #else
 						refname);
 #endif
 #else
 					Mesf("#Unexpected BOM in file.[%s]",
 #ifdef HSPCMP_DLL
-						message_refname);
+						message_refname.c_str());
 #else
 						refname);
 #endif
-#endif
-#ifdef HSPCMP_DLL
-					free(converted_refname);
 #endif
 				}
 				p += 3;
@@ -4013,10 +4007,8 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char *refname )
 			if (utf8text) {
 				//	UTF-8 -> Shift-JIS
 #ifdef HSPCMP_DLL
-				char* converted_refname;
-				const char* message_refname = hspcmp_message_path(refname, &converted_refname);
-				Mesf("#Convert to SJIS [%s].", message_refname);
-				free(converted_refname);
+				hspcmp_message_path message_refname(refname);
+				Mesf("#Convert to SJIS [%s].", message_refname.c_str());
 #else
 				Mesf("#Convert to SJIS [%s].", refname);
 #endif
@@ -4030,10 +4022,8 @@ int CToken::ExpandLine( CMemBuf *buf, CMemBuf *src, char *refname )
 			if (!utf8text) {
 				//	Shift-JIS -> UTF-8
 #ifdef HSPCMP_DLL
-				char* converted_refname;
-				const char* message_refname = hspcmp_message_path(refname, &converted_refname);
-				Mesf("#Convert to UTF8 [%s].", message_refname);
-				free(converted_refname);
+				hspcmp_message_path message_refname(refname);
+				Mesf("#Convert to UTF8 [%s].", message_refname.c_str());
 #else
 				Mesf("#Convert to UTF8 [%s].", refname);
 #endif
@@ -4224,26 +4214,22 @@ int CToken::ExpandFile( CMemBuf *buf, const char *fname, const char *refname )
 				if ( fbuf.PutFile( cname.c_str() ) < 0 ) {
 					if ( fileadd == 0 ) {
 #ifdef HSPCMP_DLL
-						char* converted_purename;
-						const char* message_purename = hspcmp_message_path(purename.c_str(), &converted_purename);
+						hspcmp_message_path message_purename(purename.c_str());
 #endif
 #ifdef JPNMSG
 						Mesf( "#スクリプトファイルが見つかりません [%s]",
 #ifdef HSPCMP_DLL
-							message_purename);
+							message_purename.c_str());
 #else
 							purename.c_str());
 #endif
 #else
 						Mesf( "#Source file not found.[%s]",
 #ifdef HSPCMP_DLL
-							message_purename);
+							message_purename.c_str());
 #else
 							purename.c_str());
 #endif
-#endif
-#ifdef HSPCMP_DLL
-						free(converted_purename);
 #endif
 					}
 					return -1;
@@ -4256,10 +4242,8 @@ int CToken::ExpandFile( CMemBuf *buf, const char *fname, const char *refname )
 
 	if ( fileadd ) {
 #ifdef HSPCMP_DLL
-		char* converted_purename;
-		const char* message_purename = hspcmp_message_path(purename.c_str(), &converted_purename);
-		Mesf( "#Use file [%s]", message_purename );
-		free(converted_purename);
+		hspcmp_message_path message_purename(purename.c_str());
+		Mesf( "#Use file [%s]", message_purename.c_str() );
 #else
 		Mesf( "#Use file [%s]",purename.c_str() );
 #endif
@@ -4288,26 +4272,22 @@ int CToken::ExpandFile( CMemBuf *buf, const char *fname, const char *refname )
 		res = tstack->StackCheck( linebuf );
 		if ( res ) {
 #ifdef HSPCMP_DLL
-			char* converted_refname_copy;
-			const char* message_refname_copy = hspcmp_message_path(refname_copy.data(), &converted_refname_copy);
+			hspcmp_message_path message_refname_copy(refname_copy.data());
 #endif
 #ifdef JPNMSG
 			Mesf( "#スタックが空になっていないマクロタグが%d個あります [%s]", res,
 #ifdef HSPCMP_DLL
-				message_refname_copy);
+				message_refname_copy.c_str());
 #else
 				refname_copy.data());
 #endif
 #else
 			Mesf( "#%d unresolved macro(s).[%s]", res,
 #ifdef HSPCMP_DLL
-				message_refname_copy);
+				message_refname_copy.c_str());
 #else
 				refname_copy.data());
 #endif
-#endif
-#ifdef HSPCMP_DLL
-			free(converted_refname_copy);
 #endif
 			Mes( linebuf );
 		}
