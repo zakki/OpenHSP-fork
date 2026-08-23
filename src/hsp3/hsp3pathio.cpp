@@ -272,6 +272,18 @@ int hsp_path_file_exists_utf8(hsp_path::utf8_view path)
 	return hsp_path_make_fs_path(path.c_str(), fs_path) && fs::exists(fs_path, error) && !error;
 }
 
+int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::utf8_view directory,
+	hsp_path::utf8_view name)
+{
+	if (directory.c_str() == NULL || name.c_str() == NULL ||
+		!hsp_path_utf8_is_valid((const unsigned char*)directory.c_str()) ||
+		!hsp_path_utf8_is_valid((const unsigned char*)name.c_str())) return -1;
+	result = directory.c_str();
+	if (!result.empty() && result.back() != '/' && result.back() != '\\') result += '/';
+	result += name.c_str();
+	return 0;
+}
+
 #if defined(HSPWIN) || defined(_WIN32)
 
 #include <windows.h>
@@ -311,18 +323,19 @@ int hsp_path_exec_utf8(hsp_path::utf8_view command)
 	return result ? 33 : 0;
 }
 
-hsp_path::utf8_string hsp_path_utf8_from_wide(const wchar_t* text)
+int hsp_path_utf8_from_wide(std::string& result, const wchar_t* text)
 {
-	if (text == NULL) return hsp_path::utf8_string();
+	result.clear();
+	if (text == NULL) return -1;
 	int length = utf16_to_utf8_strict(NULL, text, 0);
-	if (length <= 0) return hsp_path::utf8_string();
-	char* result = (char*)malloc((size_t)length);
-	if (result == NULL) return hsp_path::utf8_string();
-	if (utf16_to_utf8_strict(result, text, length) == 0) {
-		free(result);
-		return hsp_path::utf8_string();
+	if (length <= 0) return -1;
+	result.resize((size_t)length, '\0');
+	if (utf16_to_utf8_strict(&result[0], text, length) == 0) {
+		result.clear();
+		return -1;
 	}
-	return hsp_path::utf8_string(result);
+	result.resize((size_t)length - 1);
+	return 0;
 }
 
 int hsp_path_dirlist_utf8(hsp_path::utf8_view pattern, int flags, hsp_path_list_callback callback, void* user_data)
@@ -344,10 +357,11 @@ int hsp_path_dirlist_utf8(hsp_path::utf8_view pattern, int flags, hsp_path_list_
 	for (;;) {
 		bool selected = (data.dwFileAttributes & attribute_mask) != 0;
 		if ((flags & 4) == 0) selected = !selected;
-		hsp_path::utf8_string name = selected ? hsp_path_utf8_from_wide(data.cFileName) : hsp_path::utf8_string();
-		if (name && name.c_str()[0] != 0 && strcmp(name.c_str(), ".") != 0 && strcmp(name.c_str(), "..") != 0) {
+		std::string name;
+		if (selected && hsp_path_utf8_from_wide(name, data.cFileName) == 0 &&
+			!name.empty() && strcmp(name.c_str(), ".") != 0 && strcmp(name.c_str(), "..") != 0) {
 			++count;
-			if (callback(name.as_view(), user_data) != 0) {
+			if (callback(hsp_path::utf8_view(name.c_str()), user_data) != 0) {
 				result = -1;
 				break;
 			}
@@ -398,10 +412,7 @@ int hsp_path_get_module_filename_utf8(std::string& result)
 		module_path.resize(module_path.size() * 2);
 	} while (true);
 
-	hsp_path::utf8_string utf8_path = hsp_path_utf8_from_wide(module_path.data());
-	if (!utf8_path) return -1;
-	result = utf8_path.c_str();
-	return 0;
+	return hsp_path_utf8_from_wide(result, module_path.data());
 }
 
 int hsp_path_get_module_directory_utf8(std::string& result)
@@ -426,68 +437,60 @@ int hsp_path_get_current_directory_utf8(std::string& result)
 	DWORD actual_length = GetCurrentDirectoryW(length, current_directory.data());
 	if (actual_length == 0 || actual_length >= length) return -1;
 
-	hsp_path::utf8_string utf8_path = hsp_path_utf8_from_wide(current_directory.data());
-	if (!utf8_path) return -1;
-	result = utf8_path.c_str();
-	return 0;
+	return hsp_path_utf8_from_wide(result, current_directory.data());
 }
 
-hsp_path::utf8_string hsp_path_from_ansi(hsp_path::ansi_view path)
+int hsp_path_from_ansi(std::string& result, hsp_path::ansi_view path)
 {
-	if (path.c_str() == NULL) return hsp_path::utf8_string();
+	result.clear();
+	if (path.c_str() == NULL) return -1;
 
 	int wide_length = ansi_to_utf16_strict(NULL, path.c_str(), 0);
-	if (wide_length <= 0) return hsp_path::utf8_string();
-	wchar_t* wide_path = (wchar_t*)malloc(sizeof(wchar_t) * (size_t)wide_length);
-	if (wide_path == NULL) return hsp_path::utf8_string();
-	if (ansi_to_utf16_strict(wide_path, path.c_str(), wide_length) == 0) {
-		free(wide_path);
-		return hsp_path::utf8_string();
+	if (wide_length <= 0) return -1;
+	std::vector<wchar_t> wide_path((size_t)wide_length);
+	if (ansi_to_utf16_strict(wide_path.data(), path.c_str(), wide_length) == 0) {
+		return -1;
 	}
 
-	hsp_path::utf8_string result = hsp_path_utf8_from_wide(wide_path);
-	free(wide_path);
-	return result;
+	return hsp_path_utf8_from_wide(result, wide_path.data());
 }
 
-hsp_path::ansi_string hsp_path_to_ansi(hsp_path::utf8_view path)
+int hsp_path_to_ansi(std::string& result, hsp_path::utf8_view path)
 {
+	result.clear();
 	wchar_t* wide_path = hsp_path_utf8_to_wide(path.c_str());
-	if (wide_path == NULL) return hsp_path::ansi_string();
+	if (wide_path == NULL) return -1;
 
 	int ansi_length = utf16_to_ansi_strict(NULL, wide_path, 0);
 	if (ansi_length <= 0) {
 		free(wide_path);
-		return hsp_path::ansi_string();
+		return -1;
 	}
-	char* result = (char*)malloc((size_t)ansi_length);
-	if (result == NULL) {
+	result.resize((size_t)ansi_length, '\0');
+	if (utf16_to_ansi_strict(&result[0], wide_path, ansi_length) == 0) {
 		free(wide_path);
-		return hsp_path::ansi_string();
-	}
-	if (utf16_to_ansi_strict(result, wide_path, ansi_length) == 0) {
-		free(wide_path);
-		free(result);
-		return hsp_path::ansi_string();
+		result.clear();
+		return -1;
 	}
 	free(wide_path);
-	return hsp_path::ansi_string(result);
+	result.resize((size_t)ansi_length - 1);
+	return 0;
 }
 
 int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::utf8_view name)
 {
 	if (name.c_str() == NULL || !hsp_path_utf8_is_valid((const unsigned char*)name.c_str())) return -1;
-	if (hsp_path_get_module_directory_utf8(result) != 0) return -1;
-	result += "\\hsptv\\";
-	result += name.c_str();
-	return 0;
+	std::string directory;
+	if (hsp_path_get_module_directory_utf8(directory) != 0) return -1;
+	directory += "\\hsptv";
+	return hsp_path_get_hsptv_path_utf8(result, hsp_path::utf8_view(directory.c_str()), name);
 }
 
 int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::ansi_view name)
 {
-	hsp_path::utf8_string utf8_name = hsp_path_from_ansi(name);
-	if (!utf8_name) return -1;
-	return hsp_path_get_hsptv_path_utf8(result, utf8_name.as_view());
+	std::string utf8_name;
+	if (hsp_path_from_ansi(utf8_name, name) != 0) return -1;
+	return hsp_path_get_hsptv_path_utf8(result, hsp_path::utf8_view(utf8_name.c_str()));
 }
 
 #else
@@ -542,22 +545,20 @@ int hsp_path_dirlist_utf8(hsp_path::utf8_view pattern, int flags, hsp_path_list_
 	return result < 0 ? result : count;
 }
 
-hsp_path::utf8_string hsp_path_from_ansi(hsp_path::ansi_view path)
+int hsp_path_from_ansi(std::string& result, hsp_path::ansi_view path)
 {
-	if (path.c_str() == NULL) return hsp_path::utf8_string();
-	size_t length = strlen(path.c_str()) + 1;
-	char* result = (char*)malloc(length);
-	if (result != NULL) memcpy(result, path.c_str(), length);
-	return hsp_path::utf8_string(result);
+	result.clear();
+	if (path.c_str() == NULL) return -1;
+	result = path.c_str();
+	return 0;
 }
 
-hsp_path::ansi_string hsp_path_to_ansi(hsp_path::utf8_view path)
+int hsp_path_to_ansi(std::string& result, hsp_path::utf8_view path)
 {
-	if (path.c_str() == NULL || !hsp_path_utf8_is_valid((const unsigned char*)path.c_str())) return hsp_path::ansi_string();
-	size_t length = strlen(path.c_str()) + 1;
-	char* result = (char*)malloc(length);
-	if (result != NULL) memcpy(result, path.c_str(), length);
-	return hsp_path::ansi_string(result);
+	result.clear();
+	if (path.c_str() == NULL || !hsp_path_utf8_is_valid((const unsigned char*)path.c_str())) return -1;
+	result = path.c_str();
+	return 0;
 }
 
 FILE* hsp_path_fopen_utf8(hsp_path::utf8_view path, const char* mode)

@@ -52,17 +52,19 @@ static inline int hspcmp_getpath(const char* source, char* output, int mode, siz
 class hspcmp_message_path {
 public:
 	explicit hspcmp_message_path(const char* path)
-		: converted_(path != NULL ? hsp_path_to_ansi(hsp_path::utf8_view(path)) : hsp_path::ansi_string())
 	{
-		if (path == NULL) value_ = "<null path>";
-		else value_ = converted_ ? converted_.c_str() : "<unrepresentable UTF-8 path>";
+		if (path == NULL) {
+			value_ = "<null path>";
+		}
+		else if (hsp_path_to_ansi(value_, hsp_path::utf8_view(path)) != 0) {
+			value_ = "<unrepresentable UTF-8 path>";
+		}
 	}
 
-	const char* c_str() const { return value_; }
+	const char* c_str() const { return value_.c_str(); }
 
 private:
-	hsp_path::ansi_string converted_;
-	const char* value_;
+	std::string value_;
 };
 #endif
 

@@ -2199,8 +2199,10 @@ void CToken::GenerateCodePP( char *buf )
 			std::string cg_orgfile_utf8 = cg_str;
 #if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8) && !defined(HSPUTF8)
 			if (!pp_utf8) {
-				hsp_path::utf8_string converted_path = hsp_path_from_ansi(hsp_path::ansi_view(cg_str));
-				if (converted_path) cg_orgfile_utf8 = converted_path.c_str();
+				std::string converted_path;
+				if (hsp_path_from_ansi(converted_path, hsp_path::ansi_view(cg_str)) == 0) {
+					cg_orgfile_utf8 = converted_path;
+				}
 			}
 #endif
 			cg_orgfilefull = cg_orgfile_utf8;

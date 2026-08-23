@@ -7,10 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#if defined(HSPWIN)
 #include <string>
-#endif
 
 #if defined(HSPDEBUG) && !defined(HSPCMP)
 char* hsp3ext_getdir(int id);
@@ -210,70 +207,53 @@ void freeac(char **ppc)
 FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 {
 	FILE* hsp3_fp = NULL;
-#ifdef HSPWIN
-	// Windows path encoding follows the target's internal representation.
-	hsp3_fp = hsp_path_fopen(hsp_path::path_view(name), "rb");
-
-	//	Read HSPTV resource
-#ifdef HSPDEBUG
-
-	if (hsp3_fp == NULL) {
-		//	hsptvフォルダを検索する
-		std::string fn;
-#if defined(HSPUTF8)
-		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::utf8_view(name)) == 0)
-			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
-#elif defined(HSPCMP_PATH_UTF8)
-		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::utf8_view(name)) == 0)
-			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
-#else
-		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::ansi_view(name)) == 0) {
-			hsp_path::ansi_string ansi_fn = hsp_path_to_ansi(hsp_path::utf8_view(fn.c_str()));
-			if (ansi_fn) hsp3_fp = hsp_path_fopen(hsp_path::path_view(ansi_fn.c_str()), "rb");
-		}
-#endif
-	}
-
-#endif
-
-#else
-
-
 #ifdef HSPNDK
 	{
-	char *fname = name;
-	if ( *name == '*' ) {
-		fname = hgio_getstorage(name+1);
-	}
-	hsp3_fp = hgio_android_fopen(fname,offset);
-	if (hsp3_fp == NULL) return NULL;
-	return hsp3_fp;
+		char *fname = name;
+		if ( *name == '*' ) {
+			fname = hgio_getstorage(name+1);
+		}
+		hsp3_fp = hgio_android_fopen(fname,offset);
+		if (hsp3_fp == NULL) return NULL;
+		return hsp3_fp;
 	}
 #endif
 
 #ifdef HSPIOS
-    {
-        char* path = gb_filepath(name);
-        //printf("Load %s", path);
-        hsp3_fp = fopen(path, "rb");
-        if (hsp3_fp == NULL) return NULL;
-        return  hsp3_fp;
-    }
+	{
+		char* path = gb_filepath(name);
+		//printf("Load %s", path);
+		hsp3_fp = fopen(path, "rb");
+		if (hsp3_fp == NULL) return NULL;
+		return  hsp3_fp;
+	}
 #endif
-    
-	// Linux
+
 	hsp3_fp = hsp_path_fopen(hsp_path::path_view(name), "rb");
 #if defined(HSPDEBUG) && !defined(HSPCMP)
 	if (hsp3_fp == NULL) {
 		//	hsptvフォルダを検索する
-		char fn[2048];
-		strcpy(fn, hsp3ext_getdir(5));		// tv folder
-		strcat(fn, name);
-		hsp3_fp = hsp_path_fopen(hsp_path::path_view(fn), "rb");
-	}
+		std::string fn;
+#if defined(HSPWIN)
+#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
+		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::utf8_view(name)) == 0) {
+			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
+		}
+#else
+		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::ansi_view(name)) == 0) {
+			std::string ansi_fn;
+			if (hsp_path_to_ansi(ansi_fn, hsp_path::utf8_view(fn.c_str())) == 0) {
+				hsp3_fp = hsp_path_fopen(hsp_path::path_view(ansi_fn.c_str()), "rb");
+			}
+		}
 #endif
-
-
+#else
+		if (hsp_path_get_hsptv_path_utf8(fn,
+			hsp_path::utf8_view(hsp3ext_getdir(5)), hsp_path::utf8_view(name)) == 0) {
+			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
+		}
+#endif
+	}
 #endif
 	if (hsp3_fp == NULL) return NULL;
 	if (offset > 0) {
@@ -285,45 +265,25 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 
 FILE* hsp3_fopenwrite(char* fname8, HSPPTRINT offset)
 {
-	FILE* hsp3_fp = NULL;
-
-#ifdef HSPWIN
-	if (offset < 0) {
-		hsp3_fp = hsp_path_fopen(hsp_path::path_view(fname8), "w+b");
-	}
-	else {
-		hsp3_fp = hsp_path_fopen(hsp_path::path_view(fname8), "r+b");
-		if (hsp3_fp == NULL) return NULL;
-		hsp3_fseek(hsp3_fp, offset, SEEK_SET);
-	}
-
-#else
-
-	char *fname;
-	fname = fname8;
+	const char* mode = offset < 0 ? "w+b" : "r+b";
+	FILE* hsp3_fp;
 #ifdef HSPNDK
+	char *fname = fname8;
 	if ( *fname != '/' ) {
 		fname = hgio_getstorage(fname8);
 	}
+	hsp3_fp = fopen(fname, mode);
+#else
+	hsp3_fp = hsp_path_fopen(hsp_path::path_view(fname8), mode);
 #endif
-	// Linux
-	if (offset < 0) {
-	#ifdef HSPNDK
-		hsp3_fp = fopen(fname, "w+b");
-	#else
-		hsp3_fp = hsp_path_fopen(hsp_path::path_view(fname), "w+b");
-	#endif
-	}
-	else {
-	#ifdef HSPNDK
-		hsp3_fp = fopen(fname, "r+b");
-	#else
-		hsp3_fp = hsp_path_fopen(hsp_path::path_view(fname), "r+b");
-	#endif
-		if (hsp3_fp == NULL) return NULL;
+	if (hsp3_fp == NULL) return NULL;
+	if (offset >= 0) {
+#ifdef HSPNDK
 		fseek(hsp3_fp, offset, SEEK_SET);
-	}
+#else
+		hsp3_fseek(hsp3_fp, offset, SEEK_SET);
 #endif
+	}
 	return hsp3_fp;
 }
 

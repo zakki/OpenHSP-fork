@@ -23,8 +23,8 @@
 #if defined(HSPCMP_PATH_UTF8) && defined(HSPWIN)
 static int copy_wide_dirinfo_path(char* destination, size_t destination_size, const wchar_t* source)
 {
-	hsp_path::utf8_string utf8_path = hsp_path_utf8_from_wide(source);
-	if (!utf8_path || strlen(utf8_path.c_str()) >= destination_size) {
+	std::string utf8_path;
+	if (hsp_path_utf8_from_wide(utf8_path, source) != 0 || utf8_path.size() >= destination_size) {
 		return -1;
 	}
 	strcpy(destination, utf8_path.c_str());
@@ -59,8 +59,9 @@ void dirinfo(char* p, int id)
 #ifdef HSPCMP_PATH_UTF8
 		if (!hspcmp_getpath(module_filename.c_str(), p, 32)) p[0] = 0;
 #else
-		hsp_path::ansi_string ansi_filename = hsp_path_to_ansi(hsp_path::utf8_view(module_filename.c_str()));
-		if (!ansi_filename || !hspcmp_getpath(ansi_filename.c_str(), p, 32)) p[0] = 0;
+		std::string ansi_filename;
+		if (hsp_path_to_ansi(ansi_filename, hsp_path::utf8_view(module_filename.c_str())) != 0 ||
+			!hspcmp_getpath(ansi_filename.c_str(), p, 32)) p[0] = 0;
 #endif
 		break;
 	}

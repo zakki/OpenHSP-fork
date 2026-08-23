@@ -39,49 +39,6 @@ private:
 	const char* value_;
 };
 
-template <typename Encoding>
-class owned {
-public:
-	explicit owned(char* value = NULL) : value_(value) {}
-
-	owned(owned&& other) : value_(other.value_)
-	{
-		other.value_ = NULL;
-	}
-
-	owned& operator=(owned&& other)
-	{
-		if (this != &other) {
-			free(value_);
-			value_ = other.value_;
-			other.value_ = NULL;
-		}
-		return *this;
-	}
-
-	~owned()
-	{
-		free(value_);
-	}
-
-	owned(const owned&) = delete;
-	owned& operator=(const owned&) = delete;
-
-	const char* c_str() const { return value_; }
-	char* data() { return value_; }
-	hsp_path::view<Encoding> as_view() const { return hsp_path::view<Encoding>(value_); }
-	char* release()
-	{
-		char* result = value_;
-		value_ = NULL;
-		return result;
-	}
-	explicit operator bool() const { return value_ != NULL; }
-
-private:
-	char* value_;
-};
-
 typedef view<utf8_tag> utf8_view;
 typedef view<ansi_tag> ansi_view;
 
@@ -91,15 +48,17 @@ typedef utf8_view path_view;
 typedef ansi_view path_view;
 #endif
 
-typedef owned<utf8_tag> utf8_string;
-typedef owned<ansi_tag> ansi_string;
-
 }
 
 // Open a file whose path is a NUL-terminated UTF-8 string.
 // On Windows, the path is converted to UTF-16 before calling _wfopen.
 // On POSIX systems, the validated UTF-8 byte sequence is passed to fopen.
 FILE* hsp_path_fopen_utf8(hsp_path::utf8_view path, const char* mode);
+
+// Append a UTF-8 filename to an HSPTV directory. The directory may be empty
+// for targets whose HSPTV files are relative to the current filesystem root.
+int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::utf8_view directory,
+	hsp_path::utf8_view name);
 
 #if defined(HSPWIN) || defined(_WIN32)
 // Return the current module filename or directory as UTF-8.
@@ -131,13 +90,13 @@ typedef int (*hsp_path_list_callback)(hsp_path::utf8_view name, void* user_data)
 int hsp_path_dirlist_utf8(hsp_path::utf8_view pattern, int flags, hsp_path_list_callback callback, void* user_data);
 
 // Convert a Windows ACP string at a compatibility boundary to UTF-8.
-// The returned value owns a malloc-allocated buffer.
-hsp_path::utf8_string hsp_path_from_ansi(hsp_path::ansi_view path);
+// Returns zero on success and -1 on invalid input or conversion failure.
+int hsp_path_from_ansi(std::string& result, hsp_path::ansi_view path);
 
 // Convert a Windows wide string at a UTF-16 boundary to UTF-8.
-// The returned value owns a malloc-allocated buffer.
 #if defined(HSPWIN) || defined(_WIN32)
-hsp_path::utf8_string hsp_path_utf8_from_wide(const wchar_t* text);
+// Returns zero on success and -1 on invalid input or conversion failure.
+int hsp_path_utf8_from_wide(std::string& result, const wchar_t* text);
 
 // Launch a process using a UTF-8 command line. Returns a WinExec-compatible
 // success value (>= 32) or zero on failure.
@@ -145,8 +104,8 @@ int hsp_path_exec_utf8(hsp_path::utf8_view command);
 #endif
 
 // Convert an internal UTF-8 path to the legacy Windows ACP contract.
-// Returns an invalid value when the path cannot be represented without loss.
-hsp_path::ansi_string hsp_path_to_ansi(hsp_path::utf8_view path);
+// Returns zero on success and -1 when the path cannot be represented.
+int hsp_path_to_ansi(std::string& result, hsp_path::utf8_view path);
 
 // Remove the extension from a UTF-8 path in place. Falls back to a manual
 // strip (rather than leaving the extension untouched) when the path cannot

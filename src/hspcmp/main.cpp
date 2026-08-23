@@ -126,9 +126,9 @@ int main( int argc, char *argv[] )
 	std::vector<std::string> utf8_args;
 	utf8_args.reserve(argc);
 	for (int i = 0; i < argc; ++i) {
-		hsp_path::utf8_string converted = hsp_path_utf8_from_wide(argv[i]);
-		if (!converted) return 1;
-		utf8_args.push_back(converted.c_str());
+		std::string converted;
+		if (hsp_path_utf8_from_wide(converted, argv[i]) != 0) return 1;
+		utf8_args.push_back(converted);
 	}
 #endif
 

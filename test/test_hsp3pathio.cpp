@@ -18,8 +18,6 @@ static int count_matching_path(hsp_path::utf8_view name, void* user_data)
 int main()
 {
 	static_assert(!std::is_same<hsp_path::utf8_view, hsp_path::ansi_view>::value, "UTF-8 and ANSI views must differ");
-	static_assert(!std::is_copy_constructible<hsp_path::utf8_string>::value, "Owned paths must not be copied");
-	static_assert(std::is_move_constructible<hsp_path::utf8_string>::value, "Owned paths must be movable");
 
 	const char* path = "hsp3pathio-日本語-😀.tmp";
 	const char* expected = "UTF-8 path I/O\n";
@@ -45,17 +43,22 @@ int main()
 	assert(hsp_path_fopen_utf8(hsp_path::utf8_view(invalid_utf8), "rb") == NULL);
 	assert(!hsp_path_file_exists_utf8(hsp_path::utf8_view(invalid_utf8)));
 	assert(hsp_path_filesize_utf8(hsp_path::utf8_view(invalid_utf8)) < 0);
-	hsp_path::utf8_string compatibility_path = hsp_path_from_ansi(hsp_path::ansi_view("compatibility-日本語"));
-	assert(compatibility_path);
+	std::string compatibility_path;
+	assert(hsp_path_from_ansi(compatibility_path,
+		hsp_path::ansi_view("compatibility-日本語")) == 0);
 	assert(strcmp(compatibility_path.c_str(), "compatibility-日本語") == 0);
-	hsp_path::ansi_string compatibility_output = hsp_path_to_ansi(compatibility_path.as_view());
-	assert(compatibility_output);
+	std::string compatibility_output;
+	assert(hsp_path_to_ansi(compatibility_output,
+		hsp_path::utf8_view(compatibility_path.c_str())) == 0);
 	assert(strcmp(compatibility_output.c_str(), compatibility_path.c_str()) == 0);
+	assert(hsp_path_from_ansi(compatibility_path, hsp_path::ansi_view("")) == 0);
+	assert(compatibility_path.empty());
+	assert(hsp_path_from_ansi(compatibility_path, hsp_path::ansi_view(NULL)) != 0);
 
 #if defined(HSPWIN) || defined(_WIN32)
 	const wchar_t wide_path[] = L"wide-日本語-😀";
-	hsp_path::utf8_string wide_path_utf8 = hsp_path_utf8_from_wide(wide_path);
-	assert(wide_path_utf8);
+	std::string wide_path_utf8;
+	assert(hsp_path_utf8_from_wide(wide_path_utf8, wide_path) == 0);
 	assert(strcmp(wide_path_utf8.c_str(), "wide-日本語-😀") == 0);
 #endif
 
@@ -74,6 +77,16 @@ int main()
 	assert(strcmp(component, ".bashrc") == 0);
 	assert(hsp_path_getpath_utf8(hsp_path::utf8_view(".bashrc"), component, sizeof(component), 1));
 	assert(strcmp(component, "") == 0);
+	std::string hsptv_path;
+	assert(hsp_path_get_hsptv_path_utf8(hsptv_path,
+		hsp_path::utf8_view("/runtime/hsptv"), hsp_path::utf8_view("素材-日本語.dat")) == 0);
+	assert(hsptv_path == "/runtime/hsptv/素材-日本語.dat");
+	assert(hsp_path_get_hsptv_path_utf8(hsptv_path,
+		hsp_path::utf8_view(""), hsp_path::utf8_view("素材-日本語.dat")) == 0);
+	assert(hsptv_path == "素材-日本語.dat");
+	const char invalid_hsptv_name[] = "素材-\xf0\x28\x8c\x28.dat";
+	assert(hsp_path_get_hsptv_path_utf8(hsptv_path,
+		hsp_path::utf8_view("/runtime/hsptv"), hsp_path::utf8_view(invalid_hsptv_name)) != 0);
 	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:foo.hsp"), component, sizeof(component), 8));
 	assert(strcmp(component, "foo.hsp") == 0);
 	assert(hsp_path_getpath_utf8(hsp_path::utf8_view("C:"), component, sizeof(component), 32));

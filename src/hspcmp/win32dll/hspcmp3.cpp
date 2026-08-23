@@ -79,12 +79,8 @@ static void ensure_trailing_backslash(std::string& path)
 
 static int copy_ansi_path_to_utf8(std::string& destination, const char* source)
 {
-	hsp_path::utf8_string utf8_path;
 	if (source == NULL) return -1;
-	utf8_path = hsp_path_from_ansi(hsp_path::ansi_view(source));
-	if (!utf8_path) return -1;
-	destination = utf8_path.c_str();
-	return 0;
+	return hsp_path_from_ansi(destination, hsp_path::ansi_view(source));
 }
 
 static int copy_ansi_path_directory_to_utf8(std::string& destination, const char* source)
@@ -804,15 +800,14 @@ EXPORT BOOL WINAPI hsc3_getruntime ( char *p1, char *p2, HSPPTRINT p3, HSPPTRINT
 	int i;
 	std::string path;
 	char runtime[HSP_MAX_PATH];
-	hsp_path::ansi_string ansi_runtime;
+	std::string ansi_runtime;
 	if (copy_ansi_path_to_utf8(path, p2) != 0) return -1;
 	i = hsc3->GetRuntimeFromHeader( path.c_str(), runtime );
 	if ( i != 1 ) {
 		*p1 = 0;
 		return 0;
 	}
-	ansi_runtime = hsp_path_to_ansi(hsp_path::utf8_view(runtime));
-	if (!ansi_runtime) return -1;
+	if (hsp_path_to_ansi(ansi_runtime, hsp_path::utf8_view(runtime)) != 0) return -1;
 	strcpy(p1, ansi_runtime.c_str());
 	return 0;
 }
@@ -823,9 +818,9 @@ EXPORT BOOL WINAPI hsc3_run ( char *p1, HSPPTRINT p2, HSPPTRINT p3, HSPPTRINT p4
 	//
 	//		hsc3_run path, debug_flag  (type1)
 	//
-	hsp_path::utf8_string utf8_command = hsp_path_from_ansi(hsp_path::ansi_view(p1));
-	if (!utf8_command) return -1;
-	int i = hsp_path_exec_utf8(utf8_command.as_view());
+	std::string utf8_command;
+	if (hsp_path_from_ansi(utf8_command, hsp_path::ansi_view(p1)) != 0) return -1;
+	int i = hsp_path_exec_utf8(hsp_path::utf8_view(utf8_command.c_str()));
 	if ( i < 32 ) return -1;
 	return 0;
 }
@@ -1299,8 +1294,8 @@ EXPORT BOOL WINAPI aht_getprjsrc( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HS
 	APTR ap3;
 	int ep1;
 	char *p;
-	hsp_path::ansi_string ansi_name;
-	hsp_path::ansi_string ansi_path;
+	std::string ansi_name;
+	std::string ansi_path;
 	int res;
 
 	if ( aht == NULL ) return -1;
@@ -1311,12 +1306,10 @@ EXPORT BOOL WINAPI aht_getprjsrc( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HS
 	ep1 = hei->HspFunc_prm_getdi( 0 );		// パラメータ4:数値
 
 	p = aht->GetProjectFileModel( ep1 );
-	ansi_name = hsp_path_to_ansi(hsp_path::utf8_view(p));
-	if (!ansi_name) return -1;
+	if (hsp_path_to_ansi(ansi_name, hsp_path::utf8_view(p)) != 0) return -1;
 	hei->HspFunc_prm_setva( pv, ap, TYPE_STRING, ansi_name.c_str() );	// 変数に値を代入
 	p = aht->GetProjectFileModelPath( ep1 );
-	ansi_path = hsp_path_to_ansi(hsp_path::utf8_view(p));
-	if (!ansi_path) return -1;
+	if (hsp_path_to_ansi(ansi_path, hsp_path::utf8_view(p)) != 0) return -1;
 	hei->HspFunc_prm_setva( pv2, ap2, TYPE_STRING, ansi_path.c_str() );	// 変数に値を代入
 	res = aht->GetProjectFileModelID( ep1 );
 	hei->HspFunc_prm_setva( pv3, ap3, TYPE_INUM, &res );	// 変数に値を代入
@@ -1448,14 +1441,13 @@ EXPORT BOOL WINAPI aht_parts( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSPPTR
 	//
 	char *ep1;
 	char *ep2;
-	hsp_path::utf8_string utf8_list;
+	std::string utf8_list;
 	std::string path;
 	if ( aht == NULL ) return -1;
 	ep1 = hei->HspFunc_prm_gets();			// パラメータ1:文字列
 	if (copy_ansi_path_to_utf8(path, ep1) != 0) return -1;
 	ep2 = hei->HspFunc_prm_gets();			// パラメータ2:文字列
-	utf8_list = hsp_path_from_ansi(hsp_path::ansi_view(ep2));
-	if (!utf8_list) return -1;
+	if (hsp_path_from_ansi(utf8_list, hsp_path::ansi_view(ep2)) != 0) return -1;
 	return aht->BuildParts( utf8_list.data(), path.c_str() ) < 0 ? -1 : 0;
 }
 
@@ -1475,8 +1467,8 @@ EXPORT BOOL WINAPI aht_getparts( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSP
 	int ep1;
 	int res;
 	char *p;
-	hsp_path::ansi_string ansi_name;
-	hsp_path::ansi_string ansi_classname;
+	std::string ansi_name;
+	std::string ansi_classname;
 
 	if ( aht == NULL ) return -1;
 
@@ -1490,12 +1482,10 @@ EXPORT BOOL WINAPI aht_getparts( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSP
 	res = aht->GetPartsIconID(ep1);
 	hei->HspFunc_prm_setva( pv, ap, TYPE_INUM, &res );	// 変数に値を代入
 	p = aht->GetPartsName(ep1);
-	ansi_name = hsp_path_to_ansi(hsp_path::utf8_view(p));
-	if (!ansi_name) return -1;
+	if (hsp_path_to_ansi(ansi_name, hsp_path::utf8_view(p)) != 0) return -1;
 	hei->HspFunc_prm_setva( pv2, ap2, TYPE_STRING, ansi_name.c_str() );	// 変数に値を代入
 	p = aht->GetPartsClassName(ep1);
-	ansi_classname = hsp_path_to_ansi(hsp_path::utf8_view(p));
-	if (!ansi_classname) return -1;
+	if (hsp_path_to_ansi(ansi_classname, hsp_path::utf8_view(p)) != 0) return -1;
 	hei->HspFunc_prm_setva( pv3, ap3, TYPE_STRING, ansi_classname.c_str() );	// 変数に値を代入
 
 	return 0;

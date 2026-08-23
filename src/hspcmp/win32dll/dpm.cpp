@@ -205,9 +205,9 @@ static int gettvfolder(std::string& path, char* name)
 	path = utf8_path;
 #else
 	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::ansi_view(name)) != 0) return -1;
-	hsp_path::ansi_string ansi_path = hsp_path_to_ansi(hsp_path::utf8_view(utf8_path.c_str()));
-	if (!ansi_path) return -1;
-	path = ansi_path.c_str();
+	std::string ansi_path;
+	if (hsp_path_to_ansi(ansi_path, hsp_path::utf8_view(utf8_path.c_str())) != 0) return -1;
+	path = ansi_path;
 #endif
 	return 0;
 #endif

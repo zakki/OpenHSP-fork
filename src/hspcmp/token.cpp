@@ -2228,7 +2228,7 @@ ppresult_t CToken::PP_IncludeSub(char* word, int is_addition)
 ppresult_t CToken::PP_Include( int is_addition )
 {
 	char* word = (char*)s3;
-	hsp_path::utf8_string converted_word;
+	std::string converted_word;
 	int type = GetToken();
 	switch (type) {
 	case TK_STRING:
@@ -2248,8 +2248,7 @@ ppresult_t CToken::PP_Include( int is_addition )
 
 	#if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8)
 	if (!pp_utf8) {
-		converted_word = hsp_path_from_ansi(hsp_path::ansi_view(word));
-		if (!converted_word) {
+		if (hsp_path_from_ansi(converted_word, hsp_path::ansi_view(word)) != 0) {
 			SetError("include path conversion failed");
 			return PPRESULT_ERROR;
 		}
@@ -3332,7 +3331,7 @@ ppresult_t CToken::PP_Pack( int mode )
 	//			(mode:0=normal/1=encrypt)
 	int i;
 	char* pack_name;
-	hsp_path::utf8_string converted_name;
+	std::string converted_name;
 	if ( packbuf!=NULL ) {
 		i = GetToken();
 		if ( i != TK_STRING ) {
@@ -3341,8 +3340,7 @@ ppresult_t CToken::PP_Pack( int mode )
 		pack_name = (char*)s3;
 #if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8)
 		if (!pp_utf8) {
-			converted_name = hsp_path_from_ansi(hsp_path::ansi_view(pack_name));
-			if (!converted_name) return PPRESULT_ERROR;
+			if (hsp_path_from_ansi(converted_name, hsp_path::ansi_view(pack_name)) != 0) return PPRESULT_ERROR;
 			pack_name = converted_name.data();
 		}
 #endif
@@ -3370,7 +3368,7 @@ ppresult_t CToken::PP_PackOpt( void )
 	char tmp[1024];
 	char optname[1024];
 	char* optvalue;
-	hsp_path::utf8_string converted_value;
+	std::string converted_value;
 	if ( packbuf!=NULL ) {
 		i = GetToken();
 		if ( i != TK_OBJ ) {
@@ -3388,8 +3386,7 @@ ppresult_t CToken::PP_PackOpt( void )
 		optvalue = (char*)s3;
 #if defined(HSPWIN) && defined(HSPCMP_PATH_UTF8)
 		if (i == TK_STRING && !pp_utf8) {
-			converted_value = hsp_path_from_ansi(hsp_path::ansi_view(optvalue));
-			if (!converted_value) return PPRESULT_ERROR;
+			if (hsp_path_from_ansi(converted_value, hsp_path::ansi_view(optvalue)) != 0) return PPRESULT_ERROR;
 			optvalue = converted_value.data();
 		}
 #endif
