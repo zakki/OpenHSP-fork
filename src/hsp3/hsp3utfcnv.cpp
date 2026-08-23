@@ -235,18 +235,9 @@ FILE *hsp3_fopen(char*name, HSPPTRINT offset)
 		//	hsptvフォルダを検索する
 		std::string fn;
 #if defined(HSPWIN)
-#if defined(HSPUTF8) || defined(HSPCMP_PATH_UTF8)
-		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::utf8_view(name)) == 0) {
-			hsp3_fp = hsp_path_fopen_utf8(hsp_path::utf8_view(fn.c_str()), "rb");
+		if (hsp_path_get_hsptv_path(fn, hsp_path::path_view(name)) == 0) {
+			hsp3_fp = hsp_path_fopen(hsp_path::path_view(fn.c_str()), "rb");
 		}
-#else
-		if (hsp_path_get_hsptv_path_utf8(fn, hsp_path::ansi_view(name)) == 0) {
-			std::string ansi_fn;
-			if (hsp_path_to_ansi(ansi_fn, hsp_path::utf8_view(fn.c_str())) == 0) {
-				hsp3_fp = hsp_path_fopen(hsp_path::path_view(ansi_fn.c_str()), "rb");
-			}
-		}
-#endif
 #else
 		if (hsp_path_get_hsptv_path_utf8(fn,
 			hsp_path::utf8_view(hsp3ext_getdir(5)), hsp_path::utf8_view(name)) == 0) {

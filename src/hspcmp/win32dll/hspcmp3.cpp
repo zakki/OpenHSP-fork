@@ -334,7 +334,7 @@ p1が128(bit7)の場合はデフォルトで64bitランタイムを選択しま�
 	hsc3->ResetError();
 
 	if (orgcompath==0) {
-		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
+		if (hsp_path_get_module_directory(compath) != 0) return -1;
 		ensure_trailing_backslash(compath);
 		compath += "common\\";
 	}
@@ -542,7 +542,7 @@ EXPORT BOOL WINAPI hsc3_getsym(HSPPTRINT p1, HSPPTRINT p2, HSPPTRINT p3, HSPPTRI
 	//
 	hsc3->ResetError();
 	if (orgcompath == 0) {
-		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
+		if (hsp_path_get_module_directory(compath) != 0) return -1;
 		ensure_trailing_backslash(compath);
 		compath += "common\\";
 	}
@@ -634,10 +634,10 @@ EXPORT BOOL WINAPI hsc3_make ( BMSCR *bm, char *p1, HSPPTRINT p2, HSPPTRINT p3 )
 	if (copy_ansi_path_directory_to_utf8(libpath, p1) != 0) return -1;
 
 #ifdef ICONINS_SUPPORT
-	if (hsp_path_get_module_directory_utf8(ici_opt) != 0) return -1;
+	if (hsp_path_get_module_directory(ici_opt) != 0) return -1;
 	ensure_trailing_backslash(ici_opt);
 	ici_opt += "iconins.exe";
-	if (hsp_path_get_current_directory_utf8(ici_current) != 0) return -1;
+	if (hsp_path_get_current_directory(ici_current) != 0) return -1;
 	ici_current += "\\";
 #endif
 
@@ -869,7 +869,7 @@ EXPORT BOOL WINAPI aht_source( HSPEXINFO *hei, HSPPTRINT p1, HSPPTRINT p2, HSPPT
 	//		AHTを解析
 	hsc3->ResetError();
 	if (orgcompath==0) {
-		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
+		if (hsp_path_get_module_directory(compath) != 0) return -1;
 		ensure_trailing_backslash(compath);
 		compath += fpath;
 	}
@@ -1068,7 +1068,7 @@ EXPORT BOOL WINAPI aht_make ( int *p1, char *p2, HSPPTRINT p3, HSPPTRINT p4 )
 	res = 0;
 	hsc3->ResetError();
 	if (orgcompath==0) {
-		if (hsp_path_get_module_directory_utf8(compath) != 0) return -1;
+		if (hsp_path_get_module_directory(compath) != 0) return -1;
 		ensure_trailing_backslash(compath);
 		compath += ahtmodel->GetSourcePath();
 	}

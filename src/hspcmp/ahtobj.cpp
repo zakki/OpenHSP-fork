@@ -39,30 +39,21 @@ void dirinfo(char* p, int id)
 #ifdef HSPWIN
 	switch (id) {
 	case 0:				//    カレント(現在の)ディレクトリ
-	#ifdef HSPCMP_PATH_UTF8
-		{
-			wchar_t wide_path[_MAX_PATH];
-			if (_wgetcwd(wide_path, sizeof(wide_path) / sizeof(wide_path[0])) == NULL ||
-				copy_wide_dirinfo_path(p, _MAX_PATH, wide_path) != 0) p[0] = 0;
-		}
-	#else
-		_getcwd(p, _MAX_PATH);
-	#endif
+	{
+		std::string current_directory;
+		if (hsp_path_get_current_directory(current_directory) != 0 ||
+			current_directory.size() >= _MAX_PATH) p[0] = 0;
+		else strcpy(p, current_directory.c_str());
+	}
 		break;
 	case 1:				//    実行ファイルがあるディレクトリ
 	{
 		std::string module_filename;
-		if (hsp_path_get_module_filename_utf8(module_filename) != 0) {
+		if (hsp_path_get_module_filename(module_filename) != 0) {
 			p[0] = 0;
 			break;
 		}
-#ifdef HSPCMP_PATH_UTF8
 		if (!hspcmp_getpath(module_filename.c_str(), p, 32)) p[0] = 0;
-#else
-		std::string ansi_filename;
-		if (hsp_path_to_ansi(ansi_filename, hsp_path::utf8_view(module_filename.c_str())) != 0 ||
-			!hspcmp_getpath(ansi_filename.c_str(), p, 32)) p[0] = 0;
-#endif
 		break;
 	}
 	case 2:				//    Windowsディレクトリ

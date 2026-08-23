@@ -67,6 +67,12 @@ int hsp_path_get_module_directory_utf8(std::string& result);
 int hsp_path_get_current_directory_utf8(std::string& result);
 int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::utf8_view name);
 int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::ansi_view name);
+
+// Return the same paths in the target's default internal representation.
+int hsp_path_get_module_filename(std::string& result);
+int hsp_path_get_module_directory(std::string& result);
+int hsp_path_get_current_directory(std::string& result);
+int hsp_path_get_hsptv_path(std::string& result, hsp_path::path_view name);
 #endif
 
 // Open a file using the target's default internal path representation.

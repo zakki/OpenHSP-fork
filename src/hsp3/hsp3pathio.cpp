@@ -477,6 +477,39 @@ int hsp_path_to_ansi(std::string& result, hsp_path::utf8_view path)
 	return 0;
 }
 
+int hsp_path_get_module_filename(std::string& result)
+{
+#if HSP_PATHIO_DEFAULT_UTF8
+	return hsp_path_get_module_filename_utf8(result);
+#else
+	std::string utf8_path;
+	if (hsp_path_get_module_filename_utf8(utf8_path) != 0) return -1;
+	return hsp_path_to_ansi(result, hsp_path::utf8_view(utf8_path.c_str()));
+#endif
+}
+
+int hsp_path_get_module_directory(std::string& result)
+{
+#if HSP_PATHIO_DEFAULT_UTF8
+	return hsp_path_get_module_directory_utf8(result);
+#else
+	std::string utf8_path;
+	if (hsp_path_get_module_directory_utf8(utf8_path) != 0) return -1;
+	return hsp_path_to_ansi(result, hsp_path::utf8_view(utf8_path.c_str()));
+#endif
+}
+
+int hsp_path_get_current_directory(std::string& result)
+{
+#if HSP_PATHIO_DEFAULT_UTF8
+	return hsp_path_get_current_directory_utf8(result);
+#else
+	std::string utf8_path;
+	if (hsp_path_get_current_directory_utf8(utf8_path) != 0) return -1;
+	return hsp_path_to_ansi(result, hsp_path::utf8_view(utf8_path.c_str()));
+#endif
+}
+
 int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::utf8_view name)
 {
 	if (name.c_str() == NULL || !hsp_path_utf8_is_valid((const unsigned char*)name.c_str())) return -1;
@@ -491,6 +524,17 @@ int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::ansi_view name)
 	std::string utf8_name;
 	if (hsp_path_from_ansi(utf8_name, name) != 0) return -1;
 	return hsp_path_get_hsptv_path_utf8(result, hsp_path::utf8_view(utf8_name.c_str()));
+}
+
+int hsp_path_get_hsptv_path(std::string& result, hsp_path::path_view name)
+{
+#if HSP_PATHIO_DEFAULT_UTF8
+	return hsp_path_get_hsptv_path_utf8(result, hsp_path::utf8_view(name.c_str()));
+#else
+	std::string utf8_path;
+	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::ansi_view(name.c_str())) != 0) return -1;
+	return hsp_path_to_ansi(result, hsp_path::utf8_view(utf8_path.c_str()));
+#endif
 }
 
 #else

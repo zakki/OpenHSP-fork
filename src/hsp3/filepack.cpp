@@ -419,14 +419,10 @@ int FilePack::LoadPackFile( const char *fname, int encode, HFPSIZE dpmoffset, in
 		//	fnameがフルパスの場合はパスを補完しない
 		bool addcurrent = !hsp_path_is_absolute(fname);
 		if (addcurrent) {
-#ifdef HSPUTF8
 			std::string current_directory;
-			if (hsp_path_get_current_directory_utf8(current_directory) != 0) return -2;
+			if (hsp_path_get_current_directory(current_directory) != 0) return -2;
 			if (current_directory.size() + 1 + strlen(fname) > HFP_PATH_MAX) return -2;
 			strcpy(dpmname, current_directory.c_str());
-#else
-			_getcwd(dpmname, HFP_PATH_MAX);
-#endif
 			strcat(dpmname, "/");
 		}
 	}

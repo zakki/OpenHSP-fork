@@ -199,16 +199,7 @@ static int gettvfolder(std::string& path, char* name)
 	//	get HSPTV resource folder path
 
 #ifdef HSPWIN
-	std::string utf8_path;
-#ifdef HSPCMP_PATH_UTF8
-	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::utf8_view(name)) != 0) return -1;
-	path = utf8_path;
-#else
-	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::ansi_view(name)) != 0) return -1;
-	std::string ansi_path;
-	if (hsp_path_to_ansi(ansi_path, hsp_path::utf8_view(utf8_path.c_str())) != 0) return -1;
-	path = ansi_path;
-#endif
+	if (hsp_path_get_hsptv_path(path, hsp_path::path_view(name)) != 0) return -1;
 	return 0;
 #endif
 	return -1;

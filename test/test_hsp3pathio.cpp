@@ -60,6 +60,19 @@ int main()
 	std::string wide_path_utf8;
 	assert(hsp_path_utf8_from_wide(wide_path_utf8, wide_path) == 0);
 	assert(strcmp(wide_path_utf8.c_str(), "wide-日本語-😀") == 0);
+	std::string module_filename;
+	assert(hsp_path_get_module_filename(module_filename) == 0);
+	assert(!module_filename.empty());
+	std::string module_directory;
+	assert(hsp_path_get_module_directory(module_directory) == 0);
+	assert(!module_directory.empty());
+	std::string current_directory;
+	assert(hsp_path_get_current_directory(current_directory) == 0);
+	assert(!current_directory.empty());
+	std::string native_hsptv_path;
+	assert(hsp_path_get_hsptv_path(native_hsptv_path,
+		hsp_path::path_view("native-test.dat")) == 0);
+	assert(native_hsptv_path.find("native-test.dat") != std::string::npos);
 #endif
 
 	char component[64];
