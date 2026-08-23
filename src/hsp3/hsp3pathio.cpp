@@ -323,19 +323,27 @@ int hsp_path_exec_utf8(hsp_path::utf8_view command)
 	return result ? 33 : 0;
 }
 
-int hsp_path_utf8_from_wide(std::string& result, const wchar_t* text)
+// Shared by hsp_path_utf8_from_wide and hsp_path_to_ansi: both narrow a wide
+// string through a *_strict converter of matching signature.
+static int hsp_path_narrow_from_wide_strict(std::string& result, const wchar_t* text,
+	int (*converter)(char*, const void*, int))
 {
 	result.clear();
 	if (text == NULL) return -1;
-	int length = utf16_to_utf8_strict(NULL, text, 0);
+	int length = converter(NULL, text, 0);
 	if (length <= 0) return -1;
 	result.resize((size_t)length, '\0');
-	if (utf16_to_utf8_strict(&result[0], text, length) == 0) {
+	if (converter(&result[0], text, length) == 0) {
 		result.clear();
 		return -1;
 	}
 	result.resize((size_t)length - 1);
 	return 0;
+}
+
+int hsp_path_utf8_from_wide(std::string& result, const wchar_t* text)
+{
+	return hsp_path_narrow_from_wide_strict(result, text, utf16_to_utf8_strict);
 }
 
 int hsp_path_dirlist_utf8(hsp_path::utf8_view pattern, int flags, hsp_path_list_callback callback, void* user_data)
@@ -460,54 +468,38 @@ int hsp_path_to_ansi(std::string& result, hsp_path::utf8_view path)
 	result.clear();
 	wchar_t* wide_path = hsp_path_utf8_to_wide(path.c_str());
 	if (wide_path == NULL) return -1;
-
-	int ansi_length = utf16_to_ansi_strict(NULL, wide_path, 0);
-	if (ansi_length <= 0) {
-		free(wide_path);
-		return -1;
-	}
-	result.resize((size_t)ansi_length, '\0');
-	if (utf16_to_ansi_strict(&result[0], wide_path, ansi_length) == 0) {
-		free(wide_path);
-		result.clear();
-		return -1;
-	}
+	int status = hsp_path_narrow_from_wide_strict(result, wide_path, utf16_to_ansi_strict);
 	free(wide_path);
-	result.resize((size_t)ansi_length - 1);
-	return 0;
+	return status;
+}
+
+// Shared by the hsp_path_get_*() wrappers below: run a UTF-8 accessor and,
+// unless UTF-8 is already the target's default representation, convert its
+// result to ANSI.
+static int hsp_path_convert_to_default(std::string& result, int (*to_utf8)(std::string&))
+{
+#if HSP_PATHIO_DEFAULT_UTF8
+	return to_utf8(result);
+#else
+	std::string utf8_path;
+	if (to_utf8(utf8_path) != 0) return -1;
+	return hsp_path_to_ansi(result, hsp_path::utf8_view(utf8_path.c_str()));
+#endif
 }
 
 int hsp_path_get_module_filename(std::string& result)
 {
-#if HSP_PATHIO_DEFAULT_UTF8
-	return hsp_path_get_module_filename_utf8(result);
-#else
-	std::string utf8_path;
-	if (hsp_path_get_module_filename_utf8(utf8_path) != 0) return -1;
-	return hsp_path_to_ansi(result, hsp_path::utf8_view(utf8_path.c_str()));
-#endif
+	return hsp_path_convert_to_default(result, hsp_path_get_module_filename_utf8);
 }
 
 int hsp_path_get_module_directory(std::string& result)
 {
-#if HSP_PATHIO_DEFAULT_UTF8
-	return hsp_path_get_module_directory_utf8(result);
-#else
-	std::string utf8_path;
-	if (hsp_path_get_module_directory_utf8(utf8_path) != 0) return -1;
-	return hsp_path_to_ansi(result, hsp_path::utf8_view(utf8_path.c_str()));
-#endif
+	return hsp_path_convert_to_default(result, hsp_path_get_module_directory_utf8);
 }
 
 int hsp_path_get_current_directory(std::string& result)
 {
-#if HSP_PATHIO_DEFAULT_UTF8
-	return hsp_path_get_current_directory_utf8(result);
-#else
-	std::string utf8_path;
-	if (hsp_path_get_current_directory_utf8(utf8_path) != 0) return -1;
-	return hsp_path_to_ansi(result, hsp_path::utf8_view(utf8_path.c_str()));
-#endif
+	return hsp_path_convert_to_default(result, hsp_path_get_current_directory_utf8);
 }
 
 int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::utf8_view name)
@@ -529,10 +521,10 @@ int hsp_path_get_hsptv_path_utf8(std::string& result, hsp_path::ansi_view name)
 int hsp_path_get_hsptv_path(std::string& result, hsp_path::path_view name)
 {
 #if HSP_PATHIO_DEFAULT_UTF8
-	return hsp_path_get_hsptv_path_utf8(result, hsp_path::utf8_view(name.c_str()));
+	return hsp_path_get_hsptv_path_utf8(result, name);
 #else
 	std::string utf8_path;
-	if (hsp_path_get_hsptv_path_utf8(utf8_path, hsp_path::ansi_view(name.c_str())) != 0) return -1;
+	if (hsp_path_get_hsptv_path_utf8(utf8_path, name) != 0) return -1;
 	return hsp_path_to_ansi(result, hsp_path::utf8_view(utf8_path.c_str()));
 #endif
 }
