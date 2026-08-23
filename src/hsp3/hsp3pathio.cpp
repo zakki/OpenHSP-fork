@@ -531,8 +531,25 @@ int hsp_path_get_hsptv_path(std::string& result, hsp_path::path_view name)
 
 #else
 
+#include <dirent.h>
 #include <sys/stat.h>
-#include <glob.h>
+
+static bool hsp_path_wildcard_match(const char* text, const char* pattern)
+{
+	if (pattern[0] == '\0' && text[0] == '\0') return true;
+	if (pattern[0] == '*') {
+		if (text[0] == '\0' && pattern[1] == '\0') return true;
+		if (text[0] == '\0') return false;
+		if (pattern[1] == text[0] || pattern[1] == '*') {
+			if (hsp_path_wildcard_match(text, pattern + 1)) return true;
+		}
+		return hsp_path_wildcard_match(text + 1, pattern);
+	}
+	if (text[0] != '\0' && pattern[0] == text[0]) {
+		return hsp_path_wildcard_match(text + 1, pattern + 1);
+	}
+	return false;
+}
 
 int hsp_path_remove_utf8(hsp_path::utf8_view path)
 {
@@ -545,40 +562,45 @@ int hsp_path_remove_utf8(hsp_path::utf8_view path)
 int hsp_path_dirlist_utf8(hsp_path::utf8_view pattern, int flags, hsp_path_list_callback callback, void* user_data)
 {
 	if (callback == NULL || !hsp_path_utf8_is_valid((const unsigned char*)pattern.c_str())) return -1;
-	glob_t matches;
-	memset(&matches, 0, sizeof(matches));
-	int glob_result = glob(pattern.c_str(), 0, NULL, &matches);
-	if (glob_result == GLOB_NOMATCH) {
-		globfree(&matches);
-		return 0;
-	}
-	if (glob_result != 0) {
-		globfree(&matches);
-		return -1;
-	}
+	DIR* directory = opendir(".");
+	if (directory == NULL) return -1;
 
 	int count = 0;
-	int result = 0;
-	for (size_t i = 0; i < matches.gl_pathc; ++i) {
-		const char* full_path = matches.gl_pathv[i];
-		struct stat status;
-		if (stat(full_path, &status) != 0) continue;
-		bool is_directory = (status.st_mode & S_IFMT) == S_IFDIR;
-		const char* basename = strrchr(full_path, '/');
-		basename = basename != NULL ? basename + 1 : full_path;
-		int attributes = is_directory ? 1 : 0;
-		if (basename[0] == '.') attributes |= 2;
-		bool selected = (attributes & (flags & 3)) != 0;
-		if ((flags & 4) == 0) selected = !selected;
-		if (!selected || basename[0] == 0 || strcmp(basename, ".") == 0 || strcmp(basename, "..") == 0) continue;
+	struct dirent* entry;
+	while ((entry = readdir(directory)) != NULL) {
+		const char* name = entry->d_name;
+		bool selected = true;
+		if (name[0] == '\0' || strcmp(name, ".") == 0 || strcmp(name, "..") == 0) selected = false;
+
+		if (selected && flags != 0) {
+			struct stat status;
+			if (stat(name, &status) != 0) {
+				selected = false;
+			}
+			else {
+				unsigned int filter_mask = 0;
+				if (flags & 4) {
+					if (S_ISREG(status.st_mode) && name[0] != '.') {
+						selected = false;
+					}
+					else {
+						filter_mask = 3;
+					}
+				}
+				if (selected && ((flags ^ filter_mask) & 1) && S_ISDIR(status.st_mode)) selected = false;
+				if (selected && ((flags ^ filter_mask) & 2) && name[0] == '.') selected = false;
+			}
+		}
+
+		if (!selected || !hsp_path_wildcard_match(name, pattern.c_str())) continue;
 		++count;
-		if (callback(hsp_path::utf8_view(basename), user_data) != 0) {
-			result = -1;
-			break;
+		if (callback(hsp_path::utf8_view(name), user_data) != 0) {
+			closedir(directory);
+			return -1;
 		}
 	}
-	globfree(&matches);
-	return result < 0 ? result : count;
+	closedir(directory);
+	return count;
 }
 
 int hsp_path_from_ansi(std::string& result, hsp_path::ansi_view path)
