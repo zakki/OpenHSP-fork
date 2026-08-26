@@ -184,7 +184,7 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies>libffi.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libffi.lib;icu.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>lib/lib</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)$(TargetName)_64$(TargetExt)</OutputFile>
     </Link>
@@ -225,7 +225,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <AdditionalLibraryDirectories>lib/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libffi.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libffi.lib;icu.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -237,6 +237,7 @@
     <ClCompile Include="..\hsp3code.cpp" />
     <ClCompile Include="..\hsp3debug.cpp" />
     <ClCompile Include="..\hsp3int.cpp" />
+    <ClCompile Include="..\hsp3textcodec.cpp" />
     <ClCompile Include="..\hspvar_core.cpp" />
     <ClCompile Include="..\hspvar_double.cpp" />
     <ClCompile Include="..\hspvar_int.cpp" />

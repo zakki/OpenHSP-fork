@@ -556,6 +556,7 @@
     <ClCompile Include="..\..\hsp3\hsp3code.cpp" />
     <ClCompile Include="..\..\hsp3\hsp3debug.cpp" />
     <ClCompile Include="..\..\hsp3\hsp3int.cpp" />
+    <ClCompile Include="..\..\hsp3\hsp3textcodec.cpp" />
     <ClCompile Include="..\..\hsp3\hspvar_core.cpp" />
     <ClCompile Include="..\..\hsp3\hspvar_double.cpp" />
     <ClCompile Include="..\..\hsp3\hspvar_int.cpp" />
@@ -663,4 +664,10 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <!-- ICU is required by the UTF-8 x64 configurations for note encoding conversion. -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Release|x64' Or '$(Configuration)|$(Platform)'=='ReleaseDll|x64' Or '$(Configuration)|$(Platform)'=='angle_Release|x64' Or '$(Configuration)|$(Platform)'=='angle_hsprt|x64' Or '$(Configuration)|$(Platform)'=='hsprt|x64'">
+    <Link>
+      <AdditionalDependencies>icu.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
 </Project>

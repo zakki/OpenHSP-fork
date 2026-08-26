@@ -164,6 +164,7 @@
     <ClCompile Include="..\..\hsp3\hsp3code.cpp" />
     <ClCompile Include="..\..\hsp3\hsp3debug.cpp" />
     <ClCompile Include="..\..\hsp3\hsp3int.cpp" />
+    <ClCompile Include="..\..\hsp3\hsp3textcodec.cpp" />
     <ClCompile Include="..\..\hsp3\hspvar_core.cpp" />
     <ClCompile Include="..\..\hsp3\hspvar_double.cpp" />
     <ClCompile Include="..\..\hsp3\hspvar_int.cpp" />

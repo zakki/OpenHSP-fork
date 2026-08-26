@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <limits>
 #include <limits.h>
+#include <string>
 
 #include "hsp3config.h"
 #include "hsp3struct.h"
@@ -29,6 +30,7 @@
 #include "dpmread.h"
 #include "strbuf.h"
 #include "strnote.h"
+#include "hsp3textcodec.h"
 
 #include "hsp3int.h"
 #include "hsp3code.h"
@@ -1061,29 +1063,60 @@ static int cmdfunc_intcmd( int cmd )
 		int64_t ep1;
 		char *ptr;
 		char *pdat;
+		char *encoding;
 
 		code_event( HSPEVENT_FNAME, 0, 0, code_gets() );
 		ep1 = code_getdl( -1 );
+		encoding = code_getds( "" );
 		code_event( HSPEVENT_FEXIST, 0, 0, NULL );
 		size = ctx->strsize;
 		if ( size < 0 ) throw HSPERR_FILE_IO;
 		if ( ep1>=0 ) if ( size >= ep1 ) { ctx->strsize = size = (HSPPTRINT)ep1; }
 
-		pdat = note_update();
-		HspVarCoreAllocBlock( ctx->note_pval, (PDAT *)pdat, (int)size+1 );
-		ptr = (char *)note_update();
-		code_event( HSPEVENT_FREAD, 0, size, ptr );
-		ptr[size] = 0;
+		if ( *encoding == 0 ) {
+			pdat = note_update();
+			HspVarCoreAllocBlock( ctx->note_pval, (PDAT *)pdat, (int)size+1 );
+			ptr = (char *)note_update();
+			code_event( HSPEVENT_FREAD, 0, size, ptr );
+			ptr[size] = 0;
+		} else {
+			std::string raw((size_t)size, '\0');
+			code_event( HSPEVENT_FREAD, 0, size,
+				raw.empty() ? NULL : &raw[0] );
+			std::string converted;
+			if ( !hsp_text_decode( encoding, raw.data(), raw.size(), converted ) ) {
+				throw HSPERR_FILE_IO;
+			}
+			if ( converted.size() > (size_t)INT_MAX - 1 ) throw HSPERR_FILE_IO;
+			pdat = note_update();
+			HspVarCoreAllocBlock( ctx->note_pval, (PDAT *)pdat,
+				(int)converted.size()+1 );
+			ptr = (char *)note_update();
+			if ( !converted.empty() ) memcpy( ptr, converted.data(), converted.size() );
+			ptr[converted.size()] = 0;
+			ctx->strsize = (HSPPTRINT)converted.size();
+		}
 		break;
 		}
 	case 0x26:								// notesave
 		{
 		char *pdat;
 		int size;
+		char *encoding;
 		code_event( HSPEVENT_FNAME, 0, 0, code_gets() );
+		encoding = code_getds( "" );
 		pdat = note_update();
 		size = (int)strlen( pdat );
-		code_event( HSPEVENT_FWRITE, -1, size, pdat );
+		if ( *encoding == 0 ) {
+			code_event( HSPEVENT_FWRITE, -1, size, pdat );
+		} else {
+			std::string converted;
+			if ( !hsp_text_encode( encoding, pdat, (size_t)size, converted ) ) {
+				throw HSPERR_FILE_IO;
+			}
+			code_event( HSPEVENT_FWRITE, -1, (HSPPTRINT)converted.size(),
+				converted.empty() ? NULL : &converted[0] );
+		}
 		break;
 		}
 	case 0x27:								// randomize
@@ -1899,5 +1932,3 @@ void hsp3typeinit_intfunc( HSP3TYPEINFO *info )
 {
 	info->reffunc = reffunc_intfunc;
 }
-
-

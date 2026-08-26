@@ -279,12 +279,16 @@ Save target buffer
 %group
 String Operation Commands
 %prm
-"filename"
+"filename", "encoding"
 "filename" : Write file name
+"encoding" : Character encoding name (the default internal encoding if omitted)
 %inst
 Saves the contents of the memory notepad command buffer to the specified file as a text file.
 Note that you must always set the target buffer with the notesel command first.
 The notesave command saves the string length included in the specified buffer.
+In HSPUTF8 and Unix environments, an ICU-recognized encoding name such as "UTF-8", "CP932", or "EUC-JP" can be specified.
+An error occurs if a character cannot be represented in the specified encoding.
+Encoding arguments are not available in the regular ANSI-string HSPWIN runtime.
 
 %href
 notesel
@@ -302,9 +306,10 @@ Load target buffer
 %group
 String Operation Commands
 %prm
-"filename",p1
+"filename",p1,"encoding"
 "filename" : Read file name
 p1(-1)     : Upper limit of read size
+"encoding" : Character encoding name (the default internal encoding if omitted)
 %inst
 Loads the specified file into the memory notepad command buffer.
 Normally, it reads a text file and uses it as a target to be read out by the memory notepad command.
@@ -313,6 +318,9 @@ You can specify the maximum size of the file to be read with p1.
 If you omit the specification or set it to a negative value, it will read any size.
 It is also possible to read files other than text files.
 Note that you must always set the target buffer with the notesel command first.
+In HSPUTF8 and Unix environments, an ICU-recognized encoding name such as "UTF-8", "CP932", or "EUC-JP" can be specified.
+An error occurs for malformed input or an unrecognized encoding name.
+Encoding arguments are not available in the regular ANSI-string HSPWIN runtime.
 %href
 notesel
 notesave

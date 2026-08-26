@@ -16,3 +16,8 @@ rundish: $(TARGET).ax
 
 runcl: $(TARGET).ax
 	$(HSP3CL) $<
+
+.PHONY: textcodec
+
+textcodec:
+	$(MAKE) -C test_hsp3textcodec run
