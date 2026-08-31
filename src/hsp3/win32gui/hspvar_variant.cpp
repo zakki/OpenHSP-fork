@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include <ocidl.h>
 
@@ -207,8 +208,14 @@ static int code_get_element( PVal *pval )
 			break;
 		}
 		if ( chk != PARAM_OK && chk != PARAM_SPLIT ) throw HSPERR_ARRAY_OVERFLOW;
-		if ( mpval->flag != HSPVAR_FLAG_INT ) break;
-		idx = *(int *)(mpval->pt);
+		if (( mpval->flag != HSPVAR_FLAG_INT )&&( mpval->flag != HSPVAR_FLAG_INT64 )) break;
+		if ( mpval->flag == HSPVAR_FLAG_INT64 ) {
+			int64_t index = *(int64_t *)(mpval->pt);
+			if (( index < 0 )||( index >= INT_MAX )) throw HSPVAR_ERROR_ARRAYOVER;
+			idx = (int)index;
+		} else {
+			idx = *(int *)(mpval->pt);
+		}
 		HspVarCoreArray( pval, idx );
 	}
 	return chk;
@@ -226,8 +233,14 @@ static void code_get_safearray( SAFEARRAY *psa, VariantParam *vprm )
 		switch ( chk ) {
 		case PARAM_OK:
 		case PARAM_SPLIT:
-			if ( mpval->flag != HSPVAR_FLAG_INT ) throw HSPERR_BAD_ARRAY_EXPRESSION;
-			vprm->index[i] = *(int *)(mpval->pt);
+			if (( mpval->flag != HSPVAR_FLAG_INT )&&( mpval->flag != HSPVAR_FLAG_INT64 )) throw HSPERR_BAD_ARRAY_EXPRESSION;
+			if ( mpval->flag == HSPVAR_FLAG_INT64 ) {
+				int64_t index = *(int64_t *)(mpval->pt);
+				if (( index < INT_MIN )||( index > INT_MAX )) throw HSPERR_BAD_ARRAY_EXPRESSION;
+				vprm->index[i] = (long)index;
+			} else {
+				vprm->index[i] = *(int *)(mpval->pt);
+			}
 			break;
 		default:
 			throw HSPERR_ARRAY_OVERFLOW;

@@ -44,3 +44,8 @@ arr(0) = 100
 arr(1) = 200
 arr(2) = 300
 mes str(arr(0)) + " " + str(arr(1)) + " " + str(arr(2))
+
+; int64 array index
+index64 = 1L
+arr(index64) = 400
+mes str(arr(index64))

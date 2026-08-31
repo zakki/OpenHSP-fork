@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include <ocidl.h>
 
@@ -158,8 +159,14 @@ static int code_get_element( PVal *pval )
 			break;
 		}
 		if ( chk != PARAM_OK && chk != PARAM_SPLIT ) throw HSPERR_ARRAY_OVERFLOW;
-		if ( mpval->flag != HSPVAR_FLAG_INT ) break;
-		idx = *(int *)(mpval->pt);
+		if (( mpval->flag != HSPVAR_FLAG_INT )&&( mpval->flag != HSPVAR_FLAG_INT64 )) break;
+		if ( mpval->flag == HSPVAR_FLAG_INT64 ) {
+			int64_t index = *(int64_t *)(mpval->pt);
+			if (( index < 0 )||( index >= INT_MAX )) throw HSPVAR_ERROR_ARRAYOVER;
+			idx = (int)index;
+		} else {
+			idx = *(int *)(mpval->pt);
+		}
 		HspVarCoreArray( pval, idx );
 	}
 	return chk;
@@ -422,4 +429,3 @@ void HspVarComobj_Init( HspVarProc *p )
 
 
 #endif	// !defined( HSP_COM_UNSUPPORTED )
-

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #ifdef HSPWIN
 #include <windows.h>
@@ -78,11 +79,13 @@ static int tflag;
 static int arrayobj_flag;
 
 
-static void HspVarCoreArray2( PVal *pval, int offset )
+static void HspVarCoreArray2( PVal *pval, int64_t offset )
 {
 	//		配列要素の指定 (index)
 	//		( Reset後に次元数だけ連続で呼ばれます )
 	//
+	if (( offset < 0 )||( offset >= INT_MAX )) throw HSPVAR_ERROR_ARRAYOVER;
+	int index = (int)offset;
 	if ( pval->arraycnt >= 5 ) throw HSPVAR_ERROR_ARRAYOVER;
 	if ( pval->arraycnt == 0 ) {
 		pval->arraymul = 1;			// 最初の値
@@ -90,19 +93,18 @@ static void HspVarCoreArray2( PVal *pval, int offset )
 		pval->arraymul *= pval->len[ pval->arraycnt ];
 	}
 	pval->arraycnt++;
-	if ( offset < 0 ) throw HSPVAR_ERROR_ARRAYOVER;
-	if ( offset >= (pval->len[ pval->arraycnt ]) ) {
+	if ( index >= (pval->len[ pval->arraycnt ]) ) {
 		if ((pval->arraycnt >= 4 )||( pval->len[ pval->arraycnt+1 ]==0 )) {
 			if ( pval->support & HSPVAR_SUPPORT_FLEXARRAY ) {
 				//Alertf("Expand.(%d)",offset);
-				HspVarCoreReDim( pval, pval->arraycnt, offset+1 );	// 配列を拡張する
-				pval->offset += offset * pval->arraymul;
+				HspVarCoreReDim( pval, pval->arraycnt, index+1 );	// 配列を拡張する
+				pval->offset += index * pval->arraymul;
 				return;
 			}
 		}
 		throw HSPVAR_ERROR_ARRAYOVER;
 	}
-	pval->offset += offset * pval->arraymul;
+	pval->offset += index * pval->arraymul;
 }
 
 
@@ -173,11 +175,13 @@ static void AfterCalc( void )
 }
 
 
-static inline void code_arrayint2( PVal *pval, int offset )
+static inline void code_arrayint2( PVal *pval, int64_t offset )
 {
 	//		配列要素の指定 (index)
 	//		( Reset後に次元数だけ連続で呼ばれます )
 	//
+	if (( offset < 0 )||( offset >= INT_MAX )) throw HSPVAR_ERROR_ARRAYOVER;
+	int index = (int)offset;
 	if ( pval->arraycnt >= 5 ) throw HSPVAR_ERROR_ARRAYOVER;
 	if ( pval->arraycnt == 0 ) {
 		pval->arraymul = 1;			// 最初の値
@@ -185,19 +189,18 @@ static inline void code_arrayint2( PVal *pval, int offset )
 		pval->arraymul *= pval->len[ pval->arraycnt ];
 	}
 	pval->arraycnt++;
-	if ( offset < 0 ) throw HSPVAR_ERROR_ARRAYOVER;
-	if ( offset >= (pval->len[ pval->arraycnt ]) ) {
+	if ( index >= (pval->len[ pval->arraycnt ]) ) {
 		if ((pval->arraycnt >= 4 )||( pval->len[ pval->arraycnt+1 ]==0 )) {
 			if ( pval->support & HSPVAR_SUPPORT_FLEXARRAY ) {
 				//Alertf("Expand.(%d)",offset);
-				HspVarCoreReDim( pval, pval->arraycnt, offset+1 );	// 配列を拡張する
-				pval->offset += offset * pval->arraymul;
+				HspVarCoreReDim( pval, pval->arraycnt, index+1 );	// 配列を拡張する
+				pval->offset += index * pval->arraymul;
 				return;
 			}
 		}
 		throw HSPVAR_ERROR_ARRAYOVER;
 	}
-	pval->offset += offset * pval->arraymul;
+	pval->offset += index * pval->arraymul;
 }
 
 
@@ -207,7 +210,7 @@ static inline APTR CheckArray( PVal *pval, int ar )
 	//		(配列要素(int)の取り出し)
 	//
 	int chk,i;
-	int val;
+	int64_t index;
 	PVal temp;
 	arrayobj_flag = 0;
 	HspVarCoreReset( pval );							// 配列ポインタをリセットする
@@ -221,10 +224,10 @@ static inline APTR CheckArray( PVal *pval, int ar )
 		HspVarCoreCopyArrayInfo( &temp, pval );			// 状態を保存
 		chk = code_get();
 		if ( chk<=PARAM_END ) { throw HSPERR_BAD_ARRAY_EXPRESSION; }
-		if ( mpval->flag != HSPVAR_FLAG_INT ) { throw HSPERR_TYPE_MISMATCH; }
+		if (( mpval->flag != HSPVAR_FLAG_INT )&&( mpval->flag != HSPVAR_FLAG_INT64 )) { throw HSPERR_TYPE_MISMATCH; }
 		HspVarCoreCopyArrayInfo( pval, &temp );			// 状態を復帰
-		val = *(int *)(mpval->pt);
-		HspVarCoreArray2( pval, val );					// 配列要素指定(整数)
+		index = ( mpval->flag == HSPVAR_FLAG_INT64 ) ? *(int64_t *)(mpval->pt) : *(int *)(mpval->pt);
+		HspVarCoreArray2( pval, index );					// 配列要素指定(整数)
 	}
 	return HspVarCoreGetAPTR( pval );
 }
@@ -1572,4 +1575,3 @@ void DebugMsg( char *msg )
 	Alertf( "%s", msg );
 #endif
 }
-
