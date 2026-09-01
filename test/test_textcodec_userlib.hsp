@@ -1,0 +1,119 @@
+#runtime "hsp3cl"
+#include "hsp3cl.as"
+#include "mod_textcodec.as"
+
+goto *main
+
+#deffunc check_bytes var actual, var expected, int actual_offset, int expected_offset, int size, str label
+    repeat size
+        if peek(actual, cnt + actual_offset) != peek(expected, cnt + expected_offset) {
+            mes "FAIL " + label + " at " + cnt
+            end
+        }
+    loop
+    mes "OK " + label
+    return
+
+*main
+; CP932 bytes for "日本語".
+sdim source_cp932, 7
+poke source_cp932, 0, $93
+poke source_cp932, 1, $fa
+poke source_cp932, 2, $96
+poke source_cp932, 3, $7b
+poke source_cp932, 4, $8c
+poke source_cp932, 5, $ea
+poke source_cp932, 6, 0
+
+sdim expected_utf8, 10
+sdim converted, 1
+sdim converted_bom, 1
+sdim converted_remove, 1
+sdim loaded, 1
+result_size = 0
+poke expected_utf8, 0, $e6
+poke expected_utf8, 1, $97
+poke expected_utf8, 2, $a5
+poke expected_utf8, 3, $e6
+poke expected_utf8, 4, $9c
+poke expected_utf8, 5, $ac
+poke expected_utf8, 6, $e8
+poke expected_utf8, 7, $aa
+poke expected_utf8, 8, $9e
+poke expected_utf8, 9, 0
+
+text_cnvtext converted, source_cp932, "CP932", "UTF-8", 0, 6
+result_size = 0
+textcodec_get_result result_size
+if result_size != 9 : mes "FAIL cnvtext size" : end
+check_bytes converted, expected_utf8, 0, 0, 9, "cnvtext"
+
+; UTF-16LE contains an embedded NUL and therefore must be passed as var.
+sdim source_utf16le, 3
+poke source_utf16le, 0, $41
+poke source_utf16le, 1, $00
+poke source_utf16le, 2, $00
+sdim converted_utf16le, 1
+text_cnvtext converted_utf16le, source_utf16le, "UTF-16LE", "UTF-8", 0, 2
+result_size = 0
+textcodec_get_result result_size
+if result_size != 1 : mes "FAIL cnvtext UTF-16LE size" : end
+if peek(converted_utf16le, 0) != $41 : mes "FAIL cnvtext UTF-16LE" : end
+mes "OK cnvtext UTF-16LE"
+
+text_cnvtext converted_bom, source_cp932, "CP932", "UTF-8", textconv_bom_add, 6
+result_size = 0
+textcodec_get_result result_size
+if result_size != 12 : mes "FAIL cnvtext BOM size" : end
+if peek(converted_bom, 0) != $ef | peek(converted_bom, 1) != $bb | peek(converted_bom, 2) != $bf : mes "FAIL cnvtext BOM" : end
+check_bytes converted_bom, expected_utf8, 3, 0, 9, "cnvtext BOM payload"
+
+sdim source_utf8_bom, 13
+poke source_utf8_bom, 0, $ef
+poke source_utf8_bom, 1, $bb
+poke source_utf8_bom, 2, $bf
+repeat 9
+    poke source_utf8_bom, cnt + 3, peek(expected_utf8, cnt)
+loop
+poke source_utf8_bom, 12, 0
+sdim expected_cp932, 7
+poke expected_cp932, 0, $93
+poke expected_cp932, 1, $fa
+poke expected_cp932, 2, $96
+poke expected_cp932, 3, $7b
+poke expected_cp932, 4, $8c
+poke expected_cp932, 5, $ea
+poke expected_cp932, 6, 0
+text_cnvtext converted_remove, source_utf8_bom, "UTF-8", "CP932", textconv_bom_remove, 12
+result_size = 0
+textcodec_get_result result_size
+if result_size != 6 : mes "FAIL cnvtext BOM remove size" : end
+check_bytes converted_remove, expected_cp932, 0, 0, 6, "cnvtext BOM remove"
+
+bsave "textcodec_userlib_input.bin", source_cp932, 6
+text_loadfile loaded, "textcodec_userlib_input.bin", -1, "CP932", 0
+result_size = 0
+textcodec_get_result result_size
+if hspstat & $20000 {
+    internal_size = 9
+} else {
+    internal_size = 6
+}
+if result_size != internal_size : mes "FAIL loadfile size" : end
+if hspstat & $20000 {
+    check_bytes loaded, expected_utf8, 0, 0, internal_size, "loadfile"
+} else {
+    check_bytes loaded, source_cp932, 0, 0, internal_size, "loadfile"
+}
+
+text_savefile loaded, "textcodec_userlib_output.bin", "UTF-8", 0
+result_size = 0
+textcodec_get_result result_size
+if result_size != 9 : mes "FAIL savefile size" : end
+sdim saved, 10
+bload "textcodec_userlib_output.bin", saved
+if strsize != 9 : mes "FAIL savefile file size" : end
+check_bytes saved, expected_utf8, 0, 0, 9, "savefile"
+
+mes "PASS"
+end
