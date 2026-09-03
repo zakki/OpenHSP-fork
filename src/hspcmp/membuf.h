@@ -43,7 +43,7 @@ public:
 	void Put( unsigned char data );
 	void Put( float data );
 	void Put( double data );
-	void PutStr( char *data );
+	void PutStr( const char *data );
 	void PutStrDQ( char *data );
 	void PutStrBlock( char *data );
 	void PutCR( void );

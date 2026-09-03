@@ -190,7 +190,7 @@ void CMemBuf::Put( double data )
 }
 
 
-void CMemBuf::PutStr( char *data )
+void CMemBuf::PutStr( const char *data )
 {
 	char *p;
 	p = PreparePtr( strlen(data) );
