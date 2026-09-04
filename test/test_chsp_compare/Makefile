@@ -22,7 +22,7 @@ export C_NATIVE_CFLAGS
 export C_NATIVE_SOFLAGS
 export C_NATIVE_LDLIBS
 
-.PHONY: all clean generate-templates clean-templates compare compare-emit-c compare-libtcc check-emit-c check-emit-c-tcc check-libtcc
+.PHONY: all clean generate-templates clean-templates compare compare-emit-c compare-libtcc check-emit-c check-emit-c-tcc check-libtcc check-chsp test-errors
 
 all: compare compare-emit-c compare-libtcc
 
@@ -51,10 +51,15 @@ check-libtcc:
 	$(MAKE) clean
 	$(MAKE) compare-libtcc
 
+test-errors:
+	$(PYTHON) ./test_chsp_error_cases.py
+
 check-chsp:
 	$(MAKE) clean
 	$(MAKE) all HSPCMP=$(ROOT)/chsp
+	$(MAKE) test-errors
 
 clean:
 	$(TEMPLATE_GENERATOR) --clean
 	$(RUNNER) clean
+
