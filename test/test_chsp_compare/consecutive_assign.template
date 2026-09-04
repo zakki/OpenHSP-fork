@@ -1,0 +1,95 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc fill_seq array a
+	a = 10, 20, 30
+	return
+
+#defcfunc inc var n, local r
+	r = n
+	n+
+	return r
+
+#deffunc fill_offset array a, local n
+	n = 2
+	a(inc(n)) = 100, 200, 300
+	return
+
+#deffunc dummy_0
+	return
+
+#global
+@@ chsp_c_module
+#chsp_module "consecutive_assign_chsp_c" target=c
+
+#chsp_deffunc fill_seq array[int] a
+	a = 10, 20, 30
+	return
+#chsp_end
+
+#chsp_defcfunc int inc array[int] n, local[int] r
+	r = n.0
+	n.0+
+	return r
+#chsp_end
+
+#chsp_deffunc fill_offset array[int] a, local[int[1]] n
+	n.0 = 2
+	a(inc(n)) = 100, 200, 300
+	return
+#chsp_end
+
+#deffunc dummy_0
+	return
+
+#chsp_module_end
+@@ chsp_p_module
+#chsp_module "consecutive_assign_chsp_p"
+
+#chsp_deffunc fill_seq array[int] a
+	a = 10, 20, 30
+	return
+#chsp_end
+
+#chsp_defcfunc int inc array[int] n, local[int] r
+	r = n.0
+	n.0+
+	return r
+#chsp_end
+
+#chsp_deffunc fill_offset array[int] a, local[int[1]] n
+	n.0 = 2
+	a(inc(n)) = 100, 200, 300
+	return
+#chsp_end
+
+#deffunc dummy_0
+	return
+
+#chsp_module_end
+@@ main
+
+	mes "SEQ"
+	dim a, 5
+	fill_seq a
+	mes "" + a(0)
+	mes "" + a(1)
+	mes "" + a(2)
+	mes "OFFSET"
+	dim b, 5
+	fill_offset b
+	mes "" + b(2)
+	mes "" + b(3)
+	mes "" + b(4)
+	end
+
+dummy_0
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

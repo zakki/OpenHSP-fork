@@ -1,0 +1,156 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc sum2d array a, array b
+	b(1,2) = a(1,2)
+	return
+
+#deffunc fill_locals array out2, array out3, array out4
+	dim a2, 2, 3
+	dim a3, 2, 3, 4
+	dim a4, 2, 2, 2, 2
+
+	a2(1,2) = 12
+	a3(1,2,3) = 123
+	a4(1,1,1,1) = 1111
+
+	sum2d a2, out2
+	out2(0,0) = length(a2)
+	out2(1,0) = length2(a2)
+	out2(0,1) = length3(a2)
+	out2(1,1) = length4(a2)
+	out3(1,2,3) = a3(1,2,3)
+	out3(0,0,0) = length(a3)
+	out3(1,0,0) = length2(a3)
+	out3(0,1,0) = length3(a3)
+	out3(1,1,0) = length4(a3)
+	out4(1,1,1,1) = a4(1,1,1,1)
+	out4(0,0,0,0) = length(a4)
+	out4(1,0,0,0) = length2(a4)
+	out4(0,1,0,0) = length3(a4)
+	out4(1,1,0,0) = length4(a4)
+	return
+
+#deffunc dummy_00
+	return
+
+#global
+
+@@ chsp_c_module
+#chsp_module "local_multidim_arrays_chsp_c" target=c
+
+#chsp_deffunc sum2d array[int] a, array[int] b
+	b(1,2) = a(1,2)
+	return
+#chsp_end
+
+#chsp_deffunc fill_locals array[int] out2, array[int] out3, array[int] out4,\
+	local[int[2][3]] a2, local[int[2][3][4]] a3, local[int[2][2][2][2]] a4
+	a2(1,2) = 12
+	a3(1,2,3) = 123
+	a4(1,1,1,1) = 1111
+
+	sum2d a2, out2
+	out2(0,0) = length(a2)
+	out2(1,0) = length2(a2)
+	out2(0,1) = length3(a2)
+	out2(1,1) = length4(a2)
+	out3(1,2,3) = a3(1,2,3)
+	out3(0,0,0) = length(a3)
+	out3(1,0,0) = length2(a3)
+	out3(0,1,0) = length3(a3)
+	out3(1,1,0) = length4(a3)
+	out4(1,1,1,1) = a4(1,1,1,1)
+	out4(0,0,0,0) = length(a4)
+	out4(1,0,0,0) = length2(a4)
+	out4(0,1,0,0) = length3(a4)
+	out4(1,1,0,0) = length4(a4)
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "local_multidim_arrays_chsp_p"
+
+#chsp_deffunc sum2d array[int] a, array[int] b
+	b(1,2) = a(1,2)
+	return
+#chsp_end
+
+#chsp_deffunc fill_locals array[int] out2, array[int] out3, array[int] out4,\
+	local[int[2][3]] a2, local[int[2][3][4]] a3, local[int[2][2][2][2]] a4
+	a2(1,2) = 12
+	a3(1,2,3) = 123
+	a4(1,1,1,1) = 1111
+
+	sum2d a2, out2
+	out2(0,0) = length(a2)
+	out2(1,0) = length2(a2)
+	out2(0,1) = length3(a2)
+	out2(1,1) = length4(a2)
+	out3(1,2,3) = a3(1,2,3)
+	out3(0,0,0) = length(a3)
+	out3(1,0,0) = length2(a3)
+	out3(0,1,0) = length3(a3)
+	out3(1,1,0) = length4(a3)
+	out4(1,1,1,1) = a4(1,1,1,1)
+	out4(0,0,0,0) = length(a4)
+	out4(1,0,0,0) = length2(a4)
+	out4(0,1,0,0) = length3(a4)
+	out4(1,1,0,0) = length4(a4)
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+dim out2, 2, 3
+dim out3, 2, 3, 4
+dim out4, 2, 2, 2, 2
+
+fill_locals out2, out3, out4
+
+mes "L2"
+mes "" + out2(0,0)
+mes "" + out2(1,0)
+mes "" + out2(0,1)
+mes "" + out2(1,1)
+mes "O2"
+mes "" + out2(1,2)
+mes "L3"
+mes "" + out3(0,0,0)
+mes "" + out3(1,0,0)
+mes "" + out3(0,1,0)
+mes "" + out3(1,1,0)
+mes "O3"
+mes "" + out3(1,2,3)
+mes "L4"
+mes "" + out4(0,0,0,0)
+mes "" + out4(1,0,0,0)
+mes "" + out4(0,1,0,0)
+mes "" + out4(1,1,0,0)
+mes "O4"
+mes "" + out4(1,1,1,1)
+
+end
+
+dummy_00
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

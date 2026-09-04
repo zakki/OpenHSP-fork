@@ -1,0 +1,68 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#defcfunc calc_precedence int which
+	if which = 0 : return 2 + 3 * 4
+	if which = 1 : return (2 + 3) * 4
+	if which = 2 : return 32 >> 2 + 1
+	if which = 3 : return (32 >> 2) + 1
+	if which = 4 : return (5 | 2) ^ 3
+	if which = 5 : return 5 | (2 ^ 3)
+	return -1
+
+#deffunc dummy_00
+	return
+
+#global
+@@ chsp_c_module
+#chsp_module "precedence_chsp_c" target=c
+
+#chsp_defcfunc int calc_precedence int which
+	if which = 0 : return 2 + 3 * 4
+	if which = 1 : return (2 + 3) * 4
+	if which = 2 : return 32 >> 2 + 1
+	if which = 3 : return (32 >> 2) + 1
+	if which = 4 : return (5 | 2) ^ 3
+	if which = 5 : return 5 | (2 ^ 3)
+	return -1
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ chsp_p_module
+#chsp_module "precedence_chsp_p"
+
+#chsp_defcfunc int calc_precedence int which
+	if which = 0 : return 2 + 3 * 4
+	if which = 1 : return (2 + 3) * 4
+	if which = 2 : return 32 >> 2 + 1
+	if which = 3 : return (32 >> 2) + 1
+	if which = 4 : return (5 | 2) ^ 3
+	if which = 5 : return 5 | (2 ^ 3)
+	return -1
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ main
+
+	mes "PRECEDENCE"
+	repeat 6
+		mes "" + calc_precedence(cnt)
+	loop
+	end
+
+dummy_00
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

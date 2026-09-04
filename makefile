@@ -17,6 +17,7 @@ CFLAGS_DISH = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPLINUX -DHSP
 CFLAGS_GP = -Wno-write-strings --exec-charset=UTF-8 -DHSPDISH -DHSPDISHGP -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED -DPNG_ARM_NEON_OPT=0 -I src/hsp3dish/extlib/src -I src/hsp3dish/extlib/src/glew -I src/hsp3dish/gameplay/src -std=c++11 $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 CFLAGS_CL = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 CFLAGS_CMP = -Wno-write-strings -std=c++11 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
+CFLAGS_CHSP = -Wno-write-strings -std=c++17 --exec-charset=UTF-8 -DHSPLINUX -DHSPDEBUG -DHSP_COM_UNSUPPORTED $(CFLAGS_ENV) $(DEBUG_CFLAGS)
 PKG_CONFIG = pkg-config
 
 OBJS = \
@@ -67,23 +68,43 @@ OBJS = \
 	src/hsp3/linux/supio_linux.do
 
 OBJS_CMP = \
-	src/hspcmp/ahtmodel.o \
-	src/hspcmp/ahtobj.o \
-	src/hspcmp/codegen.o \
-	src/hspcmp/comutil.o \
-	src/hspcmp/errormsg.o \
-	src/hspcmp/hsc3.o \
-	src/hspcmp/hspcmd.o \
-	src/hspcmp/label.o \
-	src/hspcmp/localinfo.o \
-	src/hspcmp/main.o \
-	src/hspcmp/membuf.o \
-	src/hsp3/strnote.o \
-	src/hspcmp/tagstack.o \
-	src/hspcmp/hsmanager.o \
-	src/hspcmp/token.o \
-	src/hsp3/strbuf.o \
-	src/hsp3/linux/supio_linux.o
+	src/hspcmp/ahtmodel.cmp.o \
+	src/hspcmp/ahtobj.cmp.o \
+	src/hspcmp/codegen.cmp.o \
+	src/hspcmp/comutil.cmp.o \
+	src/hspcmp/errormsg.cmp.o \
+	src/hspcmp/hsc3.cmp.o \
+	src/hspcmp/hspcmd.cmp.o \
+	src/hspcmp/label.cmp.o \
+	src/hspcmp/localinfo.cmp.o \
+	src/hspcmp/main.cmp.o \
+	src/hspcmp/membuf.cmp.o \
+	src/hsp3/strnote.cmp.o \
+	src/hspcmp/tagstack.cmp.o \
+	src/hspcmp/hsmanager.cmp.o \
+	src/hspcmp/token.cmp.o \
+	src/hsp3/strbuf.cmp.o \
+	src/hsp3/linux/supio_linux.cmp.o
+
+OBJS_CHSP = \
+	src/chsp/chsp_main.chsp.o \
+	src/hspcmp/chsp/chsp_pipeline.chsp.o \
+	src/hspcmp/chsp/codegen_lexer.chsp.o \
+	src/hspcmp/chsp/chsp_libtcc_shared.chsp.o \
+	src/hspcmp/chsp/chsp_builtin_map.chsp.o \
+	src/hspcmp/chsp/chsp_frontend_v2.chsp.o \
+	src/hspcmp/chsp/chsp_frontend_v3_parser.chsp.o \
+	src/hspcmp/chsp/chsp_frontend_v3_emitter.chsp.o \
+	src/hspcmp/chsp/lexer_util.chsp.o \
+	src/hspcmp/chsp/logger.chsp.o \
+	src/hspcmp/comutil.chsp.o \
+	src/hspcmp/errormsg.chsp.o \
+	src/hspcmp/hspcmd.chsp.o \
+	src/hspcmp/label.chsp.o \
+	src/hspcmp/membuf.chsp.o \
+	src/hsp3/strnote.chsp.o \
+	src/hsp3/strbuf.chsp.o \
+	src/hsp3/linux/supio_linux.chsp.o
 
 OBJS_CL = \
 	src/hsp3/linux/main.o \
@@ -482,6 +503,18 @@ hsp3gp: $(OBJS_GP) $(LIBS_GP)
 
 hspcmp: $(OBJS_CMP)
 	$(CXX) $(CFLAGS_CMP) $(OBJS_CMP) $(STRIPFLAGS) -o $@
+%.cmp.o: %.c
+	$(CC) $(CFLAGS_CMP) -c $< -o $@
+%.cmp.o: %.cpp
+	$(CXX) $(CFLAGS_CMP) -c $< -o $@
+
+chsp: $(OBJS_CHSP)
+	$(CXX) $(CFLAGS_CHSP) $(OBJS_CHSP) $(STRIPFLAGS) -ltcc -o $@
+%.chsp.o: %.c
+	$(CC) $(CFLAGS_CHSP) -c $< -o $@
+%.chsp.o: %.cpp
+	$(CXX) $(CFLAGS_CHSP) -c $< -o $@
+
 %.o: %.c
 	$(CC) $(CFLAGS_CMP) -c $< -o $*.o
 %.o: %.cpp
@@ -515,4 +548,7 @@ libLinearMath.a: $(OBJS_LINEAR_MATH)
 
 clean:
 	rm -f $(OBJS) $(OBJS_GP) $(OBJS_CMP) $(OBJS_CL) $(OBJS_GAMEPLAY) $(TARGETS) $(LIBS_GP)
+	rm -f chsp $(OBJS_CHSP) $(LIBS_GP) $(OBJS_CCMP)
 
+test-chsp: chsp hspcmp hsp3cl
+	$(MAKE) -C test/test_chsp_compare check-chsp

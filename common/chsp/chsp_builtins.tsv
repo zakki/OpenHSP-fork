@@ -1,0 +1,23 @@
+# cHSP builtin function mappings
+# columns: hsp_name	c_target	cpp_target	[min_args	[max_args]]
+# min_args/max_args are optional; omit for any arg count
+# max_args omitted means >= min_args (no upper bound)
+abs	chsp_hsp_abs	chsp::hsp_abs
+absf	chsp_hsp_absf	chsp::hsp_absf
+atan	chsp_hsp_atan	chsp::hsp_atan
+chsp_fabs	chsp_hsp_absf	chsp::hsp_absf
+chsp_sqrt	chsp_hsp_sqrt	chsp::hsp_sqrt
+cos	chsp_hsp_cos	chsp::hsp_cos
+double	chsp_hsp_double	chsp::hsp_double
+expf	chsp_hsp_expf	chsp::hsp_expf
+int	chsp_hsp_int	chsp::hsp_int
+limit	chsp_hsp_limit	chsp::hsp_limit
+limitf	chsp_hsp_limitf	chsp::hsp_limitf
+logf	chsp_hsp_logf	chsp::hsp_logf
+powf	chsp_hsp_powf	chsp::hsp_powf
+randomize	chsp_randomize	chsp::randomize	0	0
+randomize	chsp_randomize_seed	chsp::randomize	1
+rnd	chsp_rnd	chsp::rnd
+sin	chsp_hsp_sin	chsp::hsp_sin
+sqrt	chsp_hsp_sqrt	chsp::hsp_sqrt
+tan	chsp_hsp_tan	chsp::hsp_tan

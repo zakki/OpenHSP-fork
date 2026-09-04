@@ -1,0 +1,77 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc fill_vals array dst, local v
+	v = 10
+	dst(0) = v
+	v += 5
+	dst(1) = v
+	v -= 2
+	dst(2) = v
+	v *= 3
+	dst(3) = v
+	return
+
+#deffunc dummy_00
+	return
+
+#global
+@@ chsp_c_module
+#chsp_module "commands_chsp_c" target=c
+
+#chsp_deffunc fill_vals array[int] dst, local[int] v
+	v = 10
+	dst(0) = v
+	v += 5
+	dst(1) = v
+	v -= 2
+	dst(2) = v
+	v *= 3
+	dst(3) = v
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ chsp_p_module
+#chsp_module "commands_chsp_p"
+
+#chsp_deffunc fill_vals array[int] dst, local[int] v
+	v = 10
+	dst(0) = v
+	v += 5
+	dst(1) = v
+	v -= 2
+	dst(2) = v
+	v *= 3
+	dst(3) = v
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ main
+
+	dim vals, 4
+	fill_vals vals
+
+	mes "COMMANDS"
+	repeat 4
+		mes "" + vals(cnt)
+	loop
+	end
+
+dummy_00
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

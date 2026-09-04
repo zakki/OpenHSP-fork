@@ -1,0 +1,71 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc inner array a, int i
+	a(i,0) = 42
+	return
+
+#deffunc outer array a
+	inner a, 1
+	return
+
+#deffunc dummy_00
+	return
+
+#global
+
+@@ chsp_c_module
+#chsp_module "array_forwarded_multidim_access_chsp_c" target=c
+
+#chsp_deffunc inner array[int] a, int i
+	a(i,0) = 42
+	return
+#chsp_end
+
+#chsp_deffunc outer array[int] a
+	inner a, 1
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "array_forwarded_multidim_access_chsp_p"
+
+#chsp_deffunc inner array[int] a, int i
+	a(i,0) = 42
+	return
+#chsp_end
+
+#chsp_deffunc outer array[int] a
+	inner a, 1
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+dim a, 2, 2
+outer a
+mes "" + a(1,0)
+end
+
+dummy_00
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

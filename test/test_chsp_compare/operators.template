@@ -1,0 +1,172 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#defcfunc calc_ops int a, int b, int s, local value
+	value = (a + b) * (a - b)
+	value = value + ((a << 2) | (b & 3))
+	value = value + (a \ b)
+	value = value + (a ^ b)
+	value = value + (a / b)
+	return value + s
+
+#defcfunc assign_trace int a, int b, local v, local trace
+	v = a
+	v += b
+	trace = v
+	v -= 2
+	trace = trace * 100 + v
+	v *= 3
+	trace = trace * 100 + v
+	v /= 2
+	trace = trace * 100 + v
+	return trace
+
+#defcfunc cmp_ops int a, int b, local out
+	out = 0
+	if a = b {
+		out += 1
+	}
+	if a ! b {
+		out += 2
+	}
+	if a < b {
+		out += 4
+	}
+	if a > b {
+		out += 8
+	}
+	if a <= b {
+		out += 16
+	}
+	if a >= b {
+		out += 32
+	}
+	return out
+
+#deffunc dummy_00
+	return
+
+#global
+@@ chsp_c_module
+#chsp_module "operators_chsp_c" target=c
+
+#chsp_defcfunc int calc_ops int a, int b, int s, local[int] value
+	value = (a + b) * (a - b)
+	value = value + ((a << 2) | (b & 3))
+	value = value + (a \ b)
+	value = value + (a ^ b)
+	value = value + (a / b)
+	return value + s
+#chsp_end
+
+#chsp_defcfunc int assign_trace int a, int b, local[int] v, local[int] trace
+	v = a
+	v += b
+	trace = v
+	v -= 2
+	trace = trace * 100 + v
+	v *= 3
+	trace = trace * 100 + v
+	v /= 2
+	trace = trace * 100 + v
+	return trace
+#chsp_end
+
+#chsp_defcfunc int cmp_ops int a, int b, local[int] out
+	out = 0
+	if a = b {
+		out += 1
+	}
+	if a ! b {
+		out += 2
+	}
+	if a < b {
+		out += 4
+	}
+	if a > b {
+		out += 8
+	}
+	if a <= b {
+		out += 16
+	}
+	if a >= b {
+		out += 32
+	}
+	return out
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ chsp_p_module
+#chsp_module "operators_chsp_p"
+
+#chsp_defcfunc int calc_ops int a, int b, int s, local[int] value
+	value = (a + b) * (a - b)
+	value = value + ((a << 2) | (b & 3))
+	value = value + (a \ b)
+	value = value + (a ^ b)
+	value = value + (a / b)
+	return value + s
+#chsp_end
+
+#chsp_defcfunc int assign_trace int a, int b, local[int] v, local[int] trace
+	v = a
+	v += b
+	trace = v
+	v -= 2
+	trace = trace * 100 + v
+	v *= 3
+	trace = trace * 100 + v
+	v /= 2
+	trace = trace * 100 + v
+	return trace
+#chsp_end
+
+#chsp_defcfunc int cmp_ops int a, int b, local[int] out
+	out = 0
+	if a = b {
+		out += 1
+	}
+	if a ! b {
+		out += 2
+	}
+	if a < b {
+		out += 4
+	}
+	if a > b {
+		out += 8
+	}
+	if a <= b {
+		out += 16
+	}
+	if a >= b {
+		out += 32
+	}
+	return out
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+@@ main
+
+	mes "OPS"
+	mes "" + calc_ops(13, 5, 7)
+	mes "" + assign_trace(10, 5)
+	mes "" + cmp_ops(3, 3)
+	mes "" + cmp_ops(2, 5)
+	end
+
+dummy_00
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

@@ -1,0 +1,69 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc fill_vals array dst
+	dst(0) = 42
+	dst(1) = $2a
+	dst(2) = %101010
+	dst(3) = 0x2a
+	dst(4) = 0b101010
+	dst(5) = -$10
+	dst(6) = -%10000
+	dst(7) = -0x10
+	dst(8) = -0b10000
+	return
+
+#global
+@@ chsp_c_module
+#chsp_module "int_literals_chsp_c" target=c
+
+#chsp_deffunc fill_vals array[int] dst
+	dst(0) = 42
+	dst(1) = $2a
+	dst(2) = %101010
+	dst(3) = 0x2a
+	dst(4) = 0b101010
+	dst(5) = -$10
+	dst(6) = -%10000
+	dst(7) = -0x10
+	dst(8) = -0b10000
+	return
+#chsp_end
+
+#chsp_module_end
+@@ chsp_p_module
+#chsp_module "int_literals_chsp_p"
+
+#chsp_deffunc fill_vals array[int] dst
+	dst(0) = 42
+	dst(1) = $2a
+	dst(2) = %101010
+	dst(3) = 0x2a
+	dst(4) = 0b101010
+	dst(5) = -$10
+	dst(6) = -%10000
+	dst(7) = -0x10
+	dst(8) = -0b10000
+	return
+#chsp_end
+
+#chsp_module_end
+@@ main
+
+dim vals, 9
+fill_vals vals
+
+repeat 9
+	mes "" + vals(cnt)
+loop
+
+end
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

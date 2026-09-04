@@ -1,0 +1,66 @@
+@@ meta
+compare_default = chsp_p chsp_c
+compare_emit_c = chsp_p chsp_c
+compare_libtcc = chsp_p chsp_c
+
+@@ header
+#include "hsp3cl.as"
+
+@@ chsp_c_module
+#chsp_module "dl_link_native_chsp_c" target=c
+
+#chsp_c {"
+#include <dlfcn.h>
+
+static int can_open_self(void) {
+    void *handle = dlopen(NULL, RTLD_LAZY);
+    if (handle == NULL) {
+        return 0;
+    }
+    dlclose(handle);
+    return 1;
+}
+"}
+#chsp_cdecl can_open_self
+#chsp_clink "dl"
+
+#chsp_defcfunc int check_dl
+	return can_open_self()
+#chsp_end
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "dl_link_native_chsp_p"
+
+#chsp_c {"
+#include <dlfcn.h>
+
+static int can_open_self(void) {
+    void *handle = dlopen(NULL, RTLD_LAZY);
+    if (handle == NULL) {
+        return 0;
+    }
+    dlclose(handle);
+    return 1;
+}
+"}
+#chsp_cdecl can_open_self
+#chsp_clink "dl"
+
+#chsp_defcfunc int check_dl
+	return can_open_self()
+#chsp_end
+
+#chsp_module_end
+
+@@ main
+	mes "DL_LINK_NATIVE"
+	mes "" + check_dl()
+	end
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

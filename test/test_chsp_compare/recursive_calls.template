@@ -1,0 +1,96 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc fill_recursive array out
+	out(0) = fib(6)
+	out(1) = fact(5)
+	out(2) = fib(5) + fact(4)
+	return
+
+#defcfunc fib int n
+	if n <= 1 : return n
+	return fib(n - 1) + fib(n - 2)
+
+#defcfunc fact int n
+	if n <= 1 : return 1
+	return n * fact(n - 1)
+
+#deffunc dummy_00
+	return
+
+#global
+
+@@ chsp_c_module
+#chsp_module "recursive_calls_chsp_c" target=c
+
+#chsp_deffunc fill_recursive array[int] out
+	out(0) = fib(6)
+	out(1) = fact(5)
+	out(2) = fib(5) + fact(4)
+	return
+#chsp_end
+
+#chsp_defcfunc int fib int n
+	if n <= 1 : return n
+	return fib(n - 1) + fib(n - 2)
+#chsp_end
+
+#chsp_defcfunc int fact int n
+	if n <= 1 : return 1
+	return n * fact(n - 1)
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "recursive_calls_chsp_p"
+
+#chsp_deffunc fill_recursive array[int] out
+	out(0) = fib(6)
+	out(1) = fact(5)
+	out(2) = fib(5) + fact(4)
+	return
+#chsp_end
+
+#chsp_defcfunc int fib int n
+	if n <= 1 : return n
+	return fib(n - 1) + fib(n - 2)
+#chsp_end
+
+#chsp_defcfunc int fact int n
+	if n <= 1 : return 1
+	return n * fact(n - 1)
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+
+	dim out, 3
+	fill_recursive out
+
+	mes "RECURSIVE_CALLS"
+	repeat 3
+		mes "" + out(cnt)
+	loop
+	end
+
+dummy_00
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

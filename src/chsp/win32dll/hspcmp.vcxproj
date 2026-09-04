@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{56775D30-4CDD-48E3-80EE-1CF2956D36B6}</ProjectGuid>
+    <RootNamespace>hspcmp</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>16.0.28916.169</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HSPWIN;HSPDEBUG;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\hspcmp\extlib\tcc\libtcc;..\..\hspcmp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <AdditionalOptions>/source-charset:utf-8 /execution-charset:shift_jis %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libtcc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\hspcmp\extlib\tcc\libtcc;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>hspcmp3.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;HSPWIN;HSPDEBUG;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\hspcmp\extlib\tcc\libtcc;..\..\hspcmp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/source-charset:utf-8 /execution-charset:shift_jis %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libtcc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\hspcmp\extlib\tcc\libtcc;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>hspcmp3.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\hsp3\strbuf.cpp" />
+    <ClCompile Include="..\..\hsp3\strnote.cpp" />
+    <ClCompile Include="..\..\hsp3\win32gui\supio_win.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_builtin_map.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_frontend_v2.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_frontend_v3_emitter.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_frontend_v3_parser.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_libtcc_shared.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_pipeline.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\codegen_lexer.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\lexer_util.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\logger.cpp" />
+    <ClCompile Include="..\..\hspcmp\comutil.cpp" />
+    <ClCompile Include="..\..\hspcmp\errormsg.cpp" />
+    <ClCompile Include="..\..\hspcmp\hspcmd.cpp" />
+    <ClCompile Include="..\..\hspcmp\label.cpp" />
+    <ClCompile Include="..\..\hspcmp\membuf.cpp" />
+    <ClCompile Include="hspcmp3.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\hsp3\strbuf.h" />
+    <ClInclude Include="..\..\hsp3\strnote.h" />
+    <ClInclude Include="..\..\hsp3\win32gui\supio_win.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_builtin_map.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend_v2.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend_v3_ast.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend_v3_emitter.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend_v3_parser.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_libtcc_shared.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_pipeline.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_util.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\codegen_lexer.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\lexer_util.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\logger.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\token_def.h" />
+    <ClInclude Include="..\..\hspcmp\comutil.h" />
+    <ClInclude Include="..\..\hspcmp\errormsg.h" />
+    <ClInclude Include="..\..\hspcmp\label.h" />
+    <ClInclude Include="..\..\hspcmp\membuf.h" />
+    <ClInclude Include="..\..\hspcmp\supio.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

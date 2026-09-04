@@ -1,0 +1,66 @@
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#defcfunc call_scale int v
+	return scale_after_widen(v)
+
+#defcfunc scale_after_widen double v
+	return int(v * 10.0)
+
+#deffunc dummy_00
+	return
+
+#global
+
+@@ chsp_c_module
+#chsp_module "implicit_param_promotion_runtime_fail_chsp_c" target=c
+
+#chsp_defcfunc int call_scale int v
+	return scale_after_widen(v)
+#chsp_end
+
+#chsp_defcfunc int scale_after_widen double v
+	return int(v * 10.0)
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ chsp_p_module
+#chsp_module "implicit_param_promotion_runtime_fail_chsp_p"
+
+#chsp_defcfunc int call_scale int v
+	return scale_after_widen(v)
+#chsp_end
+
+#chsp_defcfunc int scale_after_widen double v
+	return int(v * 10.0)
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+
+	mes "IMPLICIT_PARAM_PROMOTION_RUNTIME_FAIL"
+	mes "" + call_scale(3)
+	mes "" + call_scale(7)
+	end
+
+dummy_00
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_c
+{{header}}{{chsp_c_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

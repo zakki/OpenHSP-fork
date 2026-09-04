@@ -1,0 +1,9 @@
+	a=1
+	on a goto *a0,*a1,*a2
+	mes "その他":stop
+*a0
+	mes "A=0":stop
+*a1
+	mes "A=1":stop
+*a2
+	mes "A=2":stop
