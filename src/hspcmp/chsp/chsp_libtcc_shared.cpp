@@ -2,6 +2,7 @@
 #include <windows.h>
 #endif
 
+#include <cstdint>
 #include <filesystem>
 #include <stdlib.h>
 #include <string>
@@ -111,6 +112,16 @@ static int compile_one_library_with_libtcc( CMemBuf *errbuf, const std::filesyst
 		print_error( errbuf, "#libtcc failed to configure DLL output." );
 		return -1;
 	}
+#if defined( HSP64 ) || ( defined( __UINTPTR_MAX__ ) && __UINTPTR_MAX__ == 0xffffffffffffffffu ) || ( UINTPTR_MAX == 0xffffffffffffffffu )
+	tcc_define_symbol( tcc, "HSP64", "1" );
+#endif
+#if defined( HSPLINUX )
+	tcc_define_symbol( tcc, "HSPLINUX", "1" );
+#elif defined( HSPWIN )
+	tcc_define_symbol( tcc, "HSPWIN", "1" );
+#elif defined( HSPMAC )
+	tcc_define_symbol( tcc, "HSPMAC", "1" );
+#endif
 	const std::string repo_root_str = repo_root.string();
 	if ( tcc_add_include_path( tcc, repo_root_str.c_str() ) < 0 ) {
 		tcc_delete( tcc );
