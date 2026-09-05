@@ -33,6 +33,15 @@
     <ClCompile Include="..\..\hspcmp\chsp\chsp_emitter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_types.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_hsp_emitter.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_c_emitter.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\hspcmp\chsp\chsp_parser.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -90,6 +99,15 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="..\..\hspcmp\chsp\chsp_emitter.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_types.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_hsp_emitter.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_c_emitter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="..\..\hspcmp\chsp\chsp_parser.h">

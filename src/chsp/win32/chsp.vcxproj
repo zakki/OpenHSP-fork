@@ -109,6 +109,9 @@
     <ClCompile Include="..\..\hspcmp\chsp\chsp_builtin_map.cpp" />
     <ClCompile Include="..\..\hspcmp\chsp\chsp_frontend.cpp" />
     <ClCompile Include="..\..\hspcmp\chsp\chsp_emitter.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_types.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_hsp_emitter.cpp" />
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_c_emitter.cpp" />
     <ClCompile Include="..\..\hspcmp\chsp\chsp_parser.cpp" />
     <ClCompile Include="..\..\hspcmp\chsp\chsp_libtcc_shared.cpp" />
     <ClCompile Include="..\..\hspcmp\chsp\chsp_pipeline.cpp" />
@@ -130,6 +133,9 @@
     <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend.h" />
     <ClInclude Include="..\..\hspcmp\chsp\chsp_ast.h" />
     <ClInclude Include="..\..\hspcmp\chsp\chsp_emitter.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_types.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_hsp_emitter.h" />
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_c_emitter.h" />
     <ClInclude Include="..\..\hspcmp\chsp\chsp_parser.h" />
     <ClInclude Include="..\..\hspcmp\chsp\chsp_libtcc_shared.h" />
     <ClInclude Include="..\..\hspcmp\chsp\chsp_pipeline.h" />

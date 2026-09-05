@@ -95,6 +95,9 @@ OBJS_CHSP = \
 	src/hspcmp/chsp/chsp_frontend.chsp.o \
 	src/hspcmp/chsp/chsp_parser.chsp.o \
 	src/hspcmp/chsp/chsp_emitter.chsp.o \
+	src/hspcmp/chsp/chsp_types.chsp.o \
+	src/hspcmp/chsp/chsp_hsp_emitter.chsp.o \
+	src/hspcmp/chsp/chsp_c_emitter.chsp.o \
 	src/hspcmp/chsp/lexer_util.chsp.o \
 	src/hspcmp/chsp/logger.chsp.o \
 	src/hspcmp/comutil.chsp.o \
