@@ -1,7 +1,7 @@
 //
-//      cHSP v3 AST emitter surface
+//      cHSP AST emitter surface
 //
-#include "chsp_frontend_v3_emitter.h"
+#include "chsp_emitter.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -16,7 +16,7 @@
 #include "../membuf.h"
 #include "logger.h"
 
-namespace chspv3
+namespace chsp
 {
 namespace
 {
@@ -2020,4 +2020,4 @@ int GenerateProgramOutput( const ChspV3AstProgram &ast_program, CLogger &logger,
 	return 0;
 }
 
-} // namespace chspv3
+} // namespace chsp

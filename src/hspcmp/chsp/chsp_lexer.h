@@ -57,6 +57,7 @@ struct CCgToken
 
 	std::string cg_str{};
 };
+using CChspToken = CCgToken;
 
 class CCgLexer : public CSourceTextUtil
 {
@@ -104,3 +105,5 @@ public:
 	std::string cg_orgfile;
 	std::string cg_orgfilefull;
 };
+
+using CChspLexer = CCgLexer;

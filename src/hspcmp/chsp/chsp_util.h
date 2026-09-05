@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "chsp_frontend_v2.h"
+#include "chsp_frontend.h"
 
 class CLogger;
 void strcase2( const char *str, char *str2 );

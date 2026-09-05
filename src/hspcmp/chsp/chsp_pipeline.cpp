@@ -7,7 +7,7 @@
 
 #include "../../hsp3/hsp3config.h"
 #include "../membuf.h"
-#include "chsp_frontend_v2.h"
+#include "chsp_frontend.h"
 #include "chsp_libtcc_shared.h"
 #include "chsp_util.h"
 
@@ -50,7 +50,7 @@ ChspPipelineResult ChspPipeline::Process( const ChspPipelineOptions &options )
 	result.has_chsp = true;
 
 	auto errbuf = std::make_shared<CMemBuf>();
-	CChspFrontendV2 frontend( errbuf );
+	CChspFrontend frontend( errbuf );
 	CMemBuf transformed_hsp;
 	std::vector<ChspNativeArtifact> native_outputs;
 

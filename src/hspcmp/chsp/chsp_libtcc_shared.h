@@ -3,7 +3,7 @@
 
 #include "../../hsp3/hsp3config.h"
 #include "../membuf.h"
-#include "chsp_frontend_v2.h"
+#include "chsp_frontend.h"
 
 #if defined( HSPLINUX ) || defined( HSPWIN )
 #define CHSP_HAS_LIBTCC 1

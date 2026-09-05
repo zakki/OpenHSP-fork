@@ -27,13 +27,13 @@
     <ClCompile Include="..\..\hspcmp\chsp\chsp_builtin_map.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_frontend_v2.cpp">
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_frontend.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_frontend_v3_emitter.cpp">
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_emitter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_frontend_v3_parser.cpp">
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_parser.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="..\..\hspcmp\chsp\chsp_libtcc_shared.cpp">
@@ -42,7 +42,7 @@
     <ClCompile Include="..\..\hspcmp\chsp\chsp_pipeline.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\codegen_lexer.cpp">
+    <ClCompile Include="..\..\hspcmp\chsp\chsp_lexer.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="..\..\hspcmp\chsp\lexer_util.cpp">
@@ -83,16 +83,16 @@
     <ClInclude Include="..\..\hspcmp\chsp\chsp_builtin_map.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend_v2.h">
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend_v3_ast.h">
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_ast.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend_v3_emitter.h">
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_emitter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend_v3_parser.h">
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_parser.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="..\..\hspcmp\chsp\chsp_libtcc_shared.h">
@@ -104,7 +104,7 @@
     <ClInclude Include="..\..\hspcmp\chsp\chsp_util.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\codegen_lexer.h">
+    <ClInclude Include="..\..\hspcmp\chsp\chsp_lexer.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="..\..\hspcmp\chsp\lexer_util.h">

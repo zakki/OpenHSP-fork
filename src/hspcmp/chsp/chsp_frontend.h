@@ -24,10 +24,10 @@ struct ChspNativeArtifact
 	std::unique_ptr<CMemBuf> output;
 };
 
-class CChspFrontendV2
+class CChspFrontend
 {
 public:
-	explicit CChspFrontendV2( const std::shared_ptr<CMemBuf> &errbuf );
+	explicit CChspFrontend( const std::shared_ptr<CMemBuf> &errbuf );
 	int GenerateFromBuffer( const char *source_name, const char *input_text, CMemBuf *hsp_output,
 							std::vector<ChspNativeArtifact> *native_outputs, const char *compath,
 							bool for_preprocessor = false );
@@ -35,3 +35,5 @@ public:
 private:
 	std::shared_ptr<CMemBuf> errbuf;
 };
+
+using CChspFrontendV2 = CChspFrontend;

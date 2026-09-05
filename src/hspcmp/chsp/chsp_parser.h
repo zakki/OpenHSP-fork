@@ -9,13 +9,11 @@
 #include <vector>
 
 #include "token_def.h"
-#include "chsp_frontend_v3_ast.h"
+#include "chsp_ast.h"
 #include "lexer_util.h"
 #include "logger.h"
 
-#include "codegen_lexer.h"
-// CG: #include "codegen_writer.h"
-
+#include "chsp_lexer.h"
 
 class CMemBuf;
 
@@ -39,7 +37,7 @@ public:
 	//
 	int GenerateCode( const std::string &fname, const std::string &oname, int mode );
 	int GenerateCode( CMemBuf *srcbuf, const std::string &oname, int mode );
-	const chspv3::ChspV3AstProgram &GetAstProgram( void ) const
+	const chsp::ChspAstProgram &GetAstProgram( void ) const
 	{
 		return ast_program;
 	}
@@ -50,7 +48,6 @@ private:
 	std::shared_ptr<CLogger> logger;
 	CCgLexer lexer;
 	CCgToken token;
-	// CG: std::unique_ptr<CCodeWriter> writer;
 	std::shared_ptr<CSymbolTable> symtab;
 
 	//		For Code Generate
@@ -65,13 +62,13 @@ private:
 	void GenerateCodePP( const char *buf );
 	void GenerateCodeCMD( int id );
 	void GenerateCodeLET( int id, bool first = false );
-	void GenerateCodeVAR( int id, int ex, std::unique_ptr<chspv3::ChspV3AstExpr> *ast_target = nullptr );
+	void GenerateCodeVAR( int id, int ex, std::unique_ptr<chsp::ChspAstExpr> *ast_target = nullptr );
 	void GenerateCodePRM( void );
 	void GenerateCodePRMN( void );
-	int GenerateCodePRMF( std::vector<std::unique_ptr<chspv3::ChspV3AstExpr>> *ast_args = nullptr );
-	void GenerateCodePRMF2( std::vector<std::unique_ptr<chspv3::ChspV3AstExpr>> *ast_args = nullptr );
+	int GenerateCodePRMF( std::vector<std::unique_ptr<chsp::ChspAstExpr>> *ast_args = nullptr );
+	void GenerateCodePRMF2( std::vector<std::unique_ptr<chsp::ChspAstExpr>> *ast_args = nullptr );
 	void GenerateCodePRMF3( void );
-	int GenerateCodePRMF4( int t, std::unique_ptr<chspv3::ChspV3AstExpr> *ast_target = nullptr );
+	int GenerateCodePRMF4( int t, std::unique_ptr<chsp::ChspAstExpr> *ast_target = nullptr );
 	void GenerateCodeMethod( void );
 	void GenerateCodeLabel( const std::string &name, int ex );
 
@@ -97,7 +94,7 @@ private:
 	void GenerateCodePP_defvars( int fixedvalue );
 	void ClearLocalStructAliases( void );
 	void RegisterLocalStructAlias( const std::string &name );
-	void ParseChspSignatureType( bool allow_extended_type, chspv3::ChspV3AstParam *param_ast = nullptr );
+	void ParseChspSignatureType( bool allow_extended_type, chsp::ChspAstParam *param_ast = nullptr );
 
 	void CheckInternalListenerCMD( int opt );
 	int CheckInternalProgCMD( int opt, int orgcs );
@@ -124,8 +121,8 @@ private:
 	void ResetAstBuilder( void );
 	void RecordSourceLine( const char *text );
 	void BeginAstStatement( int statement_kind, int token_kind, const std::string &text );
-	void CaptureAstExpr( std::unique_ptr<chspv3::ChspV3AstExpr> expr );
-	std::unique_ptr<chspv3::ChspV3AstExpr> TakeCapturedExpression( void );
+	void CaptureAstExpr( std::unique_ptr<chsp::ChspAstExpr> expr );
+	std::unique_ptr<chsp::ChspAstExpr> TakeCapturedExpression( void );
 
 	//		Data
 	//
@@ -168,11 +165,11 @@ private:
 	int cg_localstruct[CG_LOCALSTRUCT_MAX];
 	int cg_localcur;
 
-	chspv3::ChspV3AstProgram ast_program;
-	chspv3::ChspV3AstModule *current_module;
-	chspv3::ChspV3AstFunction *current_function;
-	chspv3::ChspV3AstStmt *current_stmt;
-	std::vector<std::unique_ptr<chspv3::ChspV3AstExpr>> expression_stack;
+	chsp::ChspAstProgram ast_program;
+	chsp::ChspAstModule *current_module;
+	chsp::ChspAstFunction *current_function;
+	chsp::ChspAstStmt *current_stmt;
+	std::vector<std::unique_ptr<chsp::ChspAstExpr>> expression_stack;
 
 	//		for Error
 	//

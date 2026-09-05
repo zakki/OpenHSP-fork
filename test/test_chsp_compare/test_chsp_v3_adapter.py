@@ -18,15 +18,15 @@ from run_test_matrix import EMIT_C_HSPCMP_FLAGS, HSPCMP
 
 ROOT = THIS_DIR.parents[1]
 MAKEFILE = ROOT / "makefile"
-V2_FRONTEND = ROOT / "src/hspcmp/chsp/chsp_frontend_v2.cpp"
+V2_FRONTEND = ROOT / "src/hspcmp/chsp/chsp_frontend.cpp"
 CHSP_UTIL_H = ROOT / "src/hspcmp/chsp/chsp_util.h"
 V2_EMITTER_CPP = ROOT / "src/hspcmp/chsp/chsp_frontend_v2_emitter.cpp"
 V2_PARSER_CPP = ROOT / "src/hspcmp/chsp/chsp_frontend_v2_parser.cpp"
 V3_BRIDGE_H = ROOT / "src/hspcmp/chsp/chsp_frontend_v3_bridge.h"
-V3_PARSER_CPP = ROOT / "src/hspcmp/chsp/chsp_frontend_v3_parser.cpp"
-V3_PARSER_H = ROOT / "src/hspcmp/chsp/chsp_frontend_v3_parser.h"
-WIN32_VCXPROJ = ROOT / "src/hspcmp/win32/hspcmp.vcxproj"
-WIN32DLL_VCXPROJ = ROOT / "src/hspcmp/win32dll/hspcmp.vcxproj"
+V3_PARSER_CPP = ROOT / "src/hspcmp/chsp/chsp_parser.cpp"
+V3_PARSER_H = ROOT / "src/hspcmp/chsp/chsp_parser.h"
+WIN32_VCXPROJ = ROOT / "src/chsp/win32/chsp.vcxproj"
+WIN32DLL_VCXPROJ = ROOT / "src/chsp/win32dll/hspcmp.vcxproj"
 
 
 class ChspV3ArchitectureGuardrailTest(unittest.TestCase):
@@ -48,12 +48,12 @@ class ChspV3ArchitectureGuardrailTest(unittest.TestCase):
 
     def test_v3_parser_declares_ast_builder_state(self) -> None:
         header = V3_PARSER_H.read_text(encoding="utf-8")
-        self.assertIn("chsp_frontend_v3_ast.h", header)
-        self.assertRegex(header, r"\bChspV3AstProgram\b")
+        self.assertIn("chsp_ast.h", header)
+        self.assertRegex(header, r"\bChspAstProgram\b")
         self.assertRegex(header, r"\bast_program\b")
         self.assertRegex(header, r"\bcurrent_module\b")
         self.assertRegex(header, r"\bcurrent_function\b")
-        self.assertRegex(header, r"const\s+chspv3::ChspV3AstProgram\s*&\s*GetAstProgram\s*\(\s*void\s*\)\s*const")
+        self.assertRegex(header, r"const\s+chsp::ChspAstProgram\s*&\s*GetAstProgram\s*\(\s*void\s*\)\s*const")
 
     def test_v3_parser_feeds_ast_builder_from_preprocessor_hooks(self) -> None:
         source = V3_PARSER_CPP.read_text(encoding="utf-8")

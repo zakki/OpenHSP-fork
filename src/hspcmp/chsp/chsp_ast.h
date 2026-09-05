@@ -1,5 +1,5 @@
 //
-//	cHSP v3 codegen-aligned AST containers
+//	cHSP AST containers
 //
 #pragma once
 
@@ -8,12 +8,12 @@
 #include <string>
 #include <vector>
 
-#include "chsp_frontend_v2.h"
+#include "chsp_frontend.h"
 
-namespace chspv3
+namespace chsp
 {
 
-enum class ChspV3SourceDirectiveKind
+enum class ChspSourceDirectiveKind
 {
 	None,
 	Module,
@@ -25,15 +25,17 @@ enum class ChspV3SourceDirectiveKind
 	DefCFunc,
 	End,
 };
+using ChspV3SourceDirectiveKind = ChspSourceDirectiveKind;
 
-struct ChspV3SourceLine
+struct ChspSourceLine
 {
 	int line = 0;
-	ChspV3SourceDirectiveKind directive = ChspV3SourceDirectiveKind::None;
+	ChspSourceDirectiveKind directive = ChspSourceDirectiveKind::None;
 	std::string text;
 };
+using ChspV3SourceLine = ChspSourceLine;
 
-enum class ChspV3AstExprKind
+enum class ChspAstExprKind
 {
 	Unknown,
 	IntLiteral,
@@ -46,8 +48,9 @@ enum class ChspV3AstExprKind
 	Call,
 	Group,
 };
+using ChspV3AstExprKind = ChspAstExprKind;
 
-enum class ChspV3AstStmtKind
+enum class ChspAstStmtKind
 {
 	Unknown,
 	Return,
@@ -59,6 +62,7 @@ enum class ChspV3AstStmtKind
 	Command,
 	BlockMarker,
 };
+using ChspV3AstStmtKind = ChspAstStmtKind;
 
 inline void AppendJsonEscaped( std::string &out, const std::string &text )
 {
@@ -94,32 +98,34 @@ inline void AppendJsonEscaped( std::string &out, const std::string &text )
 	out.push_back( '"' );
 }
 
-struct ChspV3AstExpr
+struct ChspAstExpr
 {
-	ChspV3AstExprKind kind = ChspV3AstExprKind::Unknown;
+	ChspAstExprKind kind = ChspAstExprKind::Unknown;
 	int line = 0;
 	int token_kind = 0;
 	int operator_kind = 0;
 	std::string text;
-	std::vector<std::unique_ptr<ChspV3AstExpr>> children;
+	std::vector<std::unique_ptr<ChspAstExpr>> children;
 };
+using ChspV3AstExpr = ChspAstExpr;
 
-struct ChspV3AstStmt
+struct ChspAstStmt
 {
-	ChspV3AstStmtKind kind = ChspV3AstStmtKind::Unknown;
+	ChspAstStmtKind kind = ChspAstStmtKind::Unknown;
 	int line = 0;
 	int token_kind = 0;
 	int statement_kind = 0;
 	int if_depth = 0;
 	int repeat_depth = 0;
 	std::string text;
-	std::unique_ptr<ChspV3AstExpr> lhs;
-	std::unique_ptr<ChspV3AstExpr> rhs;
-	std::vector<std::unique_ptr<ChspV3AstExpr>> exprs;
-	std::vector<std::unique_ptr<ChspV3AstStmt>> children;
+	std::unique_ptr<ChspAstExpr> lhs;
+	std::unique_ptr<ChspAstExpr> rhs;
+	std::vector<std::unique_ptr<ChspAstExpr>> exprs;
+	std::vector<std::unique_ptr<ChspAstStmt>> children;
 };
+using ChspV3AstStmt = ChspAstStmt;
 
-struct ChspV3AstParam
+struct ChspAstParam
 {
 	int line = 0;
 	int token_kind = 0;
@@ -130,18 +136,20 @@ struct ChspV3AstParam
 	bool is_local = false;
 	std::vector<int> array_dims;
 };
+using ChspV3AstParam = ChspAstParam;
 
-struct ChspV3AstFunction
+struct ChspAstFunction
 {
 	int line = 0;
 	int token_kind = 0;
 	std::string return_type;
 	std::string name;
-	std::vector<ChspV3AstParam> params;
-	std::vector<std::unique_ptr<ChspV3AstStmt>> body_stmts;
+	std::vector<ChspAstParam> params;
+	std::vector<std::unique_ptr<ChspAstStmt>> body_stmts;
 };
+using ChspV3AstFunction = ChspAstFunction;
 
-struct ChspV3AstModule
+struct ChspAstModule
 {
 	int line = 0;
 	int token_kind = 0;
@@ -150,15 +158,17 @@ struct ChspV3AstModule
 	std::vector<std::string> native_source_blocks;
 	std::vector<std::string> declared_native_functions;
 	std::vector<std::string> linked_libraries;
-	std::vector<ChspV3AstFunction> functions;
+	std::vector<ChspAstFunction> functions;
 };
+using ChspV3AstModule = ChspAstModule;
 
-struct ChspV3AstProgram
+struct ChspAstProgram
 {
-	std::vector<ChspV3AstModule> modules;
-	std::vector<std::unique_ptr<ChspV3AstStmt>> top_level_stmts;
-	std::vector<ChspV3SourceLine> source_lines;
+	std::vector<ChspAstModule> modules;
+	std::vector<std::unique_ptr<ChspAstStmt>> top_level_stmts;
+	std::vector<ChspSourceLine> source_lines;
 };
+using ChspV3AstProgram = ChspAstProgram;
 
 inline void AppendJsonExpr( std::string &out, const ChspV3AstExpr &expr );
 inline void AppendJsonStmt( std::string &out, const ChspV3AstStmt &stmt );
@@ -400,4 +410,6 @@ inline std::string SerializeAstProgramJson( const ChspV3AstProgram &program )
 	return out;
 }
 
-} // namespace chspv3
+} // namespace chsp
+
+namespace chspv3 = chsp;

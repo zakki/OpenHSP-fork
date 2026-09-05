@@ -1,26 +1,12 @@
-//
-//	logger.cpp structures
-//
 #pragma once
 
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
 
-class CLabel;
 class CMemBuf;
-
-#define SCNVBUF_DEFAULTSIZE 0x8000
-#define SCNV_OPT_NONE 0
-#define SCNV_OPT_SJISUTF8 1
-#define SCNV_OPT_UTF8SJIS 2
-
 
 //  util class
 class CLogger
 {
-	// friend class CToken;
 public:
 	explicit CLogger( const std::shared_ptr<CMemBuf> &buf ) : errbuf( buf )
 	{

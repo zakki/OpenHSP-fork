@@ -20,7 +20,7 @@
 #include "../membuf.h"
 #include "../supio.h"
 #include "../tagstack.h"
-#include "codegen_lexer.h"
+#include "chsp_lexer.h"
 
 #include "../errormsg.h"
 

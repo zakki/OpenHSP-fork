@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "../../hsp3/hsp3config.h"
-#include "chsp_frontend_v2.h"
+#include "chsp_frontend.h"
 
 #include <filesystem>
 #include <memory>
@@ -14,21 +14,21 @@
 #include "../membuf.h"
 #include "chsp_builtin_map.h"
 #include "chsp_util.h"
-#include "chsp_frontend_v3_emitter.h"
-#include "chsp_frontend_v3_parser.h"
+#include "chsp_emitter.h"
+#include "chsp_parser.h"
 #include "logger.h"
 
 
 extern char *hsp_prestr[];
 extern char *hsp_prepp[];
 
-CChspFrontendV2::CChspFrontendV2( const std::shared_ptr<CMemBuf> &errbuf_ ) : errbuf( errbuf_ )
+CChspFrontend::CChspFrontend( const std::shared_ptr<CMemBuf> &errbuf_ ) : errbuf( errbuf_ )
 {
 }
 
-int CChspFrontendV2::GenerateFromBuffer( const char *source_name, const char *input_text,
-										 CMemBuf *hsp_output, std::vector<ChspNativeArtifact> *native_outputs,
-										 const char *compath, bool for_preprocessor )
+int CChspFrontend::GenerateFromBuffer( const char *source_name, const char *input_text,
+									   CMemBuf *hsp_output, std::vector<ChspNativeArtifact> *native_outputs,
+									   const char *compath, bool for_preprocessor )
 {
 	auto logger = std::make_shared<CLogger>( errbuf );
 	CLogger local_logger( errbuf );
@@ -57,9 +57,10 @@ int CChspFrontendV2::GenerateFromBuffer( const char *source_name, const char *in
 	}
 	int res = parser.GenerateCode( &srcbuf, oname_debug.c_str(), genmode );
 	if ( chsp_dev_debug ) {
-		printf( "#cHSP AST JSON:\n%s\n", chspv3::SerializeAstProgramJson( parser.GetAstProgram() ).c_str() );
+		printf( "#cHSP AST JSON:\n%s\n", chsp::SerializeAstProgramJson( parser.GetAstProgram() ).c_str() );
 		printf( "#cHSP parser log:\n%s", errbuf->GetBuffer() );
 		printf( "#cHSP parser end\n\n" );
+		fflush( stdout );
 	}
 
 	if ( res != 0 ) {
@@ -74,10 +75,10 @@ int CChspFrontendV2::GenerateFromBuffer( const char *source_name, const char *in
 	}
 
 	try {
-		return chspv3::GenerateProgramOutput( parser.GetAstProgram(), local_logger, *hsp_output, *native_outputs,
-											  source_name, builtin_map, for_preprocessor );
+		return chsp::GenerateProgramOutput( parser.GetAstProgram(), local_logger, *hsp_output, *native_outputs,
+											source_name, builtin_map, for_preprocessor );
 	} catch ( ... ) {
-		local_logger.Mesf( "#Error:cHSP lexer/parser frontend v2 aborted during output generation [%s]",
+		local_logger.Mesf( "#Error:cHSP frontend aborted during output generation [%s]",
 						   source_name != nullptr ? source_name : "<buffer>" );
 		return -1;
 	}

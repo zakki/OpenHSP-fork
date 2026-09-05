@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "chsp_frontend_v2.h"
+#include "chsp_frontend.h"
 
 struct ChspBuiltinEntry
 {

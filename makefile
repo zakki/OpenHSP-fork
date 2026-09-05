@@ -89,12 +89,12 @@ OBJS_CMP = \
 OBJS_CHSP = \
 	src/chsp/chsp_main.chsp.o \
 	src/hspcmp/chsp/chsp_pipeline.chsp.o \
-	src/hspcmp/chsp/codegen_lexer.chsp.o \
+	src/hspcmp/chsp/chsp_lexer.chsp.o \
 	src/hspcmp/chsp/chsp_libtcc_shared.chsp.o \
 	src/hspcmp/chsp/chsp_builtin_map.chsp.o \
-	src/hspcmp/chsp/chsp_frontend_v2.chsp.o \
-	src/hspcmp/chsp/chsp_frontend_v3_parser.chsp.o \
-	src/hspcmp/chsp/chsp_frontend_v3_emitter.chsp.o \
+	src/hspcmp/chsp/chsp_frontend.chsp.o \
+	src/hspcmp/chsp/chsp_parser.chsp.o \
+	src/hspcmp/chsp/chsp_emitter.chsp.o \
 	src/hspcmp/chsp/lexer_util.chsp.o \
 	src/hspcmp/chsp/logger.chsp.o \
 	src/hspcmp/comutil.chsp.o \
