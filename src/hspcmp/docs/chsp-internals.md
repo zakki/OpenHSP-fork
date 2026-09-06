@@ -110,7 +110,7 @@ randomize	chsp_randomize_seed	chsp_randomize_seed	1	-1
 
 `LoadChspBuiltinMap(compath, out)` (`chsp_builtin_map.cpp`) が `{compath}/chsp/chsp_builtins.tsv` を読み込みます。
 ファイルが見つからない・読めない場合はエラー文字列を返します (空文字列 = 成功)。
-呼び出し側 (`chsp_frontend_v2.cpp`) はエラー時にコンパイルエラーとして処理します。
+呼び出し側 (`chsp_frontend.cpp`) はエラー時にコンパイルエラーとして処理します。
 
 ## 識別子の正規化と C 関数名
 
@@ -156,17 +156,21 @@ plugin backend は `HSPEXINFO` 経由でこれらの多くをすでに扱える�
   - HSP 準拠に寄せるか C の usual arithmetic conversions に寄せるかは今後の検討事項
 - 現在は compare テストで plugin backend の現挙動を観測・固定している段階
 
-### MVP では対応外の機能
+### 対応外の機能・制限事項
 
 以下は現状の実装に含まれません。将来の拡張候補です。
 
 - `str` / `array[str]`
 - cHSP ブロック内の `ddim` / `sdim`
-- cHSP ブロックから通常の HSP 関数を呼ぶこと
+- cHSP ブロックから通常の HSP 関数や標準命令を呼ぶこと
 - cHSP ブロック内部での HSP プリプロセッサのマクロ展開
 - `gettime` の cHSP ブロック内利用
 - HSP の一般的な「任意位置の引数省略」
 - `rnd` / `randomize` の HSP ランタイムとの乱数状態共有
+
+#### cHSP からの HSP 関数・標準命令呼び出し制限の理由
+
+HSP3 の命令 (`cmdfunc`) や関数は引数スタックを持たず、実行中のバイトコードストリーム (`mcs`) から `code_get` / `code_next` を介して式を逐次評価・消費する構造になっています。そのため、C ネイティブ側から引数を渡して直接呼ぶ手段が存在しません。擬似バイトコード生成やサブルーチンブリッジ (`HspFunc_call`) などの回避策も大きなオーバーヘッドや状態破壊のリスクを伴うため、非対応としています（詳細は [decisions/chsp-plugin-call-investigation.md](decisions/chsp-plugin-call-investigation.md) を参照）。
 
 ### 将来の拡張方針
 
