@@ -2340,6 +2340,49 @@ int CChspParser::GenerateCodeSub()
 
 	switch ( token.ttype ) {
 	case TK_OBJ: {
+		if ( token.cg_str == "ddim" || token.cg_str == "lldim" ) {
+			bool is_lldim = ( token.cg_str == "lldim" );
+			int id_dimtype = SearchSymbol( "dimtype" );
+			if ( id_dimtype >= 0 ) {
+				int t = symtab->lb->GetType( id_dimtype );
+				int opt = symtab->lb->GetOpt( id_dimtype );
+				int orgcs = 0;
+				BeginAstStatement( CG_LASTCMD_CMD, t, symtab->lb->GetName( id_dimtype ) );
+				CheckInternalProgCMD( opt, orgcs );
+				token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+				expression_stack.clear();
+				CalcCG( 0 );
+				if ( current_stmt != nullptr ) {
+					auto expr_var = TakeCapturedExpression();
+					if ( expr_var != nullptr ) {
+						current_stmt->exprs.push_back( std::move( expr_var ) );
+					}
+					auto expr_type = std::make_unique<chspv3::ChspV3AstExpr>();
+					expr_type->kind = chspv3::ChspV3AstExprKind::IntLiteral;
+					expr_type->line = lexer.cg_orgline;
+					expr_type->token_kind = TK_NUM;
+					expr_type->text = is_lldim ? "8" : "3";
+					current_stmt->exprs.push_back( std::move( expr_type ) );
+				}
+				if ( token.ttype == ',' ) {
+					token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+					GenerateCodePRM();
+				} else {
+					if ( current_stmt != nullptr ) {
+						auto expr_len1 = std::make_unique<chspv3::ChspV3AstExpr>();
+						expr_len1->kind = chspv3::ChspV3AstExprKind::IntLiteral;
+						expr_len1->line = lexer.cg_orgline;
+						expr_len1->token_kind = TK_NUM;
+						expr_len1->text = "1";
+						current_stmt->exprs.push_back( std::move( expr_len1 ) );
+					}
+				}
+				cg_lastcmd = CG_LASTCMD_CMD;
+				cg_lasttype = t;
+				cg_lastval = opt;
+				break;
+			}
+		}
 		cg_lastcmd = CG_LASTCMD_LET;
 		int i = SearchSymbol( token.cg_str );
 		if ( i < 0 ) {

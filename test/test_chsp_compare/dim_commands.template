@@ -1,0 +1,235 @@
+@@ meta
+compare_default = hsp, chsp_p
+compare_emit_c = chsp_p
+compare_libtcc = chsp_p
+
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc fill_sub array a, int n
+	repeat n
+		a(cnt) = cnt * 10
+	loop
+	return
+
+#deffunc test_int array a, int n
+	dim a, n
+	fill_sub a, n
+	return
+
+#deffunc test_ddim array d, int nx, int ny, local local_x, local local_y
+	ddim d, nx, ny
+	repeat ny
+		local_y = cnt
+		repeat nx
+			local_x = cnt
+			d(local_x, local_y) = double(local_x * 10 + local_y)
+		loop
+	loop
+	return
+
+#deffunc test_lldim array l, int n
+	lldim l, n
+	repeat n
+		l(cnt) = 10000000000L * cnt
+	loop
+	return
+
+#deffunc test_dimtype_int array a, int n
+	dimtype a, 4, n
+	repeat n
+		a(cnt) = cnt + 100
+	loop
+	return
+
+#deffunc test_dimtype_double array d, int n
+	dimtype d, 3, n
+	repeat n
+		d(cnt) = double(cnt) * 1.5
+	loop
+	return
+
+#deffunc test_dimtype_int64 array l, int n
+	dimtype l, 8, n
+	repeat n
+		l(cnt) = 5000000000L * cnt
+	loop
+	return
+
+#deffunc test_dim_default array a
+	dim a
+	a(0) = 42
+	return
+
+#deffunc test_resize_seq array a
+	dim a, 5
+	a(0) = 10
+	a(4) = 50
+	dim a, 2
+	a(0) = 20
+	a(1) = 30
+	return
+
+#deffunc dummy_00
+	return
+
+#global
+
+@@ chsp_p_module
+#chsp_module "dim_commands_chsp_p"
+
+#chsp_deffunc fill_sub array[int] a, int n
+	repeat n
+		a(cnt) = cnt * 10
+	loop
+	return
+#chsp_end
+
+#chsp_deffunc test_int array[int] a, int n
+	dim a, n
+	fill_sub a, n
+	return
+#chsp_end
+
+#chsp_deffunc test_ddim array[double] d, int nx, int ny, local[int] local_x, local[int] local_y
+	ddim d, nx, ny
+	repeat ny
+		local_y = cnt
+		repeat nx
+			local_x = cnt
+			d(local_x, local_y) = double(local_x * 10 + local_y)
+		loop
+	loop
+	return
+#chsp_end
+
+#chsp_deffunc test_lldim array[int64] l, int n
+	lldim l, n
+	repeat n
+		l(cnt) = 10000000000L * cnt
+	loop
+	return
+#chsp_end
+
+#chsp_deffunc test_dimtype_int array[int] a, int n
+	dimtype a, 4, n
+	repeat n
+		a(cnt) = cnt + 100
+	loop
+	return
+#chsp_end
+
+#chsp_deffunc test_dimtype_double array[double] d, int n
+	dimtype d, 3, n
+	repeat n
+		d(cnt) = double(cnt) * 1.5
+	loop
+	return
+#chsp_end
+
+#chsp_deffunc test_dimtype_int64 array[int64] l, int n
+	dimtype l, 8, n
+	repeat n
+		l(cnt) = 5000000000L * cnt
+	loop
+	return
+#chsp_end
+
+#chsp_deffunc test_dim_default array[int] a
+	dim a
+	a(0) = 42
+	return
+#chsp_end
+
+#chsp_deffunc test_resize_seq array[int] a
+	dim a, 5
+	a(0) = 10
+	a(4) = 50
+	dim a, 2
+	a(0) = 20
+	a(1) = 30
+	return
+#chsp_end
+
+#deffunc dummy_00
+	return
+
+#chsp_module_end
+
+@@ main
+
+	dim a, 2
+	test_int a, 4
+	mes "DIM_INT"
+	mes "" + length(a)
+	repeat length(a)
+		mes "" + a(cnt)
+	loop
+
+	ddim d, 1
+	test_ddim d, 3, 2
+	mes "DDIM"
+	mes "" + length(d)
+	mes "" + length2(d)
+	repeat length2(d)
+		y = cnt
+		repeat length(d)
+			x = cnt
+			mes "" + d(x, y)
+		loop
+	loop
+
+	lldim l, 1
+	test_lldim l, 3
+	mes "LLDIM"
+	mes "" + length(l)
+	repeat length(l)
+		mes "" + l(cnt)
+	loop
+
+	dimtype a, 4, 1
+	test_dimtype_int a, 3
+	mes "DIMTYPE_INT"
+	mes "" + length(a)
+	repeat length(a)
+		mes "" + a(cnt)
+	loop
+
+	test_dimtype_double d, 2
+	mes "DIMTYPE_DOUBLE"
+	mes "" + length(d)
+	repeat length(d)
+		mes "" + d(cnt)
+	loop
+
+	test_dimtype_int64 l, 2
+	mes "DIMTYPE_INT64"
+	mes "" + length(l)
+	repeat length(l)
+		mes "" + l(cnt)
+	loop
+
+	test_dim_default a
+	mes "DIM_DEFAULT"
+	mes "" + length(a)
+	mes "" + a(0)
+
+	test_resize_seq a
+	mes "RESIZE_SEQ"
+	mes "" + length(a)
+	repeat length(a)
+		mes "" + a(cnt)
+	loop
+
+	end
+
+dummy_00
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

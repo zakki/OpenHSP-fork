@@ -21,6 +21,7 @@ struct TranslateContext
 	ChspNativeTarget target = ChspNativeTarget::Plugin;
 	const ChspBuiltinMap *builtin_map = nullptr;
 	std::unordered_set<std::string> array_names;
+	std::unordered_set<std::string> argument_array_names;
 	std::unordered_map<std::string, std::string> declared_native_functions; // normalized name -> original case name
 	std::unordered_map<std::string, std::string> identifier_cpp_names;
 	std::unordered_map<std::string, std::string> function_cpp_names;

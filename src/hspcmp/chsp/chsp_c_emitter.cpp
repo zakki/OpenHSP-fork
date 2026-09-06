@@ -184,6 +184,15 @@ std::string TranslateExpr( const ChspAstExpr &expr, const TranslateContext &ctx,
 			out += ", ";
 		}
 		out += TranslateExpr( *expr.children[i], ctx, ok, 0, false );
+		if ( callee != nullptr && ctx.target == ChspNativeTarget::Plugin &&
+			 ( i - 1 ) < callee->params.size() && callee->params[i - 1].is_array ) {
+			const auto arg_norm = NormalizeScopedName( expr.children[i]->text );
+			if ( ctx.argument_array_names.count( arg_norm ) ) {
+				out += ", pval_" + LookupCppIdentifier( ctx, expr.children[i]->text );
+			} else {
+				out += ", NULL";
+			}
+		}
 		if ( callee != nullptr && FunctionNeedsArrayMetadata( ctx.function_array_metadata_needs, *callee ) &&
 			 ( i - 1 ) < callee->params.size() && callee->params[i - 1].is_array ) {
 			if ( !AppendArrayArgumentMetadata( *expr.children[i], ctx, ok, out ) ) {
@@ -292,6 +301,15 @@ std::string RenderCommandCall( const ChspAstStmt &stmt, TranslateContext &ctx, b
 			out += ", ";
 		}
 		out += TranslateExpr( *stmt.exprs[i], ctx, ok );
+		if ( callee != nullptr && ctx.target == ChspNativeTarget::Plugin &&
+			 i < callee->params.size() && callee->params[i].is_array ) {
+			const auto arg_norm = NormalizeScopedName( stmt.exprs[i]->text );
+			if ( ctx.argument_array_names.count( arg_norm ) ) {
+				out += ", pval_" + LookupCppIdentifier( ctx, stmt.exprs[i]->text );
+			} else {
+				out += ", NULL";
+			}
+		}
 		if ( callee != nullptr && FunctionNeedsArrayMetadata( ctx.function_array_metadata_needs, *callee ) &&
 			 i < callee->params.size() && callee->params[i].is_array ) {
 			if ( !AppendArrayArgumentMetadata( *stmt.exprs[i], ctx, ok, out ) ) {
@@ -507,7 +525,7 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 			}
 		} else {
 			const auto rendered = RenderStatementInline( stmt, ctx, ok );
-			if ( ok ) {
+			if ( ok && !rendered.empty() ) {
 				buf.PutStr( MakeIndent( indent_level ).c_str() );
 				buf.PutStr( rendered.c_str() );
 				buf.PutCR();
@@ -515,6 +533,23 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 					emitted_explicit_return = true;
 				}
 				return true;
+			}
+			if ( stmt.children.size() == 1 && stmt.children[0] != nullptr ) {
+				bool cond_ok = true;
+				const auto cond = TranslateExpr( *stmt.exprs[0], ctx, cond_ok );
+				if ( cond_ok ) {
+					buf.PutStr( MakeIndent( indent_level ).c_str() );
+					buf.PutStr( ( "if (" + cond + ") {\n" ).c_str() );
+					++indent_level;
+					if ( !WriteFunctionStmtToCpp( buf, *stmt.children[0], ctx, func, logger, indent_level,
+												  emitted_explicit_return ) ) {
+						return false;
+					}
+					indent_level = std::max( 1, indent_level - 1 );
+					buf.PutStr( MakeIndent( indent_level ).c_str() );
+					buf.PutStr( "}\n" );
+					return true;
+				}
 			}
 		}
 		return ReportUnsupportedStmt( logger, func, stmt, "conditional structure could not be translated" );
@@ -627,6 +662,151 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 				buf.PutStr( ( base_ptr + "[" + make_idx( i + 1 ) + "] = " + val + ";" ).c_str() );
 				buf.PutCR();
 			}
+			return true;
+		}
+		break;
+	}
+	case ChspAstStmtKind::Command: {
+		const auto cmd_name = NormalizeScopedName( stmt.text );
+		if ( cmd_name == "dim" || cmd_name == "dimtype" ) {
+			if ( ctx.target != ChspNativeTarget::Plugin ) {
+				return ReportUnsupportedStmt( logger, func, stmt,
+											  ( cmd_name + " is only supported in target=plugin" ).c_str() );
+			}
+			if ( stmt.exprs.empty() || stmt.exprs[0] == nullptr ||
+				 stmt.exprs[0]->kind != ChspAstExprKind::Identifier ) {
+				return ReportUnsupportedStmt( logger, func, stmt,
+											  ( cmd_name + " requires a variable identifier" ).c_str() );
+			}
+			const std::string var_name = NormalizeScopedName( stmt.exprs[0]->text );
+			const ChspAstParam *target_param = nullptr;
+			for ( const auto &param : func.params ) {
+				if ( NormalizeScopedName( param.name ) == var_name ) {
+					target_param = &param;
+					break;
+				}
+			}
+			if ( target_param == nullptr ) {
+				return ReportUnsupportedStmt(
+					logger, func, stmt,
+					( "variable '" + var_name + "' not found in function parameters" ).c_str() );
+			}
+			if ( target_param->is_local ) {
+				return ReportUnsupportedStmt(
+					logger, func, stmt, ( cmd_name + " cannot be used on local array '" + var_name + "'" ).c_str() );
+			}
+			if ( !target_param->is_array ) {
+				return ReportUnsupportedStmt(
+					logger, func, stmt,
+					( cmd_name + " cannot be used on non-array variable '" + var_name + "'" ).c_str() );
+			}
+
+			int flag = 0;
+			std::string ptr_func;
+			size_t dim_start = 1;
+
+			if ( cmd_name == "dim" ) {
+				if ( target_param->base_type != "int" ) {
+					return ReportUnsupportedStmt( logger, func, stmt,
+												  ( "type mismatch: dim requires array[int], but '" + var_name +
+													"' is array[" + target_param->base_type + "]" )
+													  .c_str() );
+				}
+				flag = 4; // HSPVAR_FLAG_INT
+				ptr_func = "chsp_plugin_int_ptr";
+				dim_start = 1;
+			} else { // dimtype
+				if ( stmt.exprs.size() < 2 || stmt.exprs[1] == nullptr ) {
+					return ReportUnsupportedStmt( logger, func, stmt,
+												  "dimtype requires type parameter" );
+				}
+				if ( stmt.exprs[1]->kind != ChspAstExprKind::IntLiteral ) {
+					return ReportUnsupportedStmt(
+						logger, func, stmt,
+						"dimtype type parameter must be a constant integer (dynamic typing is not permitted)" );
+				}
+				const std::string type_str = stmt.exprs[1]->text;
+				if ( type_str == "4" ) {
+					if ( target_param->base_type != "int" ) {
+						return ReportUnsupportedStmt( logger, func, stmt,
+													  ( "type mismatch: dimtype for type 4 requires array[int], but '" +
+														var_name + "' is array[" + target_param->base_type + "]" )
+														  .c_str() );
+					}
+					flag = 4;
+					ptr_func = "chsp_plugin_int_ptr";
+				} else if ( type_str == "3" ) {
+					if ( target_param->base_type != "double" ) {
+						return ReportUnsupportedStmt(
+							logger, func, stmt,
+							( "type mismatch: ddim/dimtype for type 3 requires array[double], but '" + var_name +
+							  "' is array[" + target_param->base_type + "]" )
+								.c_str() );
+					}
+					flag = 3;
+					ptr_func = "chsp_plugin_double_ptr";
+				} else if ( type_str == "8" ) {
+					if ( target_param->base_type != "int64" ) {
+						return ReportUnsupportedStmt(
+							logger, func, stmt,
+							( "type mismatch: lldim/dimtype for type 8 requires array[int64], but '" + var_name +
+							  "' is array[" + target_param->base_type + "]" )
+								.c_str() );
+					}
+					flag = 8;
+					ptr_func = "chsp_plugin_int64_ptr";
+				} else {
+					return ReportUnsupportedStmt(
+						logger, func, stmt,
+						( "unsupported vartype " + type_str + " in dimtype" ).c_str() );
+				}
+				dim_start = 2;
+			}
+
+			// Dimensions
+			std::string d_expr[4] = { "0", "0", "0", "0" };
+			if ( dim_start >= stmt.exprs.size() ) {
+				d_expr[0] = "1";
+			} else {
+				for ( size_t d = 0; d < 4; ++d ) {
+					if ( dim_start + d < stmt.exprs.size() && stmt.exprs[dim_start + d] != nullptr ) {
+						bool ok = true;
+						d_expr[d] = TranslateExpr( *stmt.exprs[dim_start + d], ctx, ok );
+						if ( !ok ) {
+							return ReportUnsupportedStmt( logger, func, stmt,
+														  "dimension expression could not be translated" );
+						}
+					}
+				}
+			}
+
+			std::string d_vars[4];
+			for ( int d = 0; d < 4; ++d ) {
+				d_vars[d] = "_chsp_dim_" + std::to_string( ctx.temp_var_count++ );
+				buf.PutStr( MakeIndent( indent_level ).c_str() );
+				buf.PutStr( ( "int " + d_vars[d] + " = " + d_expr[d] + ";\n" ).c_str() );
+			}
+
+			const std::string cpp_arr = LookupCppIdentifier( ctx, var_name );
+			const std::string pval_name = "pval_" + cpp_arr;
+			const auto dim_exprs = ArrayDimensionExprsForName( ctx, var_name );
+
+			buf.PutStr( MakeIndent( indent_level ).c_str() );
+			buf.PutStr( ( "if ( " + pval_name + " == NULL ) puterror( HSPERR_ILLEGAL_FUNCTION );\n" ).c_str() );
+
+			buf.PutStr( MakeIndent( indent_level ).c_str() );
+			buf.PutStr( ( "exinfo->HspFunc_dim( " + pval_name + ", " + std::to_string( flag ) + ", 0, " +
+						  d_vars[0] + ", " + d_vars[1] + ", " + d_vars[2] + ", " + d_vars[3] + " );\n" )
+							.c_str() );
+
+			buf.PutStr( MakeIndent( indent_level ).c_str() );
+			buf.PutStr( ( cpp_arr + " = " + ptr_func + "( " + pval_name + ", 0 );\n" ).c_str() );
+
+			for ( int d = 0; d < 4 && d < static_cast<int>( dim_exprs.size() ); ++d ) {
+				buf.PutStr( MakeIndent( indent_level ).c_str() );
+				buf.PutStr( ( dim_exprs[d] + " = " + pval_name + "->len[" + std::to_string( d + 1 ) + "];\n" ).c_str() );
+			}
+
 			return true;
 		}
 		break;
@@ -755,6 +935,10 @@ void WriteFunctionPrototypeToNative( CMemBuf &buf, const ChspAstFunction &func, 
 		buf.PutStr( ToNativeType( param, target ).c_str() );
 		buf.PutStr( " " );
 		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
+		if ( target == ChspNativeTarget::Plugin && param.is_array && !param.is_local ) {
+			buf.PutStr( ", PVal *pval_" );
+			buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
+		}
 		if ( needs_array_metadata && param.is_array && !param.is_local ) {
 			const size_t param_index = &param - func.params.data();
 			for ( int dim = 1; dim <= 4; ++dim ) {
@@ -802,6 +986,10 @@ bool WriteFunctionToNative( CMemBuf &buf, const ChspAstModule &module, const Chs
 		buf.PutStr( ToNativeType( param, target ).c_str() );
 		buf.PutStr( " " );
 		buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
+		if ( target == ChspNativeTarget::Plugin && param.is_array && !param.is_local ) {
+			buf.PutStr( ", PVal *pval_" );
+			buf.PutStr( LookupCppIdentifier( ctx, param.name ).c_str() );
+		}
 		if ( needs_array_metadata && param.is_array && !param.is_local ) {
 			const size_t param_index = &param - func.params.data();
 			for ( int dim = 1; dim <= 4; ++dim ) {
@@ -923,6 +1111,10 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 			first = false;
 			const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
 			buf.PutStr( var_name.c_str() );
+			if ( param.is_array ) {
+				buf.PutStr( ", pval_" );
+				buf.PutStr( var_name.c_str() );
+			}
 			if ( needs_array_metadata && param.is_array ) {
 				for ( int dim = 1; dim <= 4; ++dim ) {
 					buf.PutStr( ", " );
@@ -1034,6 +1226,10 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 			first = false;
 			const std::string var_name = "arg_" + SanitizeForCppIdentifier( param.name );
 			buf.PutStr( var_name.c_str() );
+			if ( param.is_array ) {
+				buf.PutStr( ", pval_" );
+				buf.PutStr( var_name.c_str() );
+			}
 			if ( needs_array_metadata && param.is_array ) {
 				for ( int dim = 1; dim <= 4; ++dim ) {
 					buf.PutStr( ", " );

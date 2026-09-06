@@ -149,6 +149,12 @@ static bool ExprUsesArrayMetadata( const ChspAstExpr &expr, const std::unordered
 
 static bool StmtUsesArrayMetadata( const ChspAstStmt &stmt, const std::unordered_set<std::string> &array_names )
 {
+	if ( stmt.kind == ChspAstStmtKind::Command ) {
+		const auto name = NormalizeScopedName( stmt.text );
+		if ( name == "dim" || name == "dimtype" ) {
+			return true;
+		}
+	}
 	if ( stmt.lhs != nullptr && ExprUsesArrayMetadata( *stmt.lhs, array_names ) ) {
 		return true;
 	}
@@ -529,6 +535,7 @@ TranslateContext BuildTranslateContext( const ChspAstFunction &func, const ChspA
 		if ( param.is_local ) {
 			ctx.array_dimension_exprs[normalized_name] = FixedDimsToDimensionExprs( param.array_dims );
 		} else {
+			ctx.argument_array_names.insert( normalized_name );
 			const size_t param_index = &param - func.params.data();
 			ctx.array_dimension_exprs[normalized_name] = {
 				ArrayDimensionCppName( func, param_index, 1 ),

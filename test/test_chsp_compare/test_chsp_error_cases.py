@@ -328,6 +328,112 @@ static int native_helper(int v) { return v * 2; }
         self.assertNotEqual(0, proc.returncode, "#chsp_cdecl 欠落のネイティブ関数呼び出しでコンパイルが失敗すること")
 
 
+class ChspDimCommandErrorTest(ChspErrorTestBase):
+    """dim / ddim / lldim / dimtype 命令の異常系テスト"""
+
+    def test_dim_on_target_c_unsupported(self) -> None:
+        """target=c で dim 命令を使用するとコンパイルエラーになること"""
+        code = """#chsp_module "dim_target_c" target=c
+#chsp_deffunc resize array[int] a
+    dim a, 10
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "target=c での dim でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "only supported in target=plugin" in combined_out,
+            f"target=plugin 限定エラーが出力されること: {combined_out}",
+        )
+
+    def test_dim_on_local_array_unsupported(self) -> None:
+        """local 配列に対して dim 命令を使用するとコンパイルエラーになること"""
+        code = """#chsp_module "dim_local"
+#chsp_deffunc resize local[int[4]] a
+    dim a, 10
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "local配列に対する dim でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "cannot be used on local array" in combined_out,
+            f"local配列エラーが出力されること: {combined_out}",
+        )
+
+    def test_dim_type_mismatch(self) -> None:
+        """型不一致の配列に対して dim 命令を使用するとコンパイルエラーになること"""
+        code = """#chsp_module "dim_mismatch"
+#chsp_deffunc resize array[double] d
+    dim d, 10
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "型不一致の dim でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "type mismatch" in combined_out,
+            f"型不一致エラーが出力されること: {combined_out}",
+        )
+
+    def test_ddim_type_mismatch(self) -> None:
+        """型不一致の配列に対して ddim 命令を使用するとコンパイルエラーになること"""
+        code = """#chsp_module "ddim_mismatch"
+#chsp_deffunc resize array[int] a
+    ddim a, 10
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "型不一致の ddim でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "type mismatch" in combined_out,
+            f"型不一致エラーが出力されること: {combined_out}",
+        )
+
+    def test_lldim_type_mismatch(self) -> None:
+        """型不一致の配列に対して lldim 命令を使用するとコンパイルエラーになること"""
+        code = """#chsp_module "lldim_mismatch"
+#chsp_deffunc resize array[int] a
+    lldim a, 10
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "型不一致の lldim でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "type mismatch" in combined_out,
+            f"型不一致エラーが出力されること: {combined_out}",
+        )
+
+    def test_dimtype_dynamic_expression_unsupported(self) -> None:
+        """dimtype の型指定に動的変数を指定するとコンパイルエラーになること"""
+        code = """#chsp_module "dimtype_dynamic"
+#chsp_deffunc resize array[int] a, int t
+    dimtype a, t, 10
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "動的型 dimtype でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "constant integer" in combined_out,
+            f"定数整数制限エラーが出力されること: {combined_out}",
+        )
+
+
 class ChspOutsideDirectiveErrorTest(ChspErrorTestBase):
     """4. hsp側への新命令追加を想定したchspディレクティブ外の文法エラーおよびHSP動的型境界のテスト"""
 
@@ -382,7 +488,9 @@ goto *non_existent_label
         self.assertNotEqual(0, proc.returncode, "未定義ラベル参照でコンパイルが失敗すること")
         combined_out = proc.stdout + proc.stderr
         self.assertTrue(
-            "Label definition not found" in combined_out or "error 13" in combined_out,
+            "Label definition not found" in combined_out
+            or "ラベルの定義が存在しません" in combined_out
+            or "error 13" in combined_out,
             f"hspcmpのラベルエラーが検出されること: {combined_out}",
         )
 
