@@ -17,9 +17,9 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 - module 内では `#chsp_cdecl name` で、`#chsp_c` 内に書いた C 関数名を cHSP から呼べるようにできます。
 - module 内では `#chsp_clink "name"` で、その module の共有ライブラリ生成時に追加でリンクするライブラリを指定できます。
 - cHSP 関数の引数やローカル変数には型指定が必須です。
-- MVP では、cHSP ブロック内のローカル変数・ローカル配列は `local[...]` で宣言します。
+- cHSP ブロック内のローカル変数・ローカル配列は `local[...]` で宣言します。
 
-### MVP で対応する型と文法
+### 対応する型と文法
 
 - 型
   - `int`
@@ -51,10 +51,9 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 
 注意:
 
-- `int` / `double` の混在演算と、混在式を `int` / `double` 返り値や代入先へ載せたときのセマンティクスは未確定です。
-- 現在は compare テストで plugin backend の現挙動を観測・固定している段階であり、HSP 準拠に寄せるか、C の usual arithmetic conversions に寄せるかは今後の検討事項です。
+- `int` / `double` の混在演算や、混在式を `int` / `double` の返り値・代入先へ渡す場合の暗黙変換セマンティクスは仕様策定中です（現状は代入先や型に応じた C の型変換規則に準拠）。
 
-### MVP では対象外
+### 現在非対応の機能・制約事項
 
 - `str` / `array[str]`
 - cHSP ブロック内の `ddim` / `sdim`
@@ -71,19 +70,21 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 - **Cソースコード (`.c`)**:
   - module ごとに target に応じた C ソースを生成します。
   - target 未指定の module は既定で plugin backend 用の C ソースを生成します。
+- **共有ライブラリ (`.so` / `.dll`)**:
+  - ネイティブコンパイル方式（既定: `libtcc`）により、module ごとに共有ライブラリがビルドされます。
 
 ### 変数共有
 
-- MVP では引数として HSP の数値と数値配列をネイティブ側に渡します。
+- 引数として HSP の数値と数値配列をネイティブ側に渡します。
 - HSP側のグローバル変数はネイティブ側では利用できません。
 - cHSP ブロックから通常の HSP 関数は呼べません。
 
 ## 設計
 
-### コンパイラ (hspcmp)
+### コンパイラフロントエンド (`chsp` / `hspcmp.dll`)
 
-`hspcmp`は、`.chsp`ファイルを解釈し、`.ax`とネイティブソース (`.c`) を生成します。
-既存文法だけの`.hsp`ファイルを受け取った場合は、既存のhspcmpと同様の処理を行います。
+Linux では `chsp` CLI、Windows では `hspcmp.dll` (Proxy DLL) が `.chsp` ファイルを解釈し、ネイティブソース (`.c`) や共有ライブラリ (`.so` / `.dll`) を生成したうえで、`hspcmp` へ委譲して `.ax` を生成します。
+拡張構文を含まない通常の `.hsp` ファイルを受け取った場合は、既存の `hspcmp` と同様の処理をそのまま実行します。
 
 コンパイラの内部構造については [chsp-internals.md](chsp-internals.md) を参照してください。
 
@@ -115,7 +116,7 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 - target を省略した場合
   - `target=plugin` と同じ扱いにします。
 
-`target=c` は C backend の試作で、`rnd` / `randomize` は `rand` / `srand` ベースです。`mt19937` (`HSPRANDMT`) には対応しません。
+`target=c` (C backend) では、`rnd` / `randomize` は標準 C の `rand` / `srand` ベースで動作します。`mt19937` (`HSPRANDMT`) には対応しません。
 
 現在の既定動作は、target 未指定 module を plugin backend として扱い、`--chsp-compile=libtcc` と組み合わせてその場で共有ライブラリまで出力する形です。
 
@@ -187,13 +188,13 @@ static int can_open_self(void) {
 - 生成される HSP 側コードでは、module ごとに対応する `#uselib` を 1 回だけ出力します。
 - 同一 `.chsp` 内で `target=plugin` と `target=c` を混在させられます。
 - 出力ファイル名は module 単位で一意になる必要があります。
-  - MVP では module の出現順を使い、`foo.chsp` から `foo_1.c` / `foo_1.so`、`foo_2.c` / `foo_2.so` のように出力します。
+  - module 名省略時はモジュールの出現順を使い、`foo.chsp` から `foo_1.c` / `foo_1.so`、`foo_2.c` / `foo_2.so` のように出力します。
 
 ```sh
-./hspcmp -d -i -u --compath=common/ sample/chsp/ao_opt.chsp
+./chsp -d -i -u --compath=common/ src/chsp/sample/ao_opt.chsp
 ```
 
-Linux では `sample/chsp/ao_opt.c` と `sample/chsp/ao_opt.so`、Win32 では `sample\chsp\ao_opt.c` と `sample\chsp\ao_opt.dll` がまとめて生成されます。
+Linux では `src/chsp/sample/ao_opt.c` と `src/chsp/sample/ao_opt.so`、Win32 では `src\chsp\sample\ao_opt.c` と `src\chsp\sample\ao_opt.dll` がまとめて生成されます。
 
 Win32 では `libtcc` のヘッダと import library を参照できるように、`src/chsp/win32/chsp.vcxproj` や `src/chsp/win32dll/hspcmp.vcxproj` が `src/chsp/extlib/tcc/libtcc` を見に行きます。実行時の `libtcc` ランタイム探索は以下の順です。
 
@@ -205,20 +206,20 @@ Win32 では `libtcc` のヘッダと import library を参照できるように
 生成された `.c` は、ビルド時には OpenHSP リポジトリのルートを include path に含めます。
 Windows 向けの生成コードは `CHSP_EXPORT` マクロで `__declspec(dllexport)` が付くため、追加の `.def` は不要です。
 
-以下では、リポジトリのルートで `sample/chsp/ao_opt.chsp` から `sample/chsp/ao_opt.c` を生成済みとします。
+以下では、リポジトリのルートで `src/chsp/sample/ao_opt.chsp` から `src/chsp/sample/ao_opt.c` を生成済みとします。
 
 #### Linux
 
 `.so` を生成します。
 
 ```sh
-cc -std=c11 -O2 -shared -fPIC -I. -o sample/chsp/ao_opt.so sample/chsp/ao_opt.c -lm
+cc -std=c11 -O2 -shared -fPIC -I. -o src/chsp/sample/ao_opt.so src/chsp/sample/ao_opt.c -lm
 ```
 
 `#chsp_clink` を使った module は、必要なライブラリを追加してビルドします。たとえば `#chsp_clink "dl"` を使っている場合は次のようになります。
 
 ```sh
-cc -std=c11 -O2 -shared -fPIC -I. -o sample/chsp/dl_sample.so sample/chsp/dl_sample.c -lm -ldl
+cc -std=c11 -O2 -shared -fPIC -I. -o src/chsp/sample/dl_sample.so src/chsp/sample/dl_sample.c -lm -ldl
 ```
 
 HSP 側の `#uselib` は Linux では `.so` を参照します。
@@ -232,7 +233,7 @@ HSP 側の `#uselib` は Linux では `.so` を参照します。
 Visual Studio の `x86 Native Tools Command Prompt for VS` など、32bit 向けの MSVC 環境を開いてから `cl` を実行します。
 
 ```bat
-cl /O2 /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.c
+cl /O2 /LD /I. /Fe:src\chsp\sample\ao_opt.dll src\chsp\sample\ao_opt.c
 ```
 
 追加ライブラリが必要な場合は、`#chsp_clink` に対応する import library を `cl` の引数へ追加します。
@@ -248,7 +249,7 @@ HSP 側の `#uselib` は `.dll` を参照します。
 Visual Studio の `x64 Native Tools Command Prompt for VS` など、64bit 向けの MSVC 環境を開いてから `cl` を実行します。
 
 ```bat
-cl /O2 /LD /I. /Fe:sample\chsp\ao_opt.dll sample\chsp\ao_opt.c
+cl /O2 /LD /I. /Fe:src\chsp\sample\ao_opt.dll src\chsp\sample\ao_opt.c
 ```
 
 出力ファイル名は Win32 と同じ `.dll` で問題ありません。32bit 用 HSP からは Win32 版 DLL、64bit 用 HSP からは Win64 版 DLL を読み込ませます。
@@ -293,7 +294,7 @@ HSP 名をそのまま受け付け、ネイティブ側では plugin backend の
 ## aobenchの例
 
 `aobench`は、アンビエントオクルージョンという3DCGのレンダリング手法のベンチマークプログラムです。
-このサンプルでは、`ao_original.hsp`（オリジナルのHSPスクリプト）の処理のうち、特に計算負荷の高いレイトレーシングの部分を`#chsp`ブロックに記述し、ネイティブコードに置き換えることで高速化を図っています (`ao_opt.chsp`)。
+このサンプル（`src/chsp/sample/` 配下に収録）では、`ao_original.hsp`（オリジナルのHSPスクリプト）の処理のうち、特に計算負荷の高いレイトレーシングの部分を`#chsp`ブロックに記述し、ネイティブコードに置き換えることで高速化を図っています (`ao_opt.chsp`)。
 
 このように、cHSPは計算量の多い処理をネイティブコードにオフロードすることで、HSPスクリプトの実行速度を6倍程度に向上させることができる例を示しています。
 
@@ -311,7 +312,7 @@ DLLに分離したネイティブ関数として実装するため変更が必�
 - 多次元配列を1次元配列に書き換える
 - グローバル変数参照を関数の引数に書き換える
 
-ソースコード:  `ao_opt.chsp`
+ソースコード: `src/chsp/sample/ao_opt.chsp`
 
 ```hsp
 #chsp_deffunc vcross array[double] c, array[double] v0, array[double] v1
@@ -322,10 +323,10 @@ DLLに分離したネイティブ関数として実装するため変更が必�
 #chsp_end
 ```
 
-生成されるCコード: `ao_opt.c`
+生成されるCコードのイメージ (`target=c` の場合):
 
-```c++
-extern "C" CHSP_EXPORT void vcross(double *c, double *v0, double *v1) {
+```c
+CHSP_EXPORT void vcross(double *c, double *v0, double *v1) {
     c[0] = v0[1] * v1[2] - v0[2] * v1[1];
     c[1] = v0[2] * v1[0] - v0[0] * v1[2];
     c[2] = v0[0] * v1[1] - v0[1] * v1[0];
@@ -333,11 +334,13 @@ extern "C" CHSP_EXPORT void vcross(double *c, double *v0, double *v1) {
 }
 ```
 
-生成されるAXコードと等価なHSPコード: `ao_opt.hsp`
+※ 既定の `target=plugin` では、直接関数をエクスポートする代わりに HSP3 プラグインエントリーポイント（`hsp3cmdinit`, `cmdfunc`, `reffunc`）を介して安全・高速に呼び出される C コードが生成されます。
+
+生成されるAXコードと等価なHSPコード (`target=c` の場合):
 
 ```hsp
 #uselib "ao_opt.so"
-// もしくは #uselib "ao_opt.dll"
+// Windows の場合は #uselib "ao_opt.dll"
 #func global vcross "vcross" var, var, var
 ```
 
