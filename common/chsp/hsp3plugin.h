@@ -54,6 +54,8 @@ void bms_send( BMSCR *bm, int x, int y, int sx, int sy );
 
 #define code_geti exinfo->HspFunc_prm_geti
 #define code_getdi exinfo->HspFunc_prm_getdi
+#define code_getl exinfo->HspFunc_prm_getl
+#define code_getdl exinfo->HspFunc_prm_getdl
 #define code_gets exinfo->HspFunc_prm_gets
 #define code_getds exinfo->HspFunc_prm_getds
 

@@ -188,6 +188,16 @@ static std::unique_ptr<chspv3::ChspV3AstExpr> make_int_literal_expr( int line, i
 	return expr;
 }
 
+static std::unique_ptr<chspv3::ChspV3AstExpr> make_int64_literal_expr( int line, int64_t value )
+{
+	auto expr = std::make_unique<chspv3::ChspV3AstExpr>();
+	expr->kind = chspv3::ChspV3AstExprKind::IntLiteral;
+	expr->line = line;
+	expr->token_kind = TK_INT64;
+	expr->text = std::to_string( value ) + "LL";
+	return expr;
+}
+
 static void wrap_ast_target_as_call( std::unique_ptr<chspv3::ChspV3AstExpr> *target, int token_kind,
 									 std::vector<std::unique_ptr<chspv3::ChspV3AstExpr>> &args )
 {
@@ -249,6 +259,14 @@ void CChspParser::CalcCG_factor()
 			expr->token_kind = TK_NUM;
 			expr->text = std::to_string( token.val );
 			CaptureAstExpr( std::move( expr ) );
+		}
+		texflag = 0;
+		CalcCG_token();
+		calccount++;
+		return;
+	case TK_INT64:
+		if ( current_stmt != nullptr ) {
+			CaptureAstExpr( make_int64_literal_expr( lexer.cg_orgline, token.val64 ) );
 		}
 		texflag = 0;
 		CalcCG_token();
@@ -541,6 +559,7 @@ void CChspParser::GenerateCodePRM()
 			if ( calccount == 1 ) { // パラメーターが単一項目の時
 				switch ( cs_lasttype ) {
 				case TK_NUM:
+				case TK_INT64:
 				case TK_DNUM:
 				case TK_STRING: {
 					unsigned short *cstmp;
@@ -651,6 +670,12 @@ void CChspParser::GenerateCodePRMF2( std::vector<std::unique_ptr<chspv3::ChspV3A
 		case TK_NUM:
 			if ( ast_args != nullptr ) {
 				ast_args->push_back( make_int_literal_expr( lexer.cg_orgline, token.val ) );
+			}
+			token = lexer.GetTokenCG( GETTOKEN_NOFLOAT );
+			break;
+		case TK_INT64:
+			if ( ast_args != nullptr ) {
+				ast_args->push_back( make_int64_literal_expr( lexer.cg_orgline, token.val64 ) );
 			}
 			token = lexer.GetTokenCG( GETTOKEN_NOFLOAT );
 			break;
@@ -774,6 +799,7 @@ void CChspParser::GenerateCodeMethod()
 	}
 	switch ( token.ttype ) {
 	case TK_NUM:
+	case TK_INT64:
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		break;
 	case TK_STRING:
@@ -1788,7 +1814,7 @@ void CChspParser::ParseChspSignatureType( bool allow_extended_type, chspv3::Chsp
 		return;
 	}
 
-	if ( type_name == "int" || type_name == "double" || type_name == "str" || type_name == "var" ||
+	if ( type_name == "int" || type_name == "int64" || type_name == "double" || type_name == "str" || type_name == "var" ||
 		 type_name == "label" ) {
 		return;
 	}

@@ -354,6 +354,7 @@ std::pair<const char *, CCgToken> CCgLexer::GetTokenCG( const char *str, int opt
 	if ( a1 == '$' ) { // when hex code ($)
 		vs++;
 		token.val = 0;
+		token.val64 = 0;
 		a = 0;
 		while ( true ) {
 			a1 = static_cast<char>( toupper( to_uchar( *vs ) ) );
@@ -376,11 +377,17 @@ std::pair<const char *, CCgToken> CCgLexer::GetTokenCG( const char *str, int opt
 			if ( b >= 0 ) {
 				s2[a++] = a1;
 				token.val = ( token.val << 4 ) + b;
+				token.val64 = ( token.val64 << 4 ) + b;
 			}
 			vs++;
 		}
 		s2[a] = 0;
 		token.cg_str = (char *)s2;
+		if ( *vs == 'l' || *vs == 'L' ) {
+			vs++;
+			token.ttype = TK_INT64;
+			return std::make_pair( vs, token );
+		}
 		token.ttype = TK_NUM;
 		return std::make_pair( vs, token );
 	}
@@ -388,6 +395,7 @@ std::pair<const char *, CCgToken> CCgLexer::GetTokenCG( const char *str, int opt
 	if ( a1 == '%' ) { // when bin code (%)
 		vs++;
 		token.val = 0;
+		token.val64 = 0;
 		a = 0;
 		while ( true ) {
 			a1 = *vs;
@@ -407,11 +415,17 @@ std::pair<const char *, CCgToken> CCgLexer::GetTokenCG( const char *str, int opt
 			if ( b >= 0 ) {
 				s2[a++] = a1;
 				token.val = ( token.val << 1 ) + b;
+				token.val64 = ( token.val64 << 1 ) + b;
 			}
 			vs++;
 		}
 		s2[a] = 0;
 		token.cg_str = (char *)s2;
+		if ( *vs == 'l' || *vs == 'L' ) {
+			vs++;
+			token.ttype = TK_INT64;
+			return std::make_pair( vs, token );
+		}
 		token.ttype = TK_NUM;
 		return std::make_pair( vs, token );
 	}
@@ -498,6 +512,17 @@ std::pair<const char *, CCgToken> CCgLexer::GetTokenCG( const char *str, int opt
 			chk = 1;
 			vs++;
 		}
+		if ( a1 == 'l' || a1 == 'L' ) {
+			s2[a] = 0;
+			token.val64 = (int64_t)strtoll( (char *)s2, nullptr, 10 );
+			if ( is_negative_number != 0 ) {
+				token.val64 = -token.val64;
+			}
+			token.val = (int)token.val64;
+			token.ttype = TK_INT64;
+			vs++;
+			return std::make_pair( vs, token );
+		}
 		if ( a1 == 'e' ) { // 指数部を取り込む
 			chk = 1;
 			s2[a++] = 'e';
@@ -528,6 +553,10 @@ std::pair<const char *, CCgToken> CCgLexer::GetTokenCG( const char *str, int opt
 			token.ttype = TK_DNUM;
 			break;
 		default:
+			token.val64 = (int64_t)strtoll( (char *)s2, nullptr, 10 );
+			if ( is_negative_number != 0 ) {
+				token.val64 = -token.val64;
+			}
 			token.val = atoi_allow_overflow( (char *)s2 );
 			if ( is_negative_number != 0 ) {
 				token.val = -token.val;
@@ -766,6 +795,9 @@ int CCgLexer::GetParameterTypeCG( const std::string &name ) const
 	if ( name == "label" ) {
 		return MPTYPE_LABEL;
 	}
+	if ( name == "int64" ) {
+		return MPTYPE_INT64;
+	}
 	if ( name == "local" ) {
 		return MPTYPE_LOCALVAR;
 	}
@@ -805,6 +837,9 @@ int CCgLexer::GetParameterStructTypeCG( const std::string &name ) const
 	if ( name == "label" ) {
 		return MPTYPE_LABEL;
 	}
+	if ( name == "int64" ) {
+		return MPTYPE_INT64;
+	}
 	if ( name == "float" ) {
 		return MPTYPE_FLOAT;
 	}
@@ -829,6 +864,9 @@ int CCgLexer::GetParameterFuncTypeCG( const std::string &name ) const
 		return MPTYPE_DNUM;
 	}
 	//	if ( !strcmp( name,"label" ) ) return MPTYPE_LABEL;
+	if ( name == "int64" ) {
+		return MPTYPE_INT64;
+	}
 	if ( name == "float" ) {
 		return MPTYPE_FLOAT;
 	}

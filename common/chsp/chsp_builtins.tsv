@@ -11,6 +11,7 @@ cos	chsp_hsp_cos	chsp::hsp_cos
 double	chsp_hsp_double	chsp::hsp_double
 expf	chsp_hsp_expf	chsp::hsp_expf
 int	chsp_hsp_int	chsp::hsp_int
+int64	chsp_hsp_int64	chsp::hsp_int64
 limit	chsp_hsp_limit	chsp::hsp_limit
 limitf	chsp_hsp_limitf	chsp::hsp_limitf
 logf	chsp_hsp_logf	chsp::hsp_logf

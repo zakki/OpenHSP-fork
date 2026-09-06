@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+typedef int64_t int64;
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -33,6 +35,11 @@ static inline int chsp_rnd( int limit )
 static inline int chsp_hsp_int( double value )
 {
     return (int)value;
+}
+
+static inline int64_t chsp_hsp_int64( int64_t value )
+{
+    return value;
 }
 
 static inline double chsp_hsp_double( double value )

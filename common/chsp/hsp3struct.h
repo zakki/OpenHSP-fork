@@ -219,6 +219,7 @@ typedef LIBDAT HED_LIBDAT;
 #define MPTYPE_INUM 4
 #define MPTYPE_STRUCT 5
 #define MPTYPE_LABEL 7
+#define MPTYPE_INT64 8
 
 #define MPTYPE_LOCALVAR -1
 #define MPTYPE_ARRAYVAR -2
@@ -498,6 +499,11 @@ typedef struct HSPEXINFO
 	//
 	char *(*HspFunc_prm_getns)(void);
 	char *(*HspFunc_prm_getnds)(const char *defstr);
+
+	//		Enhanced data (3.8)
+	//
+	int64_t(*HspFunc_prm_getl)( void );
+	int64_t(*HspFunc_prm_getdl)( const int64_t defval );
 
 } HSPEXINFO;
 

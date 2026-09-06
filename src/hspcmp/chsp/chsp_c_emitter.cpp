@@ -842,7 +842,8 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 	}
 
 	buf.PutStr( "static int chsp_plugin_ref_int;\n" );
-	buf.PutStr( "static double chsp_plugin_ref_double;\n\n" );
+	buf.PutStr( "static double chsp_plugin_ref_double;\n" );
+	buf.PutStr( "static int64_t chsp_plugin_ref_int64;\n\n" );
 
 	buf.PutStr( "static int cmdfunc( int cmd )\n{\n" );
 	buf.PutStr( "    code_next();\n" );
@@ -873,7 +874,8 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 				buf.PutStr( " *" );
 				buf.PutStr( var_name.c_str() );
 				buf.PutStr( " = " );
-				buf.PutStr( param.base_type == "int" ? "chsp_plugin_int_ptr" : "chsp_plugin_double_ptr" );
+				buf.PutStr( param.base_type == "int64" ? "chsp_plugin_int64_ptr"
+							: ( param.base_type == "double" ? "chsp_plugin_double_ptr" : "chsp_plugin_int_ptr" ) );
 				buf.PutStr( "( pval_" );
 				buf.PutStr( var_name.c_str() );
 				buf.PutStr( ", aptr_" );
@@ -898,7 +900,8 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 				buf.PutStr( " " );
 				buf.PutStr( var_name.c_str() );
 				buf.PutStr( " = " );
-				buf.PutStr( param.base_type == "int" ? "code_getdi(0)" : "exinfo->HspFunc_prm_getdd(0.0)" );
+				buf.PutStr( param.base_type == "int64" ? "code_getdl(0)"
+							: ( param.base_type == "double" ? "exinfo->HspFunc_prm_getdd(0.0)" : "code_getdi(0)" ) );
 				buf.PutStr( ";\n" );
 			}
 		}
@@ -980,7 +983,8 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 				buf.PutStr( " *" );
 				buf.PutStr( var_name.c_str() );
 				buf.PutStr( " = " );
-				buf.PutStr( param.base_type == "int" ? "chsp_plugin_int_ptr" : "chsp_plugin_double_ptr" );
+				buf.PutStr( param.base_type == "int64" ? "chsp_plugin_int64_ptr"
+							: ( param.base_type == "double" ? "chsp_plugin_double_ptr" : "chsp_plugin_int_ptr" ) );
 				buf.PutStr( "( pval_" );
 				buf.PutStr( var_name.c_str() );
 				buf.PutStr( ", aptr_" );
@@ -1005,12 +1009,15 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 				buf.PutStr( " " );
 				buf.PutStr( var_name.c_str() );
 				buf.PutStr( " = " );
-				buf.PutStr( param.base_type == "int" ? "code_geti()" : "exinfo->HspFunc_prm_getd()" );
+				buf.PutStr( param.base_type == "int64" ? "code_getl()"
+							: ( param.base_type == "double" ? "exinfo->HspFunc_prm_getd()" : "code_geti()" ) );
 				buf.PutStr( ";\n" );
 			}
 		}
 		if ( func.return_type == "double" ) {
 			buf.PutStr( "        chsp_plugin_ref_double = " );
+		} else if ( func.return_type == "int64" ) {
+			buf.PutStr( "        chsp_plugin_ref_int64 = " );
 		} else {
 			buf.PutStr( "        chsp_plugin_ref_int = " );
 		}
@@ -1060,6 +1067,9 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 		if ( func.return_type == "double" ) {
 			buf.PutStr( "        *type_res = HSPVAR_FLAG_DOUBLE;\n" );
 			buf.PutStr( "        return &chsp_plugin_ref_double;\n" );
+		} else if ( func.return_type == "int64" ) {
+			buf.PutStr( "        *type_res = HSPVAR_FLAG_INT64;\n" );
+			buf.PutStr( "        return &chsp_plugin_ref_int64;\n" );
 		} else {
 			buf.PutStr( "        *type_res = HSPVAR_FLAG_INT;\n" );
 			buf.PutStr( "        return &chsp_plugin_ref_int;\n" );
@@ -1102,6 +1112,8 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 		native_out.PutStr(
 			"static int *chsp_plugin_int_ptr( PVal *pval, APTR aptr ) { return ((int *)pval->pt) + aptr; }\n" );
 		native_out.PutStr( "static double *chsp_plugin_double_ptr( PVal *pval, APTR aptr ) { return ((double "
+						   "*)pval->pt) + aptr; }\n" );
+		native_out.PutStr( "static int64_t *chsp_plugin_int64_ptr( PVal *pval, APTR aptr ) { return ((int64_t "
 						   "*)pval->pt) + aptr; }\n\n" );
 		return;
 	}

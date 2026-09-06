@@ -312,6 +312,9 @@ std::string ToHspParamType( const ChspAstParam &param )
 	if ( param.base_type == "int" ) {
 		return "int";
 	}
+	if ( param.base_type == "int64" ) {
+		return "int64";
+	}
 	if ( param.base_type == "double" ) {
 		return "double";
 	}
@@ -325,6 +328,9 @@ std::string ToPublicHspParamType( const ChspAstParam &param )
 	}
 	if ( param.base_type == "int" ) {
 		return "int";
+	}
+	if ( param.base_type == "int64" ) {
+		return "int64";
 	}
 	if ( param.base_type == "double" ) {
 		return "double";
@@ -355,7 +361,7 @@ std::string DefaultReturnExpr( const std::string &type )
 	if ( type == "double" ) {
 		return "0.0";
 	}
-	if ( type == "int" ) {
+	if ( type == "int" || type == "int64" ) {
 		return "0";
 	}
 	return "";
@@ -384,6 +390,9 @@ std::string BuiltinTarget( const std::string &name, size_t arg_count, ChspNative
 		}
 		if ( name == "int" ) {
 			return "chsp_hsp_int";
+		}
+		if ( name == "int64" ) {
+			return "chsp_hsp_int64";
 		}
 		if ( name == "limit" ) {
 			return "chsp_hsp_limit";

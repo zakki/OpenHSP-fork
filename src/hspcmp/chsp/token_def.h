@@ -9,6 +9,7 @@
 #define TK_STRING 2
 #define TK_DNUM 3
 #define TK_NUM 4
+#define TK_INT64 5
 #define TK_CODE 6
 #define TK_LABEL 7
 #define TK_VOID 0x1000

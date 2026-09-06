@@ -48,6 +48,7 @@ struct CCgToken
 {
 	int line{};
 	int val{};
+	int64_t val64{};
 	int ttype{}; // last token type
 	// char *lasttoken  {}; // last token point
 	// float val_f  {};
