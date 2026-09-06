@@ -29,11 +29,11 @@
 @@ chsp_c_module
 #chsp_module "continuations_chsp_c" target=c
 
-#chsp_defcfunc int calc_series \
+#chsp_defcfunc calc_series \
 	int seed,\
 	int mul,\
 	local[int] acc,\
-	local[int] i
+	local[int] i -> int
 	acc = 0
 	repeat 3
 		i = cnt
@@ -58,11 +58,11 @@
 @@ chsp_p_module
 #chsp_module "continuations_chsp_p"
 
-#chsp_defcfunc int calc_series \
+#chsp_defcfunc calc_series \
 	int seed,\
 	int mul,\
 	local[int] acc,\
-	local[int] i
+	local[int] i -> int
 	acc = 0
 	repeat 3
 		i = cnt

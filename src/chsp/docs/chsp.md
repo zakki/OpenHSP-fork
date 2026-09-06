@@ -160,7 +160,7 @@ static int helper(int v) {
 "}
 #chsp_cdecl helper
 
-#chsp_defcfunc int add_one int v
+#chsp_defcfunc add_one int v -> int
     return helper(v)
 #chsp_end
 
@@ -194,7 +194,7 @@ static int can_open_self(void) {
 #chsp_cdecl can_open_self
 #chsp_clink "dl"
 
-#chsp_defcfunc int check_dl
+#chsp_defcfunc check_dl -> int
     return can_open_self()
 #chsp_end
 

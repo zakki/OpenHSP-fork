@@ -2,11 +2,11 @@ goto *MAIN
 // #define global M_PI            3.14159265358979323846
 
 #chsp_module "ao_opt"
-#chsp_defcfunc double drand
+#chsp_defcfunc drand -> double
 	return double(rnd(32768)) / 32768.0
 #chsp_end
 
-#chsp_defcfunc double vdot array[double] v0, array[double] v1
+#chsp_defcfunc vdot array[double] v0, array[double] v1 -> double
 	return v0(0) * v1(0) + v0(1) * v1(1) + v0(2) * v1(2)
 #chsp_end
 
@@ -29,7 +29,7 @@ goto *MAIN
 	mes "(" + vec(0) + ", " + vec(1) + ", " + vec(2) + ")"
 	return
 
-#chsp_defcfunc double vadot array[double] v0, int i0, array[double] v1, int i1
+#chsp_defcfunc vadot array[double] v0, int i0, array[double] v1, int i1 -> double
 	return v0(i0*3+0) * v1(i1*3+0) + v0(i0*3+1) * v1(i1*3+1) + v0(i0*3+2) * v1(i1*3+2)
 #chsp_end
 

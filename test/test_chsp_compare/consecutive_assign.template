@@ -30,7 +30,7 @@
 	return
 #chsp_end
 
-#chsp_defcfunc int inc array[int] n, local[int] r
+#chsp_defcfunc inc array[int] n, local[int] r -> int
 	r = n.0
 	n.0+
 	return r
@@ -54,7 +54,7 @@
 	return
 #chsp_end
 
-#chsp_defcfunc int inc array[int] n, local[int] r
+#chsp_defcfunc inc array[int] n, local[int] r -> int
 	r = n.0
 	n.0+
 	return r

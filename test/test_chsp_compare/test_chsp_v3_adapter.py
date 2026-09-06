@@ -123,7 +123,7 @@ class ChspV3ArchitectureGuardrailTest(unittest.TestCase):
     def test_emit_c_smoke_still_generates_native_output_for_chsp_sample(self) -> None:
         source_text = """\
 #chsp_module "guardrail_sample" target=c
-#chsp_defcfunc int add int a, int b
+#chsp_defcfunc add int a, int b -> int
     return a + b
 #chsp_end
 #chsp_module_end
@@ -150,7 +150,7 @@ class ChspV3ArchitectureGuardrailTest(unittest.TestCase):
     def test_hspcmp_stdout_includes_v3_ast_json_dump(self) -> None:
         source_text = """\
 #chsp_module "json_dump_sample" target=c
-#chsp_defcfunc int add int a, int b
+#chsp_defcfunc add int a, int b -> int
     return a + b
 #chsp_end
 #chsp_module_end
@@ -179,7 +179,7 @@ class ChspV3ArchitectureGuardrailTest(unittest.TestCase):
     def test_hspcmp_ast_json_captures_stmt_kinds_and_assignment_rhs_shape(self) -> None:
         source_text = """\
 #chsp_module "shape_sample" target=c
-#chsp_defcfunc int sample int a, int b
+#chsp_defcfunc sample int a, int b -> int
     value = a + b * 2
     if a : return value : else : return b
     repeat 3
@@ -228,7 +228,7 @@ class ChspV3ArchitectureGuardrailTest(unittest.TestCase):
     def test_hspcmp_ast_json_and_emit_c_capture_array_access(self) -> None:
         source_text = """\
 #chsp_module "array_shape" target=c
-#chsp_defcfunc int bump array[int] arr, int i
+#chsp_defcfunc bump array[int] arr, int i -> int
     arr(i) = arr(0) + 1
     return arr(i)
 #chsp_end
@@ -276,7 +276,7 @@ class ChspV3ArchitectureGuardrailTest(unittest.TestCase):
     def test_hspcmp_ast_and_emit_c_preserve_nested_array_and_call_exprs(self) -> None:
         source_text = """\
 #chsp_module "nested_exprs" target=c
-#chsp_defcfunc int pass_value int v
+#chsp_defcfunc pass_value int v -> int
     return v
 #chsp_end
 #chsp_deffunc write_values array[int] a, local[int] i, local[int] sum
@@ -400,11 +400,11 @@ class ChspV3ArchitectureGuardrailTest(unittest.TestCase):
     out(1) = fact(5)
     return
 #chsp_end
-#chsp_defcfunc int fib int n
+#chsp_defcfunc fib int n -> int
     if n <= 1 : return n
     return fib(n - 1) + fib(n - 2)
 #chsp_end
-#chsp_defcfunc int fact int n
+#chsp_defcfunc fact int n -> int
     if n <= 1 : return 1
     return n * fact(n - 1)
 #chsp_end
@@ -437,7 +437,7 @@ static int helper(int v) {
 }
 "}
 #chsp_cdecl helper
-#chsp_defcfunc int add_helper int v
+#chsp_defcfunc add_helper int v -> int
     return helper(v)
 #chsp_end
 #chsp_module_end
@@ -470,7 +470,7 @@ static int helper(int v) {
 }
 "}
 #chsp_cdecl helper
-#chsp_defcfunc int twice int v
+#chsp_defcfunc twice int v -> int
     return helper(v)
 #chsp_end
 #chsp_module_end
@@ -520,7 +520,7 @@ static int helper(int v) {
     def test_rejects_chsp_cdecl_inside_function_body(self) -> None:
         source_text = """\
 #chsp_module "native_decl_inside_func" target=c
-#chsp_defcfunc int add_helper int v
+#chsp_defcfunc add_helper int v -> int
     #chsp_cdecl helper
     return helper(v)
 #chsp_end
@@ -549,7 +549,7 @@ static int helper(int v) {
     return v + 1;
 }
 "}
-#chsp_defcfunc int add_helper int v
+#chsp_defcfunc add_helper int v -> int
     return helper(v)
 #chsp_end
 #chsp_module_end

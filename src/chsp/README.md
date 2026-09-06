@@ -135,8 +135,8 @@ make test-chsp
 ```hsp
 #chsp_module "my_math"
 
-// 戻り値のある関数 (#chsp_defcfunc <戻り値型> <関数名> <引数...>)
-#chsp_defcfunc double vdot array[double] v0, array[double] v1
+// 戻り値のある関数 (#chsp_defcfunc <関数名> <引数...> -> <戻り値型>)
+#chsp_defcfunc vdot array[double] v0, array[double] v1 -> double
     return v0(0) * v1(0) + v0(1) * v1(1) + v0(2) * v1(2)
 #chsp_end
 
@@ -155,12 +155,12 @@ make test-chsp
 
 cHSP ブロック内の引数およびローカル変数は型指定が必須です。
 
-- **基本型**: `int`, `double`
-- **引数配列**: `array[int]`, `array[double]`
+- **基本型**: `int`, `double`, `int64`
+- **引数配列**: `array[int]`, `array[double]`, `array[int64]`
   - 多次元配列アクセス（`a(i, j)` や `a(i, j, k)` 等）に対応しています。
 - **ローカル変数・固定長配列**:
-  - `local[int]`, `local[double]`
-  - `local[int[n]]`, `local[double[n]]` (固定長配列)
+  - `local[int]`, `local[double]`, `local[int64]`
+  - `local[int[n]]`, `local[double[n]]`, `local[int64[n]]` (固定長配列)
 
 ### インライン C コードの埋め込み
 
@@ -177,7 +177,7 @@ double c_distance(double x, double y) {
 "}
 #chsp_cdecl c_distance
 
-#chsp_defcfunc double calc_dist double x, double y
+#chsp_defcfunc calc_dist double x, double y -> double
     return c_distance(x, y)
 #chsp_end
 

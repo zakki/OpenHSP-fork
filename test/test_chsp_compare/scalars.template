@@ -21,7 +21,7 @@
 @@ chsp_c_module
 #chsp_module "scalars_chsp_c" target=c
 
-#chsp_defcfunc int build_scalar int x, int y
+#chsp_defcfunc build_scalar int x, int y -> int
 	return limit(abs(x) + y, 0, 20)
 #chsp_end
 
@@ -40,7 +40,7 @@
 @@ chsp_p_module
 #chsp_module "scalars_chsp_p"
 
-#chsp_defcfunc int build_scalar int x, int y
+#chsp_defcfunc build_scalar int x, int y -> int
 	return limit(abs(x) + y, 0, 20)
 #chsp_end
 

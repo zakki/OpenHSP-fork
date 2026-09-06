@@ -15,7 +15,7 @@ return 999
 @@ chsp_c_module
 #chsp_module "loop_return_value_chsp_c" target=c
 
-#chsp_defcfunc int first_over int limit
+#chsp_defcfunc first_over int limit -> int
 repeat 6
 	if cnt > limit {
 		return cnt * 10 + 1
@@ -28,7 +28,7 @@ return 999
 @@ chsp_p_module
 #chsp_module "loop_return_value_chsp_p"
 
-#chsp_defcfunc int first_over int limit
+#chsp_defcfunc first_over int limit -> int
 repeat 6
 	if cnt > limit {
 		return cnt * 10 + 1

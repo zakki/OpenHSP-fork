@@ -24,7 +24,7 @@
 @@ chsp_c_module
 #chsp_module "vectors_chsp_c" target=c
 
-#chsp_defcfunc double vec_energy array[double] v, local[double] dot
+#chsp_defcfunc vec_energy array[double] v, local[double] dot -> double
 	dot = v(0) * v(0) + v(1) * v(1) + v(2) * v(2)
 	return sqrt(dot)
 #chsp_end
@@ -49,7 +49,7 @@
 @@ chsp_p_module
 #chsp_module "vectors_chsp_p"
 
-#chsp_defcfunc double vec_energy array[double] v, local[double] dot
+#chsp_defcfunc vec_energy array[double] v, local[double] dot -> double
 	dot = v(0) * v(0) + v(1) * v(1) + v(2) * v(2)
 	return sqrt(dot)
 #chsp_end

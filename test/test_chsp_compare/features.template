@@ -57,7 +57,7 @@
 @@ chsp_c_module
 #chsp_module "features_chsp_c" target=c
 
-#chsp_defcfunc int choose_value int x
+#chsp_defcfunc choose_value int x -> int
 	if x < 0 {
 		return 11
 	} else : if x = 0 {
@@ -67,11 +67,11 @@
 	}
 #chsp_end
 
-#chsp_defcfunc int scale_value int x, int m
+#chsp_defcfunc scale_value int x, int m -> int
 	return x * m + 1
 #chsp_end
 
-#chsp_defcfunc int sequence_checksum int seed, local[int[4]] tmp, local[int] sum, local[int] i
+#chsp_defcfunc sequence_checksum int seed, local[int[4]] tmp, local[int] sum, local[int] i -> int
 	sum = 0
 	repeat 4
 		i = cnt
@@ -86,7 +86,7 @@
 	return sum
 #chsp_end
 
-#chsp_defcfunc double math_value double x, double y, local[double] v
+#chsp_defcfunc math_value double x, double y, local[double] v -> double
 	v = absf(-x) + powf(y, 2.0)
 	v = limitf(v, 0.5, 10.0)
 	return v + sqrt(9.0) + expf(0.0) + logf(1.0)
@@ -99,7 +99,7 @@
 	return
 #chsp_end
 
-#chsp_defcfunc int array_checksum array[int] src, int n, local[int] acc, local[int] i
+#chsp_defcfunc array_checksum array[int] src, int n, local[int] acc, local[int] i -> int
 	acc = 0
 	repeat n
 		i = cnt
@@ -115,7 +115,7 @@
 @@ chsp_p_module
 #chsp_module "features_chsp_p"
 
-#chsp_defcfunc int choose_value int x
+#chsp_defcfunc choose_value int x -> int
 	if x < 0 {
 		return 11
 	} else : if x = 0 {
@@ -125,11 +125,11 @@
 	}
 #chsp_end
 
-#chsp_defcfunc int scale_value int x, int m
+#chsp_defcfunc scale_value int x, int m -> int
 	return x * m + 1
 #chsp_end
 
-#chsp_defcfunc int sequence_checksum int seed, local[int[4]] tmp, local[int] sum, local[int] i
+#chsp_defcfunc sequence_checksum int seed, local[int[4]] tmp, local[int] sum, local[int] i -> int
 	sum = 0
 	repeat 4
 		i = cnt
@@ -144,7 +144,7 @@
 	return sum
 #chsp_end
 
-#chsp_defcfunc double math_value double x, double y, local[double] v
+#chsp_defcfunc math_value double x, double y, local[double] v -> double
 	v = absf(-x) + powf(y, 2.0)
 	v = limitf(v, 0.5, 10.0)
 	return v + sqrt(9.0) + expf(0.0) + logf(1.0)
@@ -157,7 +157,7 @@
 	return
 #chsp_end
 
-#chsp_defcfunc int array_checksum array[int] src, int n, local[int] acc, local[int] i
+#chsp_defcfunc array_checksum array[int] src, int n, local[int] acc, local[int] i -> int
 	acc = 0
 	repeat n
 		i = cnt

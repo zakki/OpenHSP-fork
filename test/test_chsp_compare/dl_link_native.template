@@ -24,7 +24,7 @@ static int can_open_self(void) {
 #chsp_cdecl can_open_self
 #chsp_clink "dl"
 
-#chsp_defcfunc int check_dl
+#chsp_defcfunc check_dl -> int
 	return can_open_self()
 #chsp_end
 
@@ -48,7 +48,7 @@ static int can_open_self(void) {
 #chsp_cdecl can_open_self
 #chsp_clink "dl"
 
-#chsp_defcfunc int check_dl
+#chsp_defcfunc check_dl -> int
 	return can_open_self()
 #chsp_end
 

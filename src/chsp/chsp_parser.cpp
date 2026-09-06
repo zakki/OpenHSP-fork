@@ -1830,14 +1830,8 @@ void CChspParser::GenerateCodePP_chsp_deffunc0( int is_command )
 	chspv3::ChspV3AstFunction function_ast;
 	function_ast.line = lexer.cg_orgline;
 	function_ast.token_kind = 0;
-	function_ast.return_type = "void";
 
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
-	if ( is_command == 0 ) {
-		function_ast.return_type = token.cg_str;
-		ParseChspSignatureType( false );
-	}
-
 	if ( token.ttype != TK_OBJ ) {
 		throw CGERROR_PP_NAMEREQUIRED;
 	}
@@ -1854,8 +1848,22 @@ void CChspParser::GenerateCodePP_chsp_deffunc0( int is_command )
 			symtab->lb->Regist( const_cast<char *>( funcname.c_str() ), TYPE_MODCMD, 0, lexer.cg_orgfilefull.c_str(), lexer.cg_orgline );
 	}
 
+	std::string parsed_return_type;
 	token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 	while ( token.ttype < TK_EOL ) {
+		if ( token.ttype == TK_NONE && token.val == 0x65 ) { // ->
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			if ( token.ttype != TK_OBJ ) {
+				throw CGERROR_PP_WRONG_PARAM_NAME;
+			}
+			parsed_return_type = token.cg_str;
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			if ( token.ttype < TK_EOL ) {
+				throw CGERROR_PP_WRONG_PARAM_NAME;
+			}
+			break;
+		}
+
 		chspv3::ChspV3AstParam param_ast;
 		param_ast.line = lexer.cg_orgline;
 		param_ast.token_kind = token.ttype;
@@ -1864,17 +1872,47 @@ void CChspParser::GenerateCodePP_chsp_deffunc0( int is_command )
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 		param_ast.name = token.cg_str;
-		current_function = &function_ast;
-		current_function->params.push_back( std::move( param_ast ) );
+		function_ast.params.push_back( std::move( param_ast ) );
 		RegisterLocalStructAlias( token.cg_str );
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
 		if ( token.ttype >= TK_EOL ) {
+			break;
+		}
+		if ( token.ttype == TK_NONE && token.val == 0x65 ) { // -> immediately following param without comma
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			if ( token.ttype != TK_OBJ ) {
+				throw CGERROR_PP_WRONG_PARAM_NAME;
+			}
+			parsed_return_type = token.cg_str;
+			token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+			if ( token.ttype < TK_EOL ) {
+				throw CGERROR_PP_WRONG_PARAM_NAME;
+			}
 			break;
 		}
 		if ( token.ttype != TK_NONE || token.val != ',' ) {
 			throw CGERROR_PP_WRONG_PARAM_NAME;
 		}
 		token = lexer.GetTokenCG( GETTOKEN_DEFAULT );
+		if ( token.ttype == TK_NONE && token.val == 0x65 ) {
+			throw CGERROR_PP_WRONG_PARAM_NAME;
+		}
+	}
+
+	if ( is_command == 0 ) {
+		if ( parsed_return_type.empty() ) {
+			throw CGERROR_PP_WRONG_PARAM_NAME;
+		}
+		if ( parsed_return_type != "int" && parsed_return_type != "double" && parsed_return_type != "int64" &&
+			 parsed_return_type != "str" ) {
+			throw CGERROR_PP_WRONG_PARAM_NAME;
+		}
+		function_ast.return_type = parsed_return_type;
+	} else {
+		if ( !parsed_return_type.empty() && parsed_return_type != "void" ) {
+			throw CGERROR_PP_WRONG_PARAM_NAME;
+		}
+		function_ast.return_type = "void";
 	}
 
 	if ( current_module != nullptr ) {
@@ -2540,8 +2578,8 @@ void CChspParser::PreScanFunctions( const char *ptr )
 			}
 		} else if ( chsputil::StartsWith( trimmed, "#chsp_defcfunc" ) ) {
 			std::istringstream ls( trimmed.substr( 14 ) );
-			std::string rettype, name;
-			if ( ( ls >> rettype ) && ( ls >> name ) ) {
+			std::string name;
+			if ( ls >> name ) {
 				std::string fixname = chsputil::NormalizeIdentifier( name );
 				char *name_ptr = const_cast<char *>( fixname.c_str() );
 				if ( symtab->lb->Search( name_ptr ) < 0 ) {

@@ -22,7 +22,7 @@
 @@ chsp_c_module
 #chsp_module "inline_if_chsp_c" target=c
 
-#chsp_defcfunc int inline_if_values local[int] v0, local[int] v1, local[int] v2
+#chsp_defcfunc inline_if_values local[int] v0, local[int] v1, local[int] v2 -> int
 	v0 = 0
 	v1 = 0
 	v2 = 0
@@ -41,7 +41,7 @@
 @@ chsp_p_module
 #chsp_module "inline_if_chsp_p"
 
-#chsp_defcfunc int inline_if_values local[int] v0, local[int] v1, local[int] v2
+#chsp_defcfunc inline_if_values local[int] v0, local[int] v1, local[int] v2 -> int
 	v0 = 0
 	v1 = 0
 	v2 = 0

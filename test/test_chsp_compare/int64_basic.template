@@ -35,15 +35,15 @@
 @@ chsp_c_module
 #chsp_module "int64_basic_chsp_c" target=c
 
-#chsp_defcfunc int64 calc64 int64 a, int64 b
+#chsp_defcfunc calc64 int64 a, int64 b -> int64
 	return (a + b) * 2L - a / 3L
 #chsp_end
 
-#chsp_defcfunc int64 bitwise64 int64 a, int64 b
+#chsp_defcfunc bitwise64 int64 a, int64 b -> int64
 	return (a & b) ^ (a | b)
 #chsp_end
 
-#chsp_defcfunc int cmp64 int64 a, int64 b
+#chsp_defcfunc cmp64 int64 a, int64 b -> int
 	if ( a > b ) {
 		return 1
 	}
@@ -69,15 +69,15 @@
 @@ chsp_p_module
 #chsp_module "int64_basic_chsp_p"
 
-#chsp_defcfunc int64 calc64 int64 a, int64 b
+#chsp_defcfunc calc64 int64 a, int64 b -> int64
 	return (a + b) * 2L - a / 3L
 #chsp_end
 
-#chsp_defcfunc int64 bitwise64 int64 a, int64 b
+#chsp_defcfunc bitwise64 int64 a, int64 b -> int64
 	return (a & b) ^ (a | b)
 #chsp_end
 
-#chsp_defcfunc int cmp64 int64 a, int64 b
+#chsp_defcfunc cmp64 int64 a, int64 b -> int
 	if ( a > b ) {
 		return 1
 	}

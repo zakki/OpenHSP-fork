@@ -42,11 +42,11 @@
 @@ chsp_c_module
 #chsp_module "array_return_chsp_c" target=c
 
-#chsp_defcfunc int pick_int array[int] vals, int i
+#chsp_defcfunc pick_int array[int] vals, int i -> int
 	return vals.i + vals.(i + 1)
 #chsp_end
 
-#chsp_defcfunc double pick_double array[double] vals, int i
+#chsp_defcfunc pick_double array[double] vals, int i -> double
 	return vals.i + vals(i + 1)
 #chsp_end
 
@@ -80,11 +80,11 @@
 @@ chsp_p_module
 #chsp_module "array_return_chsp_p"
 
-#chsp_defcfunc int pick_int array[int] vals, int i
+#chsp_defcfunc pick_int array[int] vals, int i -> int
 	return vals.i + vals.(i + 1)
 #chsp_end
 
-#chsp_defcfunc double pick_double array[double] vals, int i
+#chsp_defcfunc pick_double array[double] vals, int i -> double
 	return vals.i + vals(i + 1)
 #chsp_end
 

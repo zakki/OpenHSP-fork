@@ -20,7 +20,7 @@
 @@ chsp_c_module
 #chsp_module "precedence_chsp_c" target=c
 
-#chsp_defcfunc int calc_precedence int which
+#chsp_defcfunc calc_precedence int which -> int
 	if which = 0 : return 2 + 3 * 4
 	if which = 1 : return (2 + 3) * 4
 	if which = 2 : return 32 >> 2 + 1
@@ -37,7 +37,7 @@
 @@ chsp_p_module
 #chsp_module "precedence_chsp_p"
 
-#chsp_defcfunc int calc_precedence int which
+#chsp_defcfunc calc_precedence int which -> int
 	if which = 0 : return 2 + 3 * 4
 	if which = 1 : return (2 + 3) * 4
 	if which = 2 : return 32 >> 2 + 1

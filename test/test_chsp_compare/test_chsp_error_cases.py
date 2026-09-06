@@ -70,7 +70,7 @@ class ChspSyntaxErrorTest(ChspErrorTestBase):
     def test_unclosed_parenthesis(self) -> None:
         """式中の開き括弧が閉じられていないエラー"""
         code = """#chsp_module "syntax_unclosed_paren" target=c
-#chsp_defcfunc int compute int a
+#chsp_defcfunc compute int a -> int
     return (a + 1
 #chsp_end
 #chsp_module_end
@@ -86,7 +86,7 @@ class ChspSyntaxErrorTest(ChspErrorTestBase):
     def test_consecutive_binary_operators(self) -> None:
         """二項演算子が不正に連続している文法エラー"""
         code = """#chsp_module "syntax_consecutive_ops" target=c
-#chsp_defcfunc int compute int a
+#chsp_defcfunc compute int a -> int
     return a + * 2
 #chsp_end
 #chsp_module_end
@@ -102,7 +102,7 @@ class ChspSyntaxErrorTest(ChspErrorTestBase):
     def test_unclosed_chsp_module(self) -> None:
         """#chsp_module に対応する #chsp_module_end が欠落しているエラー"""
         code = """#chsp_module "syntax_unclosed_mod" target=c
-#chsp_defcfunc int compute int a
+#chsp_defcfunc compute int a -> int
     return a + 1
 #chsp_end
 
@@ -114,7 +114,7 @@ mes "missing module end"
     def test_missing_function_name(self) -> None:
         """関数定義で関数名が欠落している文法エラー"""
         code = """#chsp_module "syntax_missing_name" target=c
-#chsp_defcfunc int
+#chsp_defcfunc -> int
     return 1
 #chsp_end
 #chsp_module_end
@@ -130,10 +130,10 @@ mes "missing module end"
     def test_duplicate_function_definition(self) -> None:
         """同一モジュール内で同名関数が重複定義されているエラー"""
         code = """#chsp_module "syntax_dup_fn" target=c
-#chsp_defcfunc int compute int a
+#chsp_defcfunc compute int a -> int
     return a + 1
 #chsp_end
-#chsp_defcfunc int compute int a
+#chsp_defcfunc compute int a -> int
     return a + 2
 #chsp_end
 #chsp_module_end
@@ -154,7 +154,7 @@ static int helper(void) { return 42; }
     def test_invalid_tokens_statement(self) -> None:
         """構文として成立しない不正なトークン列"""
         code = """#chsp_module "syntax_invalid_tokens" target=c
-#chsp_defcfunc int compute int a
+#chsp_defcfunc compute int a -> int
     %% && $$
     return a
 #chsp_end
@@ -167,10 +167,33 @@ static int helper(void) { return 42; }
 class ChspTypeErrorTest(ChspErrorTestBase):
     """2. chsp部分での型エラーのテスト"""
 
+
+    def test_missing_return_type(self) -> None:
+        """#chsp_defcfunc で -> <type> が欠落しているエラー"""
+        code = """#chsp_module "syntax_missing_ret" target=c
+#chsp_defcfunc compute int a
+    return a
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "戻り値型欠落でコンパイルが失敗すること")
+
+    def test_legacy_syntax_rejected(self) -> None:
+        """旧記法 #chsp_defcfunc int compute がエラーとして拒絶されること"""
+        code = """#chsp_module "syntax_legacy_rejected" target=c
+#chsp_defcfunc int compute int a
+    return a
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "旧記法のdefcfuncでコンパイルが失敗すること")
+
     def test_unknown_return_type(self) -> None:
         """関数定義で未知の戻り値型が指定されたエラー"""
         code = """#chsp_module "type_unknown_ret" target=c
-#chsp_defcfunc unknown_type compute int a
+#chsp_defcfunc compute int a -> unknown_type
     return a
 #chsp_end
 #chsp_module_end
@@ -300,7 +323,7 @@ class ChspUnsupportedCommandTest(ChspErrorTestBase):
     def test_undefined_function_call(self) -> None:
         """未定義の関数を cHSP 関数内から呼び出すエラー"""
         code = """#chsp_module "unsupp_undef_func" target=c
-#chsp_defcfunc int compute int a
+#chsp_defcfunc compute int a -> int
     return non_existent_user_func(a)
 #chsp_end
 #chsp_module_end
@@ -319,7 +342,7 @@ class ChspUnsupportedCommandTest(ChspErrorTestBase):
 #chsp_c {"
 static int native_helper(int v) { return v * 2; }
 "}
-#chsp_defcfunc int compute int v
+#chsp_defcfunc compute int v -> int
     return native_helper(v)
 #chsp_end
 #chsp_module_end
@@ -440,7 +463,7 @@ class ChspOutsideDirectiveErrorTest(ChspErrorTestBase):
     def test_outside_unknown_future_command(self) -> None:
         """chspディレクティブ外（通常のHSP領域）に未定義の新命令がある場合、hspcmpで検出されること"""
         code = """#chsp_module "valid_module" target=c
-#chsp_defcfunc int add int a, int b
+#chsp_defcfunc add int a, int b -> int
     return a + b
 #chsp_end
 #chsp_module_end
@@ -459,7 +482,7 @@ future_hsp_command_v4 123, 456
     def test_outside_syntax_error_unclosed_paren(self) -> None:
         """chspディレクティブ外での開き括弧閉じ忘れエラー"""
         code = """#chsp_module "valid_module2" target=c
-#chsp_defcfunc int add int a, int b
+#chsp_defcfunc add int a, int b -> int
     return a + b
 #chsp_end
 #chsp_module_end
@@ -477,7 +500,7 @@ mes (1 + 2
     def test_outside_undefined_label(self) -> None:
         """chspディレクティブ外での未定義ラベル参照エラー"""
         code = """#chsp_module "valid_module3" target=c
-#chsp_defcfunc int add int a, int b
+#chsp_defcfunc add int a, int b -> int
     return a + b
 #chsp_end
 #chsp_module_end
@@ -497,10 +520,10 @@ goto *non_existent_label
     def test_line_number_preservation_on_outside_error(self) -> None:
         """空行パディングにより、chspモジュール後方のエラー行番号が元ファイルと正確に一致すること"""
         code = """#chsp_module "valid_mod_pad" target=c
-#chsp_defcfunc int add int a, int b
+#chsp_defcfunc add int a, int b -> int
     return a + b
 #chsp_end
-#chsp_defcfunc int sub int a, int b
+#chsp_defcfunc sub int a, int b -> int
     return a - b
 #chsp_end
 #chsp_module_end
@@ -522,7 +545,7 @@ future_unknown_command_at_line_12 999
     def test_intermediate_cleaned_up_on_error(self) -> None:
         """コンパイルエラー時に中間ファイル (.chsp.tmp.hsp) が残らないこと"""
         code = """#chsp_module "valid_mod_cleanup" target=c
-#chsp_defcfunc int add int a, int b
+#chsp_defcfunc add int a, int b -> int
     return a + b
 #chsp_end
 #chsp_module_end
@@ -541,7 +564,7 @@ unknown_command_causing_error
         """HSPが動的型のためHSP-cHSP境界の引数型チェックはコンパイル時は限定的で、実行時に型エラーとなることの検証"""
         code = """#include "hsp3cl.as"
 #chsp_module "boundary_type_check"
-#chsp_defcfunc int add int a, int b
+#chsp_defcfunc add int a, int b -> int
     return a + b
 #chsp_end
 #chsp_module_end

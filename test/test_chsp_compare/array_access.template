@@ -73,7 +73,7 @@
 @@ chsp_c_module
 #chsp_module "array_access_chsp_c" target=c
 
-#chsp_defcfunc int pass_value int v
+#chsp_defcfunc pass_value int v -> int
 	return v
 #chsp_end
 
@@ -146,7 +146,7 @@
 @@ chsp_p_module
 #chsp_module "array_access_chsp_p"
 
-#chsp_defcfunc int pass_value int v
+#chsp_defcfunc pass_value int v -> int
 	return v
 #chsp_end
 

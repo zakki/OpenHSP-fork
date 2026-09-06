@@ -2,7 +2,7 @@
 
 #chsp_module "double_return_chsp"
 
-#chsp_defcfunc double blend_value double x, double y, local[double] v
+#chsp_defcfunc blend_value double x, double y, local[double] v -> double
 	v = x * 1.5 + y * 0.25
 	v = limitf(v + sqrt(4.0), 0.0, 10.0)
 	return v

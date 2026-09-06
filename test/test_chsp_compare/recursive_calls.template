@@ -33,12 +33,12 @@
 	return
 #chsp_end
 
-#chsp_defcfunc int fib int n
+#chsp_defcfunc fib int n -> int
 	if n <= 1 : return n
 	return fib(n - 1) + fib(n - 2)
 #chsp_end
 
-#chsp_defcfunc int fact int n
+#chsp_defcfunc fact int n -> int
 	if n <= 1 : return 1
 	return n * fact(n - 1)
 #chsp_end
@@ -58,12 +58,12 @@
 	return
 #chsp_end
 
-#chsp_defcfunc int fib int n
+#chsp_defcfunc fib int n -> int
 	if n <= 1 : return n
 	return fib(n - 1) + fib(n - 2)
 #chsp_end
 
-#chsp_defcfunc int fact int n
+#chsp_defcfunc fact int n -> int
 	if n <= 1 : return 1
 	return n * fact(n - 1)
 #chsp_end

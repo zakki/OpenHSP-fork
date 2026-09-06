@@ -28,7 +28,7 @@
 @@ chsp_c_module
 #chsp_module "random_chsp_c" target=c
 
-#chsp_defcfunc int sample_random int seed, local[int] a, local[int] b, local[int] c, local[int] ok
+#chsp_defcfunc sample_random int seed, local[int] a, local[int] b, local[int] c, local[int] ok -> int
 	randomize(seed)
 	a = rnd(100)
 	b = rnd(100)
@@ -52,7 +52,7 @@
 @@ chsp_p_module
 #chsp_module "random_chsp_p"
 
-#chsp_defcfunc int sample_random int seed, local[int] a, local[int] b, local[int] c, local[int] ok
+#chsp_defcfunc sample_random int seed, local[int] a, local[int] b, local[int] c, local[int] ok -> int
 	randomize(seed)
 	a = rnd(100)
 	b = rnd(100)

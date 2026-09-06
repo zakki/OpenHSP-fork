@@ -32,19 +32,19 @@ compare_libtcc = chsp_p
 @@ chsp_p_module
 #chsp_module "mixed_numeric_return"
 
-#chsp_defcfunc int int_plus_double_to_int int a, double b
+#chsp_defcfunc int_plus_double_to_int int a, double b -> int
 	return a + b
 #chsp_end
 
-#chsp_defcfunc int double_plus_int_to_int double a, int b
+#chsp_defcfunc double_plus_int_to_int double a, int b -> int
 	return a + b
 #chsp_end
 
-#chsp_defcfunc double int_plus_double_to_double int a, double b
+#chsp_defcfunc int_plus_double_to_double int a, double b -> double
 	return a + b
 #chsp_end
 
-#chsp_defcfunc double double_plus_int_to_double double a, int b
+#chsp_defcfunc double_plus_int_to_double double a, int b -> double
 	return a + b
 #chsp_end
 

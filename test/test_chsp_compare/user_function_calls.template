@@ -49,15 +49,15 @@
 	return
 #chsp_end
 
-#chsp_defcfunc int plus_one int v
+#chsp_defcfunc plus_one int v -> int
 	return v + 1
 #chsp_end
 
-#chsp_defcfunc int triple int v
+#chsp_defcfunc triple int v -> int
 	return v * 3
 #chsp_end
 
-#chsp_defcfunc int cascade int v
+#chsp_defcfunc cascade int v -> int
 	return triple(plus_one(v))
 #chsp_end
 
@@ -84,15 +84,15 @@
 	return
 #chsp_end
 
-#chsp_defcfunc int plus_one int v
+#chsp_defcfunc plus_one int v -> int
 	return v + 1
 #chsp_end
 
-#chsp_defcfunc int triple int v
+#chsp_defcfunc triple int v -> int
 	return v * 3
 #chsp_end
 
-#chsp_defcfunc int cascade int v
+#chsp_defcfunc cascade int v -> int
 	return triple(plus_one(v))
 #chsp_end
 

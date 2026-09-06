@@ -20,11 +20,11 @@
 @@ chsp_c_module
 #chsp_module "case_fold_chsp_c" target=c
 
-#chsp_defcfunc int helper int value
+#chsp_defcfunc helper int value -> int
 	return value * 2
 #chsp_end
 
-#chsp_defcfunc int mixvalue int Foo
+#chsp_defcfunc mixvalue int Foo -> int
 	return ABS(-foo) + HELPER(foo)
 #chsp_end
 
@@ -40,11 +40,11 @@
 @@ chsp_p_module
 #chsp_module "case_fold_chsp_p"
 
-#chsp_defcfunc int helper int value
+#chsp_defcfunc helper int value -> int
 	return value * 2
 #chsp_end
 
-#chsp_defcfunc int mixvalue int Foo
+#chsp_defcfunc mixvalue int Foo -> int
 	return ABS(-foo) + HELPER(foo)
 #chsp_end
 

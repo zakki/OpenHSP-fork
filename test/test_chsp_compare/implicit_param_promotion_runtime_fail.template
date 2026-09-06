@@ -18,11 +18,11 @@
 @@ chsp_c_module
 #chsp_module "implicit_param_promotion_runtime_fail_chsp_c" target=c
 
-#chsp_defcfunc int call_scale int v
+#chsp_defcfunc call_scale int v -> int
 	return scale_after_widen(v)
 #chsp_end
 
-#chsp_defcfunc int scale_after_widen double v
+#chsp_defcfunc scale_after_widen double v -> int
 	return int(v * 10.0)
 #chsp_end
 
@@ -34,11 +34,11 @@
 @@ chsp_p_module
 #chsp_module "implicit_param_promotion_runtime_fail_chsp_p"
 
-#chsp_defcfunc int call_scale int v
+#chsp_defcfunc call_scale int v -> int
 	return scale_after_widen(v)
 #chsp_end
 
-#chsp_defcfunc int scale_after_widen double v
+#chsp_defcfunc scale_after_widen double v -> int
 	return int(v * 10.0)
 #chsp_end
 

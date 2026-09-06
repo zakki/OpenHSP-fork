@@ -20,7 +20,7 @@ class StringSupportTest(unittest.TestCase):
     def test_plugin_target_accepts_string_param_and_return(self) -> None:
         source_text = """\
 #chsp_module "str_plugin" target=plugin
-#chsp_defcfunc str echo str s
+#chsp_defcfunc echo str s -> str
     return s
 #chsp_end
 #chsp_module_end
@@ -58,7 +58,7 @@ class StringSupportTest(unittest.TestCase):
     def test_c_target_rejects_string_param(self) -> None:
         source_text = """\
 #chsp_module "str_c" target=c
-#chsp_defcfunc str echo str s
+#chsp_defcfunc echo str s -> str
     return s
 #chsp_end
 #chsp_module_end

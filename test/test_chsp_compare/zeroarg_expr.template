@@ -26,7 +26,7 @@ compare_libtcc = chsp_p
 @@ chsp_p_module
 #chsp_module "zeroarg_expr_chsp_p"
 
-#chsp_defcfunc int sample
+#chsp_defcfunc sample -> int
 	return 7
 #chsp_end
 
