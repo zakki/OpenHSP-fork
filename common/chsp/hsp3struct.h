@@ -6,6 +6,7 @@
 #define __hsp3struct_h
 
 #include <stdint.h>
+#include <stddef.h>
 #include "hspvar_core.h"
 #include "hsp3debug.h"
 
@@ -32,8 +33,14 @@
 //
 #ifdef HSP64
 #define HSPLPTR long
+#define HSPINT64 ptrdiff_t
+#define HSPPTRINT ptrdiff_t
+#define HSPCTX_STAT_FLAG HSPVAR_FLAG_INT64
 #else
 #define HSPLPTR int
+#define HSPINT64 ptrdiff_t
+#define HSPPTRINT int
+#define HSPCTX_STAT_FLAG HSPVAR_FLAG_INT
 #endif
 
 // command type
@@ -351,7 +358,7 @@ typedef struct IRQDAT {
 	int		custom2;							// custom message value2
 	int		iparam;								// iparam option
 	unsigned short *ptr;						// jump ptr
-	void	(*callback)(struct IRQDAT *,int,int);		// IRQ callback function
+	void	(*callback)(struct IRQDAT *,HSPPTRINT,HSPPTRINT);		// IRQ callback function
 } IRQDAT;
 
 typedef struct HSPCTX HSPCTX;
@@ -372,7 +379,7 @@ typedef struct HSPEXINFO30
 	int *actscr;		// Active Window ID
 	int *nptype;		// Next Parameter Type
 	int *npval;			// Next Parameter Value
-	int *strsize;		// StrSize Buffer
+	HSPPTRINT *strsize;	// StrSize Buffer
 	char *refstr;		// RefStr Buffer
 	//
 	void *(*HspFunc_prm_getv)( void );
@@ -381,8 +388,8 @@ typedef struct HSPEXINFO30
 	char *(*HspFunc_prm_gets)( void );
 	char *(*HspFunc_prm_getds)( const char *defstr );
 	int (*HspFunc_val_realloc)( PVal *pv, int size, int mode );
-	int (*HspFunc_fread)( char *fname, void *readmem, int rlen, int seekofs );
-	int (*HspFunc_fsize)( char *fname );
+	size_t (*HspFunc_fread)( char *fname, void *readmem, size_t rlen, size_t seekofs );
+	size_t (*HspFunc_fsize)( char *fname );
 	void *(*HspFunc_getbmscr)( int wid );
 	int (*HspFunc_getobj)( int wid, int id, void *inf );
 	int (*HspFunc_setobj)( int wid, int id, const void *inf );
@@ -441,7 +448,7 @@ typedef struct HSPEXINFO
 	int *actscr;		// Active Window ID
 	int *nptype;		// Next Parameter Type
 	int *npval;			// Next Parameter Value
-	int *strsize;		// StrSize Buffer
+	HSPPTRINT *strsize;	// StrSize Buffer
 	char *refstr;		// RefStr Buffer
 	//
 	void *(*HspFunc_prm_getv)( void );
@@ -449,9 +456,9 @@ typedef struct HSPEXINFO
 	int (*HspFunc_prm_getdi)( const int defval );
 	char *(*HspFunc_prm_gets)( void );
 	char *(*HspFunc_prm_getds)( const char *defstr );
-	int (*HspFunc_val_realloc)( PVal *pv, int size, int mode );
-	int (*HspFunc_fread)( char *fname, void *readmem, int rlen, int seekofs );
-	int (*HspFunc_fsize)( char *fname );
+	int (*HspFunc_val_realloc)( PVal *pv, HSPPTRINT size, int mode );
+	ptrdiff_t(*HspFunc_fread)( char *fname, void *readmem, ptrdiff_t rlen, ptrdiff_t seekofs );
+	ptrdiff_t(*HspFunc_fsize)( char *fname );
 	void *(*HspFunc_getbmscr)( int wid );
 	int (*HspFunc_getobj)( int wid, int id, void *inf );
 	int (*HspFunc_setobj)( int wid, int id, const void *inf );
@@ -476,11 +483,11 @@ typedef struct HSPEXINFO
 	PVal *(*HspFunc_prm_getpval)( void );
 	APTR (*HspFunc_prm_getva)( PVal **pval );
 	void (*HspFunc_prm_setva)( PVal *pval, APTR aptr, int type, const void *ptr );
-	char *(*HspFunc_malloc)( int size );
+	char *(*HspFunc_malloc)( size_t size );
 	void (*HspFunc_free)( void *ptr );
-	char *(*HspFunc_expand)( char *ptr, int size );
+	char *(*HspFunc_expand)( char *ptr, size_t size );
 	IRQDAT *(*HspFunc_addirq)( void );
-	int (*HspFunc_hspevent)( int event, int prm1, int prm2, void *prm3 );
+	int (*HspFunc_hspevent)( int event, HSPPTRINT prm1, HSPPTRINT prm2, void *prm3 );
 	void (*HspFunc_registvar)( int flag, HSPVAR_COREFUNC func );
 	void (*HspFunc_setpc)( const unsigned short *pc );
 	void (*HspFunc_call)( const unsigned short *pc );
@@ -549,9 +556,9 @@ struct HSPCTX
 
 	IRQDAT *mem_irq;					// IRQ data ptr
 	int irqmax;							// IRQ data count
-	int iparam;							// IRQ Info data1
-	int wparam;							// IRQ Info data2
-	int lparam;							// IRQ Info data3
+	HSPPTRINT iparam;					// IRQ Info data1
+	HSPPTRINT wparam;					// IRQ Info data2
+	HSPPTRINT lparam;					// IRQ Info data3
 
 	PVal *mem_var;						// var storage index
 	HSPEXINFO30 exinfo;					// HSP function data(3.0)
@@ -565,8 +572,8 @@ struct HSPCTX
 	int looplev;						// repeat loop level
 	HSPERROR err;						// error code
 	int hspstat;						// HSP status
-	int stat;							// sysvar 'stat'
-	int strsize;						// sysvar 'strsize'
+	HSPPTRINT stat;						// sysvar 'stat'
+	HSPPTRINT strsize;					// sysvar 'strsize'
 	char *refstr;						// RefStr Buffer
 	char *fnbuffer;						// buffer for FILENAME
 	void *instance;						// Instance Handle (windows)
@@ -657,8 +664,8 @@ typedef struct
 typedef int (* HSP3_CMDFUNC) (int);
 typedef void *(* HSP3_REFFUNC) (int *,int);
 typedef int (* HSP3_TERMFUNC) (int);
-typedef int (* HSP3_MSGFUNC) (int,int,int);
-typedef int (* HSP3_EVENTFUNC) (int,int,int,void *);
+typedef int (* HSP3_MSGFUNC) (int,HSPPTRINT,HSPPTRINT);
+typedef int (* HSP3_EVENTFUNC) (int,HSPPTRINT,HSPPTRINT,void *);
 
 
 typedef struct {
@@ -678,8 +685,8 @@ typedef struct {
 
 	// Event callback functions
 	//
-	int (* msgfunc) (int,int,int);				// Window message callback
-	int (* eventfunc) (int,int,int,void *);		// HSP event callback
+	int (* msgfunc) (int,HSPPTRINT,HSPPTRINT);				// Window message callback
+	int (* eventfunc) (int,HSPPTRINT,HSPPTRINT,void *);		// HSP event callback
 
 } HSP3TYPEINFO;
 
