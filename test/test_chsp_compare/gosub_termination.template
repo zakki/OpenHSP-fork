@@ -1,0 +1,57 @@
+@@ meta
+compare_default = hsp
+compare_emit_c = chsp_p
+compare_libtcc = hsp
+
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+#deffunc helper array flag, label cb
+	gosub cb
+	flag(0) = 999
+	return
+
+#deffunc caller array flag, label cb
+	helper flag, cb
+	flag(1) = 888
+	return
+#global
+
+@@ chsp_p_module
+#chsp_module "gosub_termination_chsp_p"
+
+#chsp_deffunc helper array[int] flag, label cb
+	gosub cb
+	flag(0) = 999
+	return
+#chsp_end
+
+#chsp_deffunc caller array[int] flag, label cb
+	helper flag, cb
+	flag(1) = 888
+	return
+#chsp_end
+
+#chsp_module_end
+
+@@ main
+dim flag, 2
+flag(0) = 10
+flag(1) = 20
+
+mes "start test"
+caller flag, *on_cb
+mes "main: SHOULD NOT PRINT"
+end
+
+*on_cb
+mes "in callback: terminating"
+end
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

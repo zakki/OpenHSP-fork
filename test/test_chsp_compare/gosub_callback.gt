@@ -1,0 +1,7 @@
+on_tick: cnt=0
+on_tick: cnt=1
+on_tick: cnt=2
+on_tick: cnt=3
+loop done, a(0)=3
+on_calc
+ans=277

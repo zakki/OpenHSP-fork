@@ -209,6 +209,140 @@ std::string MakeIndent( int level )
 	return std::string( level * 4, ' ' );
 }
 
+void EmitRunmodeEndGuard( CMemBuf &buf, const ChspAstFunction &func, int indent_level )
+{
+	buf.PutStr( MakeIndent( indent_level ).c_str() );
+	buf.PutStr( "if ( ctx->runmode == RUNMODE_END ) return" );
+	if ( IsDefCFunc( func ) ) {
+		buf.PutStr( " " );
+		buf.PutStr( DefaultReturnExpr( func.return_type ).c_str() );
+	}
+	buf.PutStr( ";\n" );
+}
+
+bool ExprMayCallNative( const ChspAstExpr &expr, const TranslateContext &ctx )
+{
+	switch ( expr.kind ) {
+	case ChspAstExprKind::Identifier: {
+		const std::string name = NormalizeScopedName( expr.text );
+		if ( ctx.array_names.find( name ) == ctx.array_names.end() &&
+			 ctx.identifier_cpp_names.find( name ) == ctx.identifier_cpp_names.end() ) {
+			if ( ctx.function_cpp_names.find( name ) != ctx.function_cpp_names.end() ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	case ChspAstExprKind::Unary:
+	case ChspAstExprKind::Group:
+		for ( const auto &child : expr.children ) {
+			if ( child != nullptr && ExprMayCallNative( *child, ctx ) ) {
+				return true;
+			}
+		}
+		return false;
+	case ChspAstExprKind::Binary:
+		for ( const auto &child : expr.children ) {
+			if ( child != nullptr && ExprMayCallNative( *child, ctx ) ) {
+				return true;
+			}
+		}
+		return false;
+	case ChspAstExprKind::Call: {
+		if ( !expr.children.empty() && expr.children[0] != nullptr &&
+			 expr.children[0]->kind == ChspAstExprKind::Identifier ) {
+			const std::string name = NormalizeScopedName( expr.children[0]->text );
+			if ( ctx.function_cpp_names.find( name ) != ctx.function_cpp_names.end() ) {
+				return true;
+			}
+		}
+		for ( const auto &child : expr.children ) {
+			if ( child != nullptr && ExprMayCallNative( *child, ctx ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	default:
+		return false;
+	}
+}
+
+bool StmtMayCallNative( const ChspAstStmt &stmt, const TranslateContext &ctx )
+{
+	switch ( stmt.kind ) {
+	case ChspAstStmtKind::Command: {
+		const std::string cmd_name = NormalizeScopedName( stmt.text );
+		if ( cmd_name == "gosub" ) {
+			return true;
+		}
+		if ( ctx.function_cpp_names.find( cmd_name ) != ctx.function_cpp_names.end() ) {
+			return true;
+		}
+		for ( const auto &expr : stmt.exprs ) {
+			if ( expr != nullptr && ExprMayCallNative( *expr, ctx ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	case ChspAstStmtKind::Assignment: {
+		if ( stmt.lhs != nullptr && ExprMayCallNative( *stmt.lhs, ctx ) ) {
+			return true;
+		}
+		if ( stmt.rhs != nullptr && ExprMayCallNative( *stmt.rhs, ctx ) ) {
+			return true;
+		}
+		for ( const auto &expr : stmt.exprs ) {
+			if ( expr != nullptr && ExprMayCallNative( *expr, ctx ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	case ChspAstStmtKind::If: {
+		for ( const auto &expr : stmt.exprs ) {
+			if ( expr != nullptr && ExprMayCallNative( *expr, ctx ) ) {
+				return true;
+			}
+		}
+		for ( const auto &child : stmt.children ) {
+			if ( child != nullptr && StmtMayCallNative( *child, ctx ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	case ChspAstStmtKind::Else: {
+		for ( const auto &child : stmt.children ) {
+			if ( child != nullptr && StmtMayCallNative( *child, ctx ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	case ChspAstStmtKind::Repeat: {
+		if ( stmt.rhs != nullptr && ExprMayCallNative( *stmt.rhs, ctx ) ) {
+			return true;
+		}
+		for ( const auto &child : stmt.children ) {
+			if ( child != nullptr && StmtMayCallNative( *child, ctx ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	case ChspAstStmtKind::Return: {
+		if ( stmt.rhs != nullptr && ExprMayCallNative( *stmt.rhs, ctx ) ) {
+			return true;
+		}
+		return false;
+	}
+	default:
+		return false;
+	}
+}
+
 bool IsBlockOpeningStmt( const ChspAstStmt &stmt )
 {
 	if ( stmt.kind == ChspAstStmtKind::Repeat ) {
@@ -435,6 +569,14 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 		if ( !ok ) {
 			return ReportUnsupportedStmt( logger, func, stmt, "repeat count expression could not be translated" );
 		}
+		std::string count_limit = expr;
+		if ( ctx.target == ChspNativeTarget::Plugin && stmt.rhs != nullptr && ExprMayCallNative( *stmt.rhs, ctx ) ) {
+			const std::string cnt_max_var = "_chsp_cnt_max_" + std::to_string( ctx.temp_var_count++ );
+			buf.PutStr( MakeIndent( indent_level ).c_str() );
+			buf.PutStr( ( "int " + cnt_max_var + " = " + expr + ";\n" ).c_str() );
+			EmitRunmodeEndGuard( buf, func, indent_level );
+			count_limit = cnt_max_var;
+		}
 		const std::string loop_var = "_cnt" + std::to_string( static_cast<int>( ctx.loop_stack.size() ) );
 		buf.PutStr( MakeIndent( indent_level ).c_str() );
 		buf.PutStr( "for (int " );
@@ -442,7 +584,7 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 		buf.PutStr( " = 0; " );
 		buf.PutStr( loop_var.c_str() );
 		buf.PutStr( " < " );
-		buf.PutStr( expr.c_str() );
+		buf.PutStr( count_limit.c_str() );
 		buf.PutStr( "; ++" );
 		buf.PutStr( loop_var.c_str() );
 		buf.PutStr( ") {\n" );
@@ -470,21 +612,58 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 				break;
 			}
 		}
-		if ( else_index != stmt.children.size() || stmt.children.size() > 1 ) {
+		const bool may_call_native = ( ctx.target == ChspNativeTarget::Plugin && StmtMayCallNative( stmt, ctx ) );
+		if ( else_index != stmt.children.size() || stmt.children.size() > 1 || may_call_native ) {
+			bool cond_ok = true;
+			const auto cond = TranslateExpr( *stmt.exprs[0], ctx, cond_ok );
+			if ( !cond_ok ) {
+				return ReportUnsupportedStmt( logger, func, stmt, "conditional expression could not be translated" );
+			}
+			std::string cond_expr = cond;
+			if ( ctx.target == ChspNativeTarget::Plugin && ExprMayCallNative( *stmt.exprs[0], ctx ) ) {
+				const std::string cond_var = "_chsp_cond_" + std::to_string( ctx.temp_var_count++ );
+				buf.PutStr( MakeIndent( indent_level ).c_str() );
+				buf.PutStr( ( "int " + cond_var + " = " + cond + ";\n" ).c_str() );
+				EmitRunmodeEndGuard( buf, func, indent_level );
+				cond_expr = cond_var;
+			}
 			buf.PutStr( MakeIndent( indent_level ).c_str() );
-			buf.PutStr( "if (" );
-			const auto cond = TranslateExpr( *stmt.exprs[0], ctx, ok );
-			buf.PutStr( cond.c_str() );
-			buf.PutStr( ") {" );
-			buf.PutCR();
-			if ( ok ) {
-				++indent_level;
-				for ( size_t i = 0; i < stmt.children.size(); ++i ) {
-					if ( i == else_index ) {
-						break;
+			buf.PutStr( ( "if (" + cond_expr + ") {\n" ).c_str() );
+			++indent_level;
+			for ( size_t i = 0; i < stmt.children.size(); ++i ) {
+				if ( i == else_index ) {
+					break;
+				}
+				if ( stmt.children[i] != nullptr ) {
+					if ( !WriteFunctionStmtToCpp( buf, *stmt.children[i], ctx, func, logger, indent_level,
+												  emitted_explicit_return ) ) {
+						return false;
 					}
-					if ( stmt.children[i] != nullptr ) {
-						if ( !WriteFunctionStmtToCpp( buf, *stmt.children[i], ctx, func, logger, indent_level,
+				}
+			}
+			indent_level = std::max( 1, indent_level - 1 );
+			buf.PutStr( MakeIndent( indent_level ).c_str() );
+			buf.PutStr( "}\n" );
+			if ( else_index != stmt.children.size() && stmt.children[else_index] != nullptr ) {
+				const auto &else_stmt = *stmt.children[else_index];
+				const bool else_may_call_native =
+					( ctx.target == ChspNativeTarget::Plugin && StmtMayCallNative( else_stmt, ctx ) );
+				bool else_ok = true;
+				if ( !else_may_call_native ) {
+					const auto rendered = RenderStatementInline( else_stmt, ctx, else_ok );
+					if ( else_ok && !rendered.empty() ) {
+						buf.PutStr( MakeIndent( indent_level ).c_str() );
+						buf.PutStr( rendered.c_str() );
+						buf.PutCR();
+						return true;
+					}
+				}
+				buf.PutStr( MakeIndent( indent_level ).c_str() );
+				buf.PutStr( "else {\n" );
+				++indent_level;
+				for ( const auto &child : else_stmt.children ) {
+					if ( child != nullptr ) {
+						if ( !WriteFunctionStmtToCpp( buf, *child, ctx, func, logger, indent_level,
 													  emitted_explicit_return ) ) {
 							return false;
 						}
@@ -492,37 +671,9 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 				}
 				indent_level = std::max( 1, indent_level - 1 );
 				buf.PutStr( MakeIndent( indent_level ).c_str() );
-				buf.PutStr( "}" );
-				buf.PutCR();
-				if ( else_index != stmt.children.size() && stmt.children[else_index] != nullptr ) {
-					const auto &else_stmt = *stmt.children[else_index];
-					bool else_ok = true;
-					const auto rendered = RenderStatementInline( else_stmt, ctx, else_ok );
-					if ( else_ok && !rendered.empty() ) {
-						buf.PutStr( MakeIndent( indent_level ).c_str() );
-						buf.PutStr( rendered.c_str() );
-						buf.PutCR();
-					} else {
-						buf.PutStr( MakeIndent( indent_level ).c_str() );
-						buf.PutStr( "else {" );
-						buf.PutCR();
-						++indent_level;
-						for ( const auto &child : else_stmt.children ) {
-							if ( child != nullptr ) {
-								if ( !WriteFunctionStmtToCpp( buf, *child, ctx, func, logger, indent_level,
-															  emitted_explicit_return ) ) {
-									return false;
-								}
-							}
-						}
-						indent_level = std::max( 1, indent_level - 1 );
-						buf.PutStr( MakeIndent( indent_level ).c_str() );
-						buf.PutStr( "}" );
-						buf.PutCR();
-					}
-				}
-				return true;
+				buf.PutStr( "}\n" );
 			}
+			return true;
 		} else {
 			const auto rendered = RenderStatementInline( stmt, ctx, ok );
 			if ( ok && !rendered.empty() ) {
@@ -556,10 +707,10 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 	}
 	case ChspAstStmtKind::Else: {
 		bool ok = true;
-		if ( stmt.children.size() > 1 ) {
+		const bool may_call_native = ( ctx.target == ChspNativeTarget::Plugin && StmtMayCallNative( stmt, ctx ) );
+		if ( stmt.children.size() > 1 || may_call_native ) {
 			buf.PutStr( MakeIndent( indent_level ).c_str() );
-			buf.PutStr( "else {" );
-			buf.PutCR();
+			buf.PutStr( "else {\n" );
 			++indent_level;
 			for ( const auto &child : stmt.children ) {
 				if ( child != nullptr ) {
@@ -571,8 +722,7 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 			}
 			indent_level = std::max( 1, indent_level - 1 );
 			buf.PutStr( MakeIndent( indent_level ).c_str() );
-			buf.PutStr( "}" );
-			buf.PutCR();
+			buf.PutStr( "}\n" );
 			return true;
 		}
 		const auto rendered = RenderStatementInline( stmt, ctx, ok );
@@ -626,6 +776,10 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 				buf.PutStr( MakeIndent( indent_level ).c_str() );
 				buf.PutStr( ( "int " + tmp + " = " + start_offset + ";" ).c_str() );
 				buf.PutCR();
+				if ( ctx.target == ChspNativeTarget::Plugin && stmt.lhs->children.size() > 1 &&
+					 stmt.lhs->children[1] != nullptr && ExprMayCallNative( *stmt.lhs->children[1], ctx ) ) {
+					EmitRunmodeEndGuard( buf, func, indent_level );
+				}
 				idx_base = tmp;
 			}
 
@@ -647,6 +801,9 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 			buf.PutStr( MakeIndent( indent_level ).c_str() );
 			buf.PutStr( ( base_ptr + "[" + make_idx( 0 ) + "] = " + rhs0 + ";" ).c_str() );
 			buf.PutCR();
+			if ( ctx.target == ChspNativeTarget::Plugin && ExprMayCallNative( *stmt.rhs, ctx ) ) {
+				EmitRunmodeEndGuard( buf, func, indent_level );
+			}
 
 			for ( size_t i = 0; i < stmt.exprs.size(); ++i ) {
 				if ( stmt.exprs[i] == nullptr ) {
@@ -661,6 +818,9 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 				buf.PutStr( MakeIndent( indent_level ).c_str() );
 				buf.PutStr( ( base_ptr + "[" + make_idx( i + 1 ) + "] = " + val + ";" ).c_str() );
 				buf.PutCR();
+				if ( ctx.target == ChspNativeTarget::Plugin && ExprMayCallNative( *stmt.exprs[i], ctx ) ) {
+					EmitRunmodeEndGuard( buf, func, indent_level );
+				}
 			}
 			return true;
 		}
@@ -786,6 +946,19 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 				buf.PutStr( MakeIndent( indent_level ).c_str() );
 				buf.PutStr( ( "int " + d_vars[d] + " = " + d_expr[d] + ";\n" ).c_str() );
 			}
+			if ( ctx.target == ChspNativeTarget::Plugin ) {
+				bool dim_may_call_native = false;
+				for ( size_t d = 0; d < 4; ++d ) {
+					if ( dim_start + d < stmt.exprs.size() && stmt.exprs[dim_start + d] != nullptr &&
+						 ExprMayCallNative( *stmt.exprs[dim_start + d], ctx ) ) {
+						dim_may_call_native = true;
+						break;
+					}
+				}
+				if ( dim_may_call_native ) {
+					EmitRunmodeEndGuard( buf, func, indent_level );
+				}
+			}
 
 			const std::string cpp_arr = LookupCppIdentifier( ctx, var_name );
 			const std::string pval_name = "pval_" + cpp_arr;
@@ -808,6 +981,52 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 			}
 
 			return true;
+		} else if ( cmd_name == "gosub" ) {
+			if ( ctx.target != ChspNativeTarget::Plugin ) {
+				return ReportUnsupportedStmt( logger, func, stmt,
+											  "gosub is only supported in target=plugin" );
+			}
+			if ( stmt.exprs.empty() || stmt.exprs[0] == nullptr ||
+				 stmt.exprs[0]->kind != ChspAstExprKind::Identifier ) {
+				return ReportUnsupportedStmt( logger, func, stmt,
+											  "gosub requires a label identifier argument" );
+			}
+			const std::string label_name = NormalizeScopedName( stmt.exprs[0]->text );
+			const ChspAstParam *target_param = nullptr;
+			for ( const auto &param : func.params ) {
+				if ( NormalizeScopedName( param.name ) == label_name ) {
+					target_param = &param;
+					break;
+				}
+			}
+			if ( target_param == nullptr ) {
+				return ReportUnsupportedStmt(
+					logger, func, stmt,
+					( "variable '" + label_name + "' not found in function parameters" ).c_str() );
+			}
+			if ( target_param->is_local ) {
+				return ReportUnsupportedStmt(
+					logger, func, stmt,
+					( "gosub cannot be used on local variable '" + label_name + "'" ).c_str() );
+			}
+			if ( target_param->is_array ) {
+				return ReportUnsupportedStmt(
+					logger, func, stmt,
+					( "gosub cannot be used on array '" + label_name + "'" ).c_str() );
+			}
+			if ( target_param->base_type != "label" ) {
+				return ReportUnsupportedStmt(
+					logger, func, stmt,
+					( "type mismatch: gosub requires label, but '" + label_name + "' is " +
+					  target_param->type_name )
+						.c_str() );
+			}
+
+			const std::string cpp_label = LookupCppIdentifier( ctx, label_name );
+			buf.PutStr( MakeIndent( indent_level ).c_str() );
+			buf.PutStr( ( "code_call( " + cpp_label + " );\n" ).c_str() );
+			EmitRunmodeEndGuard( buf, func, indent_level );
+			return true;
 		}
 		break;
 	}
@@ -823,6 +1042,8 @@ bool WriteFunctionStmtToCpp( CMemBuf &buf, const ChspAstStmt &stmt, TranslateCon
 		buf.PutCR();
 		if ( chsputil::StartsWith( chsputil::Trim( rendered ), "return" ) ) {
 			emitted_explicit_return = true;
+		} else if ( ctx.target == ChspNativeTarget::Plugin && StmtMayCallNative( stmt, ctx ) ) {
+			EmitRunmodeEndGuard( buf, func, indent_level );
 		}
 		return true;
 	}
@@ -876,6 +1097,9 @@ void WriteLocalDeclsToNative( CMemBuf &buf, const ChspAstFunction &func, const T
 bool WriteFunctionBodyToNative( CMemBuf &buf, const ChspAstFunction &func, TranslateContext &ctx, CLogger &logger )
 {
 	WriteLocalDeclsToNative( buf, func, ctx );
+	if ( ctx.target == ChspNativeTarget::Plugin ) {
+		EmitRunmodeEndGuard( buf, func, 1 );
+	}
 	int indent_level = 1;
 	bool emitted_explicit_return = false;
 	for ( size_t i = 0; i < func.body_stmts.size(); ++i ) {
@@ -957,6 +1181,17 @@ bool WriteFunctionToNative( CMemBuf &buf, const ChspAstModule &module, const Chs
 							const std::unordered_map<std::string, bool> &function_array_metadata_needs,
 							ChspNativeTarget target, CLogger &logger, const ChspBuiltinMap &builtin_map )
 {
+	if ( target == ChspNativeTarget::C ) {
+		for ( const auto &param : func.params ) {
+			if ( param.base_type == "label" ) {
+				logger.Mesf(
+					"#Error:cHSP frontend v3 emitter does not support label parameters in function '%s' at line %d (label parameters are only supported in target=plugin)",
+					NormalizeScopedName( func.name ).c_str(), func.line );
+				return false;
+			}
+		}
+	}
+
 	const bool needs_array_metadata = FunctionNeedsArrayMetadata( function_array_metadata_needs, func );
 	const auto cpp_name_it = function_cpp_names.find( func.name );
 	const std::string cpp_name = cpp_name_it != function_cpp_names.end() ? cpp_name_it->second : func.name;
@@ -1034,6 +1269,7 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 	buf.PutStr( "static int64_t chsp_plugin_ref_int64;\n\n" );
 
 	buf.PutStr( "static int cmdfunc( int cmd )\n{\n" );
+	buf.PutStr( "    if ( ctx->runmode == RUNMODE_END ) return RUNMODE_END;\n" );
 	buf.PutStr( "    code_next();\n" );
 	buf.PutStr( "    switch( cmd ) {\n" );
 	for ( size_t i = 0; i < module.functions.size(); ++i ) {
@@ -1082,6 +1318,10 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 						buf.PutStr( "];\n" );
 					}
 				}
+			} else if ( param.base_type == "label" ) {
+				buf.PutStr( "        unsigned short *" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = code_getlb();\n" );
 			} else {
 				buf.PutStr( "        " );
 				buf.PutStr( param.base_type.c_str() );
@@ -1139,9 +1379,14 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 	buf.PutStr( "        puterror( HSPERR_UNSUPPORTED_FUNCTION );\n" );
 	buf.PutStr( "        break;\n" );
 	buf.PutStr( "    }\n" );
-	buf.PutStr( "    return RUNMODE_RUN;\n" );
+	buf.PutStr( "    return ctx->runmode;\n" );
 	buf.PutStr( "}\n\n" );
 	buf.PutStr( "static void *reffunc( int *type_res, int cmd )\n{\n" );
+	buf.PutStr( "    if ( ctx->runmode == RUNMODE_END ) {\n" );
+	buf.PutStr( "        puterror( HSPERR_NONE );\n" );
+	buf.PutStr( "        *type_res = HSPVAR_FLAG_INT;\n" );
+	buf.PutStr( "        return &chsp_plugin_ref_int;\n" );
+	buf.PutStr( "    }\n" );
 	buf.PutStr( "    if ( *type != TYPE_MARK ) puterror( HSPERR_INVALID_FUNCPARAM );\n" );
 	buf.PutStr( "    if ( *val != '(' ) puterror( HSPERR_INVALID_FUNCPARAM );\n" );
 	buf.PutStr( "    code_next();\n" );
@@ -1195,6 +1440,10 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 						buf.PutStr( "];\n" );
 					}
 				}
+			} else if ( param.base_type == "label" ) {
+				buf.PutStr( "        unsigned short *" );
+				buf.PutStr( var_name.c_str() );
+				buf.PutStr( " = code_getlb();\n" );
 			} else {
 				buf.PutStr( "        " );
 				buf.PutStr( param.base_type.c_str() );
@@ -1247,6 +1496,11 @@ bool WritePluginNativeDispatch( CMemBuf &buf, const ChspAstModule &module,
 	buf.PutStr( "        puterror( HSPERR_UNSUPPORTED_FUNCTION );\n" );
 	buf.PutStr( "        break;\n" );
 	buf.PutStr( "    }\n" );
+	buf.PutStr( "    if ( ctx->runmode == RUNMODE_END ) {\n" );
+	buf.PutStr( "        puterror( HSPERR_NONE );\n" );
+	buf.PutStr( "        *type_res = HSPVAR_FLAG_INT;\n" );
+	buf.PutStr( "        return &chsp_plugin_ref_int;\n" );
+	buf.PutStr( "    }\n" );
 	buf.PutStr( "    if ( *type != TYPE_MARK ) puterror( HSPERR_INVALID_FUNCPARAM );\n" );
 	buf.PutStr( "    if ( *val != ')' ) puterror( HSPERR_INVALID_FUNCPARAM );\n" );
 	buf.PutStr( "    code_next();\n" );
@@ -1290,6 +1544,11 @@ void WriteNativePreamble( CMemBuf &native_out, ChspNativeTarget target )
 {
 	native_out.PutStr( "// Generated by OpenHSP cHSP frontend. Do not edit this file directly.\n" );
 	if ( target == ChspNativeTarget::Plugin ) {
+#ifdef HSP64
+		native_out.PutStr( "#ifndef HSP64\n#define HSP64\n#endif\n" );
+#else
+		native_out.PutStr( "#ifdef HSP64\n#undef HSP64\n#endif\n" );
+#endif
 		native_out.PutStr( "#include <stdlib.h>\n" );
 		native_out.PutStr( "#include \"common/chsp/chsp_runtime.h\"\n" );
 		native_out.PutStr( "#include \"common/chsp/hsp3plugin.h\"\n" );

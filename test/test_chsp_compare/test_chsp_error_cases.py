@@ -457,6 +457,311 @@ class ChspDimCommandErrorTest(ChspErrorTestBase):
         )
 
 
+class ChspLabelGosubErrorTest(ChspErrorTestBase):
+    """label 引数型および gosub コマンドの異常系テスト"""
+
+    def test_label_param_on_target_c_unsupported(self) -> None:
+        """target=c で label 引数型を使用するとコンパイルエラーになること"""
+        code = """#chsp_module "label_target_c" target=c
+#chsp_deffunc callback_runner label cb
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "target=c での label 型引数でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "label parameters are only supported in target=plugin" in combined_out,
+            f"target=plugin 限定エラーが出力されること: {combined_out}",
+        )
+
+    def test_gosub_on_target_c_unsupported(self) -> None:
+        """target=c で gosub 命令を使用するとコンパイルエラーになること"""
+        code = """#chsp_module "gosub_target_c" target=c
+#chsp_deffunc runner int a
+    gosub a
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "target=c での gosub でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "gosub is only supported in target=plugin" in combined_out,
+            f"target=plugin 限定エラーが出力されること: {combined_out}",
+        )
+
+    def test_gosub_missing_argument(self) -> None:
+        """gosub 命令に引数が指定されていない場合コンパイルエラーになること"""
+        code = """#chsp_module "gosub_no_arg"
+#chsp_deffunc runner
+    gosub
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "引数なし gosub でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "gosub requires a label identifier argument" in combined_out,
+            f"引数要求エラーが出力されること: {combined_out}",
+        )
+
+    def test_gosub_unknown_variable(self) -> None:
+        """引数リストに存在しない変数名を gosub に指定するとエラーになること"""
+        code = """#chsp_module "gosub_unknown_var"
+#chsp_deffunc runner label cb
+    gosub unknown_cb
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "未定義変数 gosub でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "not found in function parameters" in combined_out,
+            f"パラメータ未発見エラーが出力されること: {combined_out}",
+        )
+
+    def test_gosub_type_mismatch(self) -> None:
+        """label 型以外の引数を gosub に指定するとエラーになること"""
+        code = """#chsp_module "gosub_type_mismatch"
+#chsp_deffunc runner int a
+    gosub a
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "型不一致 gosub でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "type mismatch: gosub requires label" in combined_out,
+            f"型不一致エラーが出力されること: {combined_out}",
+        )
+
+    def test_gosub_on_local_variable(self) -> None:
+        """local 変数を gosub に指定するとエラーになること"""
+        code = """#chsp_module "gosub_local"
+#chsp_deffunc runner local[int] a
+    gosub a
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code)
+        self.assertNotEqual(0, proc.returncode, "local変数に対する gosub でコンパイルが失敗すること")
+        combined_out = proc.stdout + proc.stderr
+        self.assertTrue(
+            "cannot be used on local variable" in combined_out,
+            f"local変数エラーが出力されること: {combined_out}",
+        )
+
+    def test_callback_termination_propagation_codegen(self) -> None:
+        """コールバック中断(RUNMODE_END)がネイティブ呼び出し元、代入、if、repeat、ディスパッチ関数へ正しく伝搬するコードが生成されること"""
+        code = """#include "hsp3cl.as"
+#chsp_module "term_codegen"
+#chsp_defcfunc helper_fn label cb -> int
+    gosub cb
+    return 10
+#chsp_end
+
+#chsp_deffunc helper_cmd label cb
+    gosub cb
+    return
+#chsp_end
+
+#chsp_deffunc caller_cmd label cb
+    helper_cmd cb
+    return
+#chsp_end
+
+#chsp_deffunc caller_assign label cb, local[int] x
+    x = helper_fn(cb)
+    return
+#chsp_end
+
+#chsp_deffunc caller_if label cb
+    if ( helper_fn(cb) > 0 ) {
+        helper_cmd cb
+    }
+    return
+#chsp_end
+
+#chsp_deffunc caller_repeat label cb
+    repeat helper_fn(cb)
+        helper_cmd cb
+    loop
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, source_path = self.run_chsp_compile(code, extra_flags=["--chsp-compile=none"])
+        self.assertEqual(0, proc.returncode, f"コンパイルが成功すること: {proc.stdout}\n{proc.stderr}")
+        c_path = Path(self.tmpdir) / "term_codegen.c"
+        self.assertTrue(c_path.exists(), f"生成されたCソースが存在すること: {c_path}")
+        c_code = c_path.read_text(encoding="utf-8")
+
+        # 1. 各関数のエントリガード
+        self.assertIn("if ( ctx->runmode == RUNMODE_END ) return 0;", c_code)
+        self.assertIn("if ( ctx->runmode == RUNMODE_END ) return;", c_code)
+
+        # 2. caller_cmd 内で helper_cmd 呼び出し直後のガード
+        self.assertRegex(
+            c_code,
+            r"chsp_func_helper__cmd\([^)]*\);\s*if\s*\(\s*ctx->runmode\s*==\s*RUNMODE_END\s*\)\s*return;",
+        )
+
+        # 3. caller_assign 内で helper_fn 呼び出し代入直後のガード
+        self.assertRegex(
+            c_code,
+            r"chsp_var_caller__assign_\d+_x\s*=\s*chsp_func_helper__fn\([^)]*\);\s*if\s*\(\s*ctx->runmode\s*==\s*RUNMODE_END\s*\)\s*return;",
+        )
+
+        # 4. caller_if 内で条件式の一時変数評価と分岐前のガード
+        self.assertRegex(
+            c_code,
+            r"int\s+_chsp_cond_\d+\s*=\s*\(chsp_func_helper__fn\([^)]*\)\s*>\s*0\);\s*if\s*\(\s*ctx->runmode\s*==\s*RUNMODE_END\s*\)\s*return;\s*if\s*\(_chsp_cond_\d+\)",
+        )
+
+        # 5. caller_repeat 内でループ回数の一時変数評価とループ前のガード
+        self.assertRegex(
+            c_code,
+            r"int\s+_chsp_cnt_max_\d+\s*=\s*chsp_func_helper__fn\([^)]*\);\s*if\s*\(\s*ctx->runmode\s*==\s*RUNMODE_END\s*\)\s*return;",
+        )
+
+        # 6. cmdfunc で return ctx->runmode
+        self.assertIn("return ctx->runmode;", c_code)
+
+        # 7. reffunc での RUNMODE_END ガード
+        self.assertIn("if ( ctx->runmode == RUNMODE_END ) {\n        puterror( HSPERR_NONE );", c_code)
+
+    def test_callback_termination_propagation_runtime(self) -> None:
+        """コールバックで end が実行された際、ネストした呼び出し元関数が中断を正しく伝搬して後続文を実行しないこと"""
+        code = """#include "hsp3cl.as"
+#chsp_module "term_runtime"
+#chsp_deffunc helper array[int] flag, label cb
+    gosub cb
+    flag(0) = 999
+    return
+#chsp_end
+
+#chsp_deffunc caller array[int] flag, label cb
+    helper flag, cb
+    flag(1) = 888
+    return
+#chsp_end
+#chsp_module_end
+
+dim flag, 2
+flag(0) = 10
+flag(1) = 20
+
+mes "START"
+caller flag, *on_cb
+mes "AFTER_CALLER"
+end
+
+*on_cb
+mes "IN_CALLBACK_TERMINATING"
+end
+"""
+        ax_path = Path(self.tmpdir) / "term_runtime.ax"
+        c_path = Path(self.tmpdir) / "term_runtime.c"
+        so_path = Path(self.tmpdir) / "term_runtime.so"
+
+        # Cソース生成
+        proc, _ = self.run_chsp_compile(
+            code,
+            extra_flags=["--chsp-compile=none", "-o" + str(ax_path.name)],
+            source_name="term_runtime.chsp",
+        )
+        self.assertEqual(0, proc.returncode, f"コンパイル成功: {proc.stdout}\n{proc.stderr}")
+
+        # gcc で共有ライブラリをビルド
+        build_cmd = ["gcc", "-std=c11", "-shared", "-fPIC", f"-I{ROOT}", "-o", str(so_path), str(c_path)]
+        build_res = subprocess.run(build_cmd, capture_output=True, text=True)
+        self.assertEqual(0, build_res.returncode, f"gccビルド成功: {build_res.stdout}\n{build_res.stderr}")
+
+        # hsp3cl で実行
+        env = os.environ.copy()
+        env["LD_LIBRARY_PATH"] = str(self.tmpdir)
+        run_res = subprocess.run(
+            [str(HSP3CL), str(ax_path.name)],
+            cwd=self.tmpdir,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        self.assertEqual(0, run_res.returncode, f"正常終了すること: {run_res.stdout}\n{run_res.stderr}")
+        combined_run = run_res.stdout + run_res.stderr
+        self.assertIn("START", combined_run)
+        self.assertIn("IN_CALLBACK_TERMINATING", combined_run)
+        # 後続文が実行されていないこと
+        self.assertNotIn("AFTER_CALLER", combined_run)
+
+
+class ChspHsp64AbiTest(ChspErrorTestBase):
+    """ホストランタイムの明示的なHSP64 ABI選択が保持され、ポインタ幅のみから導出されないことのテスト"""
+
+    def test_plugin_preamble_does_not_derive_hsp64_from_pointer_width(self) -> None:
+        """生成されるプラグイン用Cソースのpreambleが、ポインタ幅/アーキテクチャ判定(__x86_64__等)からHSP64を強制定義しないこと"""
+        code = """#include "hsp3cl.as"
+#chsp_module "hsp64_abi_test"
+#chsp_deffunc dummy
+    return
+#chsp_end
+#chsp_module_end
+"""
+        proc, _ = self.run_chsp_compile(code, extra_flags=["--chsp-compile=none"])
+        self.assertEqual(0, proc.returncode, f"コンパイル成功: {proc.stdout}\n{proc.stderr}")
+        c_path = Path(self.tmpdir) / "hsp64_abi_test.c"
+        self.assertTrue(c_path.exists(), f"生成されたCソースが存在すること: {c_path}")
+        c_code = c_path.read_text(encoding="utf-8")
+
+        # アーキテクチャやポインタ幅判定マクロからHSP64を強制定義していないこと
+        self.assertNotIn("__x86_64__", c_code)
+        self.assertNotIn("_M_X64", c_code)
+        self.assertNotIn("__aarch64__", c_code)
+        self.assertNotIn("__UINTPTR_MAX__", c_code)
+
+        # 現在のビルド環境 (HSP64が有効) では明示的な #define HSP64 が出力されること
+        self.assertIn("#ifndef HSP64\n#define HSP64\n#endif", c_code)
+
+    def test_chsp_c_emitter_non_hsp64_build_undefines_hsp64(self) -> None:
+        """HSP64が無効なホスト環境ビルドでは、生成コードでHSP64が定義されず未定義化されること"""
+        obj_path = Path(self.tmpdir) / "emitter_no_hsp64.o"
+        compile_cmd = [
+            "g++",
+            "-Wno-write-strings",
+            "-std=c++17",
+            "--exec-charset=UTF-8",
+            "-DHSPLINUX",
+            "-DHSPDEBUG",
+            "-DHSP_COM_UNSUPPORTED",
+            "-Werror=int-to-pointer-cast",
+            "-Isrc/chsp",
+            "-Isrc/hspcmp",
+            "-Isrc/hsp3",
+            "-c",
+            "src/chsp/chsp_c_emitter.cpp",
+            "-o",
+            str(obj_path),
+        ]
+        res = subprocess.run(compile_cmd, cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(0, res.returncode, f"非HSP64でのemitterコンパイルが成功すること: {res.stderr}")
+
+        strings_out = subprocess.check_output(["strings", str(obj_path)]).decode("latin-1")
+        # 非HSP64ビルドでは #undef HSP64 が出力対象文字列となり、#define HSP64 や __x86_64__ は含まれない
+        self.assertIn("#undef HSP64", strings_out)
+        self.assertNotIn("#define HSP64", strings_out)
+        self.assertNotIn("__x86_64__", strings_out)
+
+
 class ChspOutsideDirectiveErrorTest(ChspErrorTestBase):
     """4. hsp側への新命令追加を想定したchspディレクティブ外の文法エラーおよびHSP動的型境界のテスト"""
 

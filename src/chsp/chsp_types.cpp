@@ -324,6 +324,9 @@ std::string ToHspParamType( const ChspAstParam &param )
 	if ( param.base_type == "double" ) {
 		return "double";
 	}
+	if ( param.base_type == "label" ) {
+		return "label";
+	}
 	return "var";
 }
 
@@ -341,6 +344,9 @@ std::string ToPublicHspParamType( const ChspAstParam &param )
 	if ( param.base_type == "double" ) {
 		return "double";
 	}
+	if ( param.base_type == "label" ) {
+		return "label";
+	}
 	return "var";
 }
 
@@ -353,6 +359,9 @@ std::string ToCppType( const ChspAstParam &param )
 {
 	if ( param.is_array ) {
 		return param.base_type + " *";
+	}
+	if ( param.base_type == "label" ) {
+		return "unsigned short *";
 	}
 	return param.base_type;
 }

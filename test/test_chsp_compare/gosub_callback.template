@@ -1,0 +1,73 @@
+@@ meta
+compare_default = hsp, chsp_p
+compare_emit_c = chsp_p
+compare_libtcc = chsp_p
+
+@@ header
+#include "hsp3cl.as"
+
+@@ hsp_module
+#module
+
+#deffunc test_loop_callback array a, int n, label cb
+	repeat n
+		a(0) = cnt
+		gosub cb
+		if ( stat != 0 ) {
+			break
+		}
+	loop
+	return
+
+#defcfunc test_calc_callback int val, label cb
+	gosub cb
+	return val + stat
+
+#global
+
+@@ chsp_p_module
+#chsp_module "gosub_callback_chsp_p"
+
+#chsp_deffunc test_loop_callback array[int] a, int n, label cb
+	repeat n
+		a(0) = cnt
+		gosub cb
+		if ( stat != 0 ) {
+			break
+		}
+	loop
+	return
+#chsp_end
+
+#chsp_defcfunc test_calc_callback int val, label cb -> int
+	gosub cb
+	return val + stat
+#chsp_end
+
+#chsp_module_end
+
+@@ main
+dim a, 1
+test_loop_callback a, 10, *on_tick
+mes "loop done, a(0)=" + a(0)
+
+ans = test_calc_callback( 200, *on_calc )
+mes "ans=" + ans
+end
+
+*on_tick
+mes "on_tick: cnt=" + a(0)
+if ( a(0) == 3 ) {
+	return 1
+}
+return 0
+
+*on_calc
+mes "on_calc"
+return 77
+
+@@ hsp
+{{header}}{{hsp_module}}{{main}}
+
+@@ chsp_p
+{{header}}{{chsp_p_module}}{{main}}

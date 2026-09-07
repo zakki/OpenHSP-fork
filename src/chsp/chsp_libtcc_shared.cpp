@@ -112,7 +112,7 @@ static int compile_one_library_with_libtcc( CMemBuf *errbuf, const std::filesyst
 		print_error( errbuf, "#libtcc failed to configure DLL output." );
 		return -1;
 	}
-#if defined( HSP64 ) || ( defined( __UINTPTR_MAX__ ) && __UINTPTR_MAX__ == 0xffffffffffffffffu ) || ( UINTPTR_MAX == 0xffffffffffffffffu )
+#if defined( HSP64 )
 	tcc_define_symbol( tcc, "HSP64", "1" );
 #endif
 #if defined( HSPLINUX )

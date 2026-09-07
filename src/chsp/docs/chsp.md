@@ -30,6 +30,7 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
   - `local[double]`
   - `local[int[n]]`
   - `local[double[n]]`
+  - `label` (`target=plugin` のみ。HSP側のラベルを引数として受け取り、コールバック呼び出しに利用可能)
 - 関数
   - `#chsp_deffunc`
   - `#chsp_defcfunc`
@@ -38,6 +39,7 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
   - `if` / `else if` / `else`
   - `if 条件 : 文` の1行形式
   - `repeat` / `loop` / `continue` / `break`
+  - `gosub <label>` (`target=plugin` のみ。渡された `label` 型引数をコールバックとしてサブルーチン呼び出し)
   - `return`
 - 式
   - 算術演算
@@ -57,7 +59,7 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 
 - `str` / `array[str]`
 - cHSP ブロック内の `ddim` / `sdim`
-- cHSP ブロックから通常の HSP 関数を呼ぶこと
+- cHSP ブロックから通常の HSP 関数を直接呼ぶこと（ただし `target=plugin` では `label` 引数を介した `gosub` コールバックが可能）
 - cHSP ブロック内部での HSP プリプロセッサのマクロ展開
 - `gettime` の cHSP ブロック内利用
 - HSP の一般的な「任意位置の引数省略」
@@ -100,8 +102,9 @@ include の再帰展開、条件付き include・ガードの評価、include �
 ### 変数共有
 
 - 引数として HSP の数値と数値配列をネイティブ側に渡します。
+- `target=plugin` では、引数として `label` 型（HSPのラベルポインタ）を渡すことができます。
 - HSP側のグローバル変数はネイティブ側では利用できません。
-- cHSP ブロックから通常の HSP 関数は呼べません。
+- cHSP ブロックから通常の HSP 関数は直接呼べませんが、`target=plugin` では `label` 引数を介した `gosub` コールバックが利用可能です。
 
 ## 設計
 
@@ -205,6 +208,41 @@ static int can_open_self(void) {
 - 1 行に 1 つのライブラリ名を書きます。複数必要な場合は複数行書きます。
 - Linux では `#chsp_clink "dl"` のように、通常の `-l<name>` に相当する `<name>` 部分だけを書きます。
 - `#chsp_clink` は `target=c` / `target=plugin` のどちらでも使えます。
+
+#### label 型引数と gosub コールバック (`target=plugin`)
+
+`target=plugin` では、HSP のラベルを関数の引数として受け取り、cHSP 側から `gosub` 命令を実行して HSP 側のサブルーチンをコールバック呼び出しできます。
+
+```hsp
+#chsp_module "callback_demo" target=plugin
+
+#chsp_deffunc iterate_with_callback int n, label cb
+    repeat n
+        gosub cb
+        if stat != 0 {
+            break
+        }
+    loop
+    return
+#chsp_end
+
+#chsp_module_end
+
+// HSP側スクリプト
+iterate_with_callback 5, *on_step
+stop
+
+*on_step
+    mes "Callback called: cnt=" + cnt
+    return 0
+```
+
+- **型と制約**:
+  - `label` 型引数および `gosub` 命令は `target=plugin` 専用です（`target=c` ではコンパイルエラーになります）。
+  - `gosub` の引数には、関数の引数リストで宣言された `label` 型変数のみ指定できます（ローカル変数、配列、即値ラベルは不可）。
+- **戻り値と制御**:
+  - HSP サブルーチン側で `return <値>` を実行すると、その戻り値が `stat`（`ctx->stat`）に格納されるため、cHSP スクリプト内から `stat` を直接参照してループの中断や条件分岐に利用できます。
+  - HSP サブルーチン内で `end` 等により実行が終了した場合、ランタイム終了状態（`ctx->runmode == RUNMODE_END`）を検知して cHSP 側も安全に関数を終了します。
 
 #### mixed target を含む `.chsp` の出力方針
 
