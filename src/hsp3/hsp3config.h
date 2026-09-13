@@ -8,9 +8,9 @@
 //		システム関連ラベル
 //
 #define HSPTITLE "Hot Soup Processor ver."
-#define hspver "3.8beta1"
-#define mvscode 1		// minor version code
-#define vercode 0x3801	// version code
+#define hspver "3.8beta2"
+#define mvscode 2		// minor version code
+#define vercode 0x3802	// version code
 
 #define HSPERR_HANDLE		// HSPエラー例外を有効にします
 #define SYSERR_HANDLE		// システムエラー例外を有効にします
@@ -62,6 +62,10 @@
 #if defined(HSPMAC)|defined(HSPIOS)|defined(HSPNDK)|defined(HSPLINUX)|defined(HSPEMSCRIPTEN)
 #define HSPGCC			// GCC使用フラグ
 #define HSPUTF8			// UTF8使用フラグ
+#endif
+
+#if defined(HSPUTF8)
+#define HSP_PATHIO_UTF8		// UTF-8 path I/O flag
 #endif
 
 #if defined(HSPEMSCRIPTEN)
