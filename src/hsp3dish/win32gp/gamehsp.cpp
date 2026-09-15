@@ -1727,6 +1727,8 @@ int gamehsp::setObjectPrm( int objid, int prmid, int value, int method )
 		break;
 	}
 
+	if ((prmid == GPOBJ_PRMSET_USEGPMAT) && (newvalue == *base_i)) return 0;
+
 	*base_i = newvalue;
 
 	switch (prmid)
@@ -2395,6 +2397,7 @@ int gamehsp::makeNewModelWithMat( gpobj *obj, Mesh *mesh, int matid )
 
 	//Alertf("[%x]===",new_material);
 	makeNewModel(obj, mesh, new_material);
+	SAFE_RELEASE(new_material);
 
 	obj->_usegpmat = matid;
 	return 0;
@@ -2591,6 +2594,7 @@ int gamehsp::overwriteNodeMaterialByMatID(Node *node, int matid, int objid)
 			obj->updateParameter(material);
 		}
 	}
+	SAFE_RELEASE(material);
 	return 0;
 }
 
