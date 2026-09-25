@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../membuf.h"
+#include "../hspcmp/membuf.h"
 #include "chsp_types.h"
 #include "logger.h"
 

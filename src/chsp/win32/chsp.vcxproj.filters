@@ -24,40 +24,40 @@
     <ClCompile Include="..\..\hsp3\win32gui\supio_win.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_builtin_map.cpp">
+    <ClCompile Include="..\chsp_builtin_map.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_frontend.cpp">
+    <ClCompile Include="..\chsp_frontend.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_emitter.cpp">
+    <ClCompile Include="..\chsp_emitter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_types.cpp">
+    <ClCompile Include="..\chsp_types.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_hsp_emitter.cpp">
+    <ClCompile Include="..\chsp_hsp_emitter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_c_emitter.cpp">
+    <ClCompile Include="..\chsp_c_emitter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_parser.cpp">
+    <ClCompile Include="..\chsp_parser.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_libtcc_shared.cpp">
+    <ClCompile Include="..\chsp_libtcc_shared.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_pipeline.cpp">
+    <ClCompile Include="..\chsp_pipeline.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\chsp_lexer.cpp">
+    <ClCompile Include="..\chsp_lexer.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\lexer_util.cpp">
+    <ClCompile Include="..\lexer_util.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hspcmp\chsp\logger.cpp">
+    <ClCompile Include="..\logger.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="..\..\hspcmp\comutil.cpp">
@@ -89,49 +89,49 @@
     <ClInclude Include="..\..\hsp3\win32gui\supio_win.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_builtin_map.h">
+    <ClInclude Include="..\chsp_builtin_map.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_frontend.h">
+    <ClInclude Include="..\chsp_frontend.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_ast.h">
+    <ClInclude Include="..\chsp_ast.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_emitter.h">
+    <ClInclude Include="..\chsp_emitter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_types.h">
+    <ClInclude Include="..\chsp_types.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_hsp_emitter.h">
+    <ClInclude Include="..\chsp_hsp_emitter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_c_emitter.h">
+    <ClInclude Include="..\chsp_c_emitter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_parser.h">
+    <ClInclude Include="..\chsp_parser.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_libtcc_shared.h">
+    <ClInclude Include="..\chsp_libtcc_shared.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_pipeline.h">
+    <ClInclude Include="..\chsp_pipeline.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_util.h">
+    <ClInclude Include="..\chsp_util.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\chsp_lexer.h">
+    <ClInclude Include="..\chsp_lexer.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\lexer_util.h">
+    <ClInclude Include="..\lexer_util.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\logger.h">
+    <ClInclude Include="..\logger.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hspcmp\chsp\token_def.h">
+    <ClInclude Include="..\token_def.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="..\..\hspcmp\comutil.h">

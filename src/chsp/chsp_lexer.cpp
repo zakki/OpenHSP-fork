@@ -12,17 +12,17 @@
 
 #include <utility>
 
-#include "../../hsp3/hsp3config.h"
-#include "../../hsp3/hsp3debug.h"
-#include "../../hsp3/hsp3struct.h"
+#include "../hsp3/hsp3config.h"
+#include "../hsp3/hsp3debug.h"
+#include "../hsp3/hsp3struct.h"
 
-#include "../label.h"
-#include "../membuf.h"
-#include "../supio.h"
-#include "../tagstack.h"
+#include "../hspcmp/label.h"
+#include "../hspcmp/membuf.h"
+#include "../hspcmp/supio.h"
+#include "../hspcmp/tagstack.h"
 #include "chsp_lexer.h"
 
-#include "../errormsg.h"
+#include "../hspcmp/errormsg.h"
 
 //-------------------------------------------------------------
 //		Routines

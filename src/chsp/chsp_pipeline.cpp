@@ -5,8 +5,8 @@
 #include <fstream>
 #include <sstream>
 
-#include "../../hsp3/hsp3config.h"
-#include "../membuf.h"
+#include "../hsp3/hsp3config.h"
+#include "../hspcmp/membuf.h"
 #include "chsp_frontend.h"
 #include "chsp_libtcc_shared.h"
 #include "chsp_util.h"

@@ -11,12 +11,12 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "../../hsp3/hsp3config.h"
-#include "../ahtobj.h"
-#include "../label.h"
-#include "../membuf.h"
-#include "../supio.h"
-#include "../tagstack.h"
+#include "../hsp3/hsp3config.h"
+#include "../hspcmp/ahtobj.h"
+#include "../hspcmp/label.h"
+#include "../hspcmp/membuf.h"
+#include "../hspcmp/supio.h"
+#include "../hspcmp/tagstack.h"
 #include "logger.h"
 
 enum

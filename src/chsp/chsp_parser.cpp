@@ -11,23 +11,23 @@
 #include <cstring>
 #include <sstream>
 
-#include "../../hsp3/hsp3config.h"
-#include "../../hsp3/hsp3debug.h"
-#include "../../hsp3/hsp3struct.h"
-#include "../../hsp3/strnote.h"
+#include "../hsp3/hsp3config.h"
+#include "../hsp3/hsp3debug.h"
+#include "../hsp3/hsp3struct.h"
+#include "../hsp3/strnote.h"
 
 #include "chsp_util.h"
 #include "chsp_parser.h"
 #include "chsp_lexer.h"
 // #include "codegen_writer.h"
-#include "../comutil.h"
-#include "../label.h"
-#include "../membuf.h"
-#include "../supio.h"
-#include "../tagstack.h"
+#include "../hspcmp/comutil.h"
+#include "../hspcmp/label.h"
+#include "../hspcmp/membuf.h"
+#include "../hspcmp/supio.h"
+#include "../hspcmp/tagstack.h"
 #include "token_def.h"
 
-#include "../errormsg.h"
+#include "../hspcmp/errormsg.h"
 
 //-------------------------------------------------------------
 //		Routines

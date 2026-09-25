@@ -88,18 +88,18 @@ OBJS_CMP = \
 
 OBJS_CHSP = \
 	src/chsp/chsp_main.chsp.o \
-	src/hspcmp/chsp/chsp_pipeline.chsp.o \
-	src/hspcmp/chsp/chsp_lexer.chsp.o \
-	src/hspcmp/chsp/chsp_libtcc_shared.chsp.o \
-	src/hspcmp/chsp/chsp_builtin_map.chsp.o \
-	src/hspcmp/chsp/chsp_frontend.chsp.o \
-	src/hspcmp/chsp/chsp_parser.chsp.o \
-	src/hspcmp/chsp/chsp_emitter.chsp.o \
-	src/hspcmp/chsp/chsp_types.chsp.o \
-	src/hspcmp/chsp/chsp_hsp_emitter.chsp.o \
-	src/hspcmp/chsp/chsp_c_emitter.chsp.o \
-	src/hspcmp/chsp/lexer_util.chsp.o \
-	src/hspcmp/chsp/logger.chsp.o \
+	src/chsp/chsp_pipeline.chsp.o \
+	src/chsp/chsp_lexer.chsp.o \
+	src/chsp/chsp_libtcc_shared.chsp.o \
+	src/chsp/chsp_builtin_map.chsp.o \
+	src/chsp/chsp_frontend.chsp.o \
+	src/chsp/chsp_parser.chsp.o \
+	src/chsp/chsp_emitter.chsp.o \
+	src/chsp/chsp_types.chsp.o \
+	src/chsp/chsp_hsp_emitter.chsp.o \
+	src/chsp/chsp_c_emitter.chsp.o \
+	src/chsp/lexer_util.chsp.o \
+	src/chsp/logger.chsp.o \
 	src/hspcmp/comutil.chsp.o \
 	src/hspcmp/errormsg.chsp.o \
 	src/hspcmp/hspcmd.chsp.o \

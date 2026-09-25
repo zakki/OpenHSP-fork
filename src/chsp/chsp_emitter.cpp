@@ -9,8 +9,8 @@
 #include <string>
 #include <vector>
 
-#include "../membuf.h"
-#include "../membuf.h"
+#include "../hspcmp/membuf.h"
+#include "../hspcmp/membuf.h"
 #include "chsp_c_emitter.h"
 #include "chsp_hsp_emitter.h"
 #include "chsp_types.h"

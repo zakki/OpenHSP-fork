@@ -15,7 +15,7 @@
 
 #include <string>
 #include <vector>
-#include "../../hspcmp/chsp/chsp_pipeline.h"
+#include "../chsp_pipeline.h"
 #include "../../hspcmp/supio.h"
 
 //	VC++の場合

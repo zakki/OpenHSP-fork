@@ -4,14 +4,14 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "../../hsp3/hsp3config.h"
+#include "../hsp3/hsp3config.h"
 #include "chsp_frontend.h"
 
 #include <filesystem>
 #include <memory>
 #include <vector>
 
-#include "../membuf.h"
+#include "../hspcmp/membuf.h"
 #include "chsp_builtin_map.h"
 #include "chsp_util.h"
 #include "chsp_emitter.h"

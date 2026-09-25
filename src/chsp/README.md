@@ -63,7 +63,7 @@ make test-chsp
 
 ## 基本仕様と構文
 
-詳細な仕様および対応命令一覧は [docs/chsp.md](../hspcmp/docs/chsp.md) を参照してください。
+詳細な仕様および対応命令一覧は [docs/chsp.md](docs/chsp.md) を参照してください。
 
 ### モジュールと関数定義
 
@@ -160,5 +160,5 @@ hsp3cl ao_opt.ax
 
 ## 関連ドキュメント
 
-- [docs/chsp.md](../hspcmp/docs/chsp.md): cHSP の言語仕様・文法・対応構文リファレンス
-- [docs/chsp-internals.md](../hspcmp/docs/chsp-internals.md): コンパイラ内部構造・AST エミッター・バックエンド設計
+- [docs/chsp.md](docs/chsp.md): cHSP の言語仕様・文法・対応構文リファレンス
+- [docs/chsp-internals.md](docs/chsp-internals.md): コンパイラ内部構造・AST エミッター・バックエンド設計

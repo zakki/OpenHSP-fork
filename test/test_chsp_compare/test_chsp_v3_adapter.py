@@ -18,13 +18,13 @@ from run_test_matrix import EMIT_C_HSPCMP_FLAGS, HSPCMP
 
 ROOT = THIS_DIR.parents[1]
 MAKEFILE = ROOT / "makefile"
-V2_FRONTEND = ROOT / "src/hspcmp/chsp/chsp_frontend.cpp"
-CHSP_UTIL_H = ROOT / "src/hspcmp/chsp/chsp_util.h"
-V2_EMITTER_CPP = ROOT / "src/hspcmp/chsp/chsp_frontend_v2_emitter.cpp"
-V2_PARSER_CPP = ROOT / "src/hspcmp/chsp/chsp_frontend_v2_parser.cpp"
-V3_BRIDGE_H = ROOT / "src/hspcmp/chsp/chsp_frontend_v3_bridge.h"
-V3_PARSER_CPP = ROOT / "src/hspcmp/chsp/chsp_parser.cpp"
-V3_PARSER_H = ROOT / "src/hspcmp/chsp/chsp_parser.h"
+V2_FRONTEND = ROOT / "src/chsp/chsp_frontend.cpp"
+CHSP_UTIL_H = ROOT / "src/chsp/chsp_util.h"
+V2_EMITTER_CPP = ROOT / "src/chsp/chsp_frontend_v2_emitter.cpp"
+V2_PARSER_CPP = ROOT / "src/chsp/chsp_frontend_v2_parser.cpp"
+V3_BRIDGE_H = ROOT / "src/chsp/chsp_frontend_v3_bridge.h"
+V3_PARSER_CPP = ROOT / "src/chsp/chsp_parser.cpp"
+V3_PARSER_H = ROOT / "src/chsp/chsp_parser.h"
 WIN32_VCXPROJ = ROOT / "src/chsp/win32/chsp.vcxproj"
 WIN32DLL_VCXPROJ = ROOT / "src/chsp/win32dll/hspcmp.vcxproj"
 

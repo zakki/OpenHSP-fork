@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <filesystem>
 
-#include "../membuf.h"
+#include "../hspcmp/membuf.h"
 #include "chsp_types.h"
 
 namespace chsp

@@ -13,7 +13,7 @@
 #include <process.h>
 #endif
 
-#include "../hspcmp/chsp/chsp_pipeline.h"
+#include "chsp_pipeline.h"
 
 static void usage()
 {

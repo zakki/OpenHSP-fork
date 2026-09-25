@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "../membuf.h"
+#include "../hspcmp/membuf.h"
 
 class CMemBuf;
 class CLabel;

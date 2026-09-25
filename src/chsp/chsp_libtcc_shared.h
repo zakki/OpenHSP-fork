@@ -1,8 +1,8 @@
 #ifndef CHSP_LIBTCC_SHARED_H
 #define CHSP_LIBTCC_SHARED_H
 
-#include "../../hsp3/hsp3config.h"
-#include "../membuf.h"
+#include "../hsp3/hsp3config.h"
+#include "../hspcmp/membuf.h"
 #include "chsp_frontend.h"
 
 #if defined( HSPLINUX ) || defined( HSPWIN )
