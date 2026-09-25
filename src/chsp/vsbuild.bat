@@ -7,4 +7,4 @@ if not exist Release mkdir Release
 
 copy /B /Y win32\Release\chsp.exe Release
 copy /B /Y win32dll\Release\hspcmp.dll Release
-copy /B /Y ..\hspcmp\extlib\tcc\libtcc.dll Release
+copy /B /Y extlib\tcc\libtcc.dll Release

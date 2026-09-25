@@ -84,6 +84,11 @@ jobs:
       run: |
         cmd /c vsbuild.bat
 
+    - name: Build chsp
+      working-directory: src/chsp
+      run: |
+        cmd /c vsbuild.bat
+
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -95,5 +100,6 @@ jobs:
           src/hsp3dish/Release64/**/*
           src/hspcmp/Release/**/*
           src/hspcmp/Release64/**/*
-          src/hspcmp/extlib/tcc
+          src/chsp/Release/**/*
+          src/chsp/extlib/tcc
           common

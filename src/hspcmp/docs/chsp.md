@@ -195,10 +195,10 @@ static int can_open_self(void) {
 
 Linux では `sample/chsp/ao_opt.c` と `sample/chsp/ao_opt.so`、Win32 では `sample\chsp\ao_opt.c` と `sample\chsp\ao_opt.dll` がまとめて生成されます。
 
-Win32 では `libtcc` のヘッダと import library を参照できるように、`src/hspcmp/win32/hspcmp.vcxproj` が `$(LIBTCC_DIR)\include` と `$(LIBTCC_DIR)\lib` を見に行きます。実行時の `libtcc` ランタイム探索は以下の順です。
+Win32 では `libtcc` のヘッダと import library を参照できるように、`src/chsp/win32/chsp.vcxproj` や `src/chsp/win32dll/hspcmp.vcxproj` が `src/chsp/extlib/tcc/libtcc` を見に行きます。実行時の `libtcc` ランタイム探索は以下の順です。
 
 - `LIBTCC_DIR`
-- `hspcmp.exe` と同じディレクトリの `tcc\`
+- 実行ファイルと同じディレクトリの `tcc\`
 
 ### 生成された `.c` のビルド方法
 
