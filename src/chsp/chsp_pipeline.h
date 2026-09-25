@@ -12,6 +12,8 @@ enum class ChspPipelineCompileMode {
 struct ChspPipelineOptions {
 	std::string source_path;
 	std::string output_ax_path;
+	// Nonempty selects library output instead of an intermediate HSP file.
+	std::string library_output_path;
 	std::string common_path;
 	ChspPipelineCompileMode compile_mode = ChspPipelineCompileMode::Libtcc;
 	bool debug_mode = false;
@@ -22,6 +24,7 @@ struct ChspPipelineResult {
 	bool has_chsp = false;
 	bool success = false;
 	std::string intermediate_hsp_path;
+	std::string generated_as_path;
 	std::vector<std::string> generated_c_files;
 	std::vector<std::string> generated_so_files;
 	std::string error_message;

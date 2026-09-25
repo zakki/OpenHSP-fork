@@ -20,13 +20,14 @@ static void usage()
 	printf( "OpenHSP cHSP Compiler Frontend ver 1.0\n" );
 	printf( "Usage: chsp [options] <source.chsp|source.hsp>\n" );
 	printf( "Options:\n" );
-	printf( "  -o<file>           Set output file (.ax)\n" );
+	printf( "  -o<file>           Set output file (.ax, or .as with --library)\n" );
 	printf( "  -d                 Add debug information\n" );
 	printf( "  -c                 HSP2.55 compatible mode\n" );
 	printf( "  -i                 Input UTF-8 source code\n" );
 	printf( "  -u                 Output UTF-8 strings\n" );
 	printf( "  --compath=<path>   Set common directory path\n" );
 	printf( "  --chsp-compile=libtcc|none (default: libtcc)\n" );
+	printf( "  --library         Generate an includable .as and native libraries; no .ax\n" );
 	printf( "  --keep-tmp         Keep intermediate .tmp.hsp file\n" );
 	printf( "  --hspcmp=<path>    Path to upstream hspcmp binary\n" );
 }
@@ -87,6 +88,7 @@ int main( int argc, char *argv[] )
 	ChspPipelineCompileMode compile_mode = ChspPipelineCompileMode::Libtcc;
 	bool debug_mode = false;
 	bool keep_tmp = false;
+	bool library_mode = false;
 	std::vector<std::string> passthrough_args;
 
 	for ( int i = 1; i < argc; ++i ) {
@@ -108,6 +110,10 @@ int main( int argc, char *argv[] )
 			}
 			if ( strncmp( arg, "--hspcmp=", 9 ) == 0 ) {
 				hspcmp_bin = arg + 9;
+				continue;
+			}
+			if ( strcmp( arg, "--library" ) == 0 ) {
+				library_mode = true;
 				continue;
 			}
 			if ( strcmp( arg, "--keep-tmp" ) == 0 ) {
@@ -147,7 +153,7 @@ int main( int argc, char *argv[] )
 
 	if ( output_ax.empty() ) {
 		std::filesystem::path sp( source_file );
-		output_ax = ( sp.parent_path() / ( sp.stem().string() + ".ax" ) ).string();
+		output_ax = ( sp.parent_path() / ( sp.stem().string() + ( library_mode ? ".as" : ".ax" ) ) ).string();
 	}
 
 	std::string resolved_hspcmp = find_hspcmp_executable( hspcmp_bin.c_str(), argv[0] );
@@ -155,6 +161,7 @@ int main( int argc, char *argv[] )
 	ChspPipelineOptions opts;
 	opts.source_path = source_file;
 	opts.output_ax_path = output_ax;
+	if ( library_mode ) opts.library_output_path = output_ax;
 	opts.common_path = compath;
 	opts.compile_mode = compile_mode;
 	opts.debug_mode = debug_mode;
@@ -165,6 +172,8 @@ int main( int argc, char *argv[] )
 		std::cerr << pipe_res.error_message << std::endl;
 		return 1;
 	}
+
+	if ( library_mode ) return 0;
 
 	std::string input_for_hspcmp = source_file;
 	if ( pipe_res.has_chsp ) {

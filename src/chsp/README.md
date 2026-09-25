@@ -44,7 +44,8 @@ make chsp
 
 | オプション | 説明 |
 | :--- | :--- |
-| `-o<file>` | 出力ファイル名 (`.ax`) を指定 |
+| `-o<file>` | 出力ファイル名を指定（通常は `.ax`、`--library` では `.as`） |
+| `--library` | include 用の `.as` とネイティブライブラリを生成。hspcmp への委譲・`.ax` 生成は行わない |
 | `-d` | デバッグ情報を付加 |
 | `--compath=<path>` | 共通ディレクトリを指定。CLI の既定値は作業ディレクトリ基準の `common/` |
 | `--chsp-compile=libtcc\|none` | `libtcc` は共有ライブラリまで生成（既定）。`none` は C ソースを生成し、共有ライブラリのコンパイルを省略 |
@@ -85,6 +86,33 @@ if ($LASTEXITCODE -eq 0) {
 実行結果は `42` です。`answer.ax`、`answer_native.c`、`answer_native.dll` と、`--keep-tmp` により保持される `answer.chsp.tmp.hsp` を確認できます。Windows の libtcc は `.def` を生成する場合もあります。既定の `target=plugin` では `#regcmd` / `#cmd` を含む呼び出しコードを生成し、`target=c` では `#uselib` / `#func` / `#cfunc` を使用します。
 
 `--compath` を省略すると、インストール先ではなく作業ディレクトリの `common/` を参照します。別ディレクトリから実行する場合は、上のように絶対パスと末尾の `/` を指定してください。`--chsp-compile=none` は生成 C コードの確認や外部コンパイラでのビルドに使います。通常の hspcmp への委譲は行われますが、実行に必要な共有ライブラリは別途用意する必要があります。
+
+#### include 用ライブラリの生成
+
+`--library` を指定すると、入口ファイルの cHSP 定義をネイティブ化し、通常の HSP から include できる `.as` を出力します。`--keep-tmp` と委譲先の `hspcmp.exe` は不要です。
+
+例えば上の `answer.hsp` から末尾の `mes answer(41)` と `end` を除いた定義を `answer.chsp` に保存し、次を実行します。
+
+```powershell
+& "C:/hsp37/chsp.exe" --library --compath=C:/hsp37/common/ answer.chsp
+```
+
+`answer.as` と `answer_native.c`、`answer_native.dll` が生成されます。通常の hspcmp でビルドする利用側は次のように記述できます。
+
+```hsp
+#include "answer.as"
+mes answer(41)
+end
+```
+
+- `.as` は入力名を基に生成します。`-oout/answer.as` で出力先を指定すると、`.c` と共有ライブラリもそのディレクトリに生成します。出力先ディレクトリは事前に作成してください。
+- 共有ライブラリ名は各 `#chsp_module` の名前に従います。1入力に複数の module があれば複数の共有ライブラリを生成します。別ライブラリと module 名・公開関数名が重複しないようにしてください。
+- module 外の HSP コードは順序を保って `.as` に残します。初期化呼び出しなどは生成時には実行されず、利用側で include した位置のコードとして実行されます。`end` などもそのまま残る点に注意してください。
+- include ガードにより、同じ生成 `.as` の重複登録・コードの重複挿入を防ぎます。実行時に include 位置へ繰り返し制御が戻る場合の「初期化を一度だけ実行する」保証ではありません。
+- `.as` の探索と実行時の DLL 探索は別です。最初は `.as`・DLL・利用側の実行ファイルを同じディレクトリに配置してください。元コードの相対 `#include` やリソース参照は書き換えません。出力先を変更する場合は関連ファイルの配置も調整してください。
+- `--chsp-compile=none` と併用すると `.as` と `.c` だけを生成します。実行前に共有ライブラリを別途ビルドしてください。
+
+これは include **先のソースを自動変換する機能ではありません**。元の `.chsp` を変更したらライブラリを再生成し、利用側も再コンパイルしてください。生成される `.as` は UTF-8 なので、利用側も `-i` を指定してビルドします。
 
 ### 3. テストの実行
 

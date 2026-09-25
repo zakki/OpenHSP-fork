@@ -99,7 +99,8 @@ int GenerateProgramOutput( const ChspAstProgram &ast_program, CLogger &logger, C
 							 source_name != nullptr ? source_name : "<buffer>" );
 				return -1;
 			}
-			current_module_tag = "chsp_mod_" + std::to_string( module_index );
+			current_module_tag = "chsp_mod_" + chsputil::StableId( native_outputs[module_index].file_stem ) +
+				"_" + std::to_string( module_index );
 			module_start_line = line.line;
 			module_output_line_start = count_newlines( hsp_out );
 			if ( !for_preprocessor ) {
