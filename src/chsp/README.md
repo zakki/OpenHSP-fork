@@ -4,7 +4,7 @@
 
 cHSPは、HSPスクリプトの一部をネイティブCコードに変換し、コンパイル・実行することでスクリプトの実行速度を向上させるための拡張フロントエンドです。
 
-独立したコンパイラフロントエンド（Linux: `chsp` CLI / Windows: `hspcmp.dll` Proxy DLL）として動作し、ネイティブトランスパイルから `hspcmp` への委譲までを透過的に実行します。
+独立したコンパイラフロントエンド（Linux: `chsp` CLI / Windows: `chsp.exe` CLI および `hspcmp.dll` Proxy DLL）として動作し、ネイティブトランスパイルから `hspcmp` への委譲までを透過的に実行します。
 
 ### 主な特徴
 
@@ -46,10 +46,45 @@ make chsp
 | :--- | :--- |
 | `-o<file>` | 出力ファイル名 (`.ax`) を指定 |
 | `-d` | デバッグ情報を付加 |
-| `--compath=<path>` | 共通ディレクトリ (`common/`) のパスを指定 |
-| `--chsp-compile=libtcc\|none` | ネイティブコンパイル方式を指定（既定値: `libtcc`） |
-| `--keep-tmp` | 中間生成ファイル (`.tmp.hsp`, `.c`) を残置 |
+| `--compath=<path>` | 共通ディレクトリを指定。CLI の既定値は作業ディレクトリ基準の `common/` |
+| `--chsp-compile=libtcc\|none` | `libtcc` は共有ライブラリまで生成（既定）。`none` は C ソースを生成し、共有ライブラリのコンパイルを省略 |
+| `--keep-tmp` | CLI が通常削除する `<入力名>.chsp.tmp.hsp` を保持。生成された `.c` と共有ライブラリは指定なしでも残る |
 | `--hspcmp=<path>` | 委譲先の `hspcmp` バイナリのパスを指定 |
+
+#### Windows CLI の必要ファイルと実行例
+
+以下は `C:\hsp37` に cHSP を配置し、ソースのある別ディレクトリから実行する例です。実際の配置先に合わせてパスを変更してください。
+
+- `chsp.exe` と、それが使用する `libtcc.dll`。
+- 委譲先の通常版 `hspcmp.exe` と、実行用の HSP ランタイム（この例では `hsp3cl.exe`）。生成コード・使用機能に対応するバージョンとアーキテクチャを揃えます。
+- `common/` 一式。標準 HSP ヘッダーに加え、`common/chsp/chsp_builtins.tsv`、`chsp_runtime.h`、プラグイン SDK ヘッダーなどの `common/chsp/` 一式が必要です。
+- libtcc のヘッダー・ライブラリを含むランタイム一式。`chsp.exe` と同じディレクトリの `tcc/` に配置するか、環境変数 `LIBTCC_DIR` でそのディレクトリを指定します。`libtcc.dll` だけでは生成 C コードのコンパイルに必要なファイルが揃いません。
+
+作業ディレクトリに `answer.hsp` を作成します。現状は高速化対象の定義も入口ファイルに直接記述します。
+
+```hsp
+#chsp_module "answer_native"
+#chsp_defcfunc int answer int p_value
+    return p_value + 1
+#chsp_end
+#chsp_module_end
+
+mes answer(41)
+end
+```
+
+PowerShell で実行します。
+
+```powershell
+& "C:/hsp37/chsp.exe" --compath=C:/hsp37/common/ --hspcmp=C:/hsp37/hspcmp.exe -i -u -d --keep-tmp answer.hsp
+if ($LASTEXITCODE -eq 0) {
+    & "C:/hsp37/hsp3cl.exe" answer.ax
+}
+```
+
+実行結果は `42` です。`answer.ax`、`answer_native.c`、`answer_native.dll` と、`--keep-tmp` により保持される `answer.chsp.tmp.hsp` を確認できます。Windows の libtcc は `.def` を生成する場合もあります。既定の `target=plugin` では `#regcmd` / `#cmd` を含む呼び出しコードを生成し、`target=c` では `#uselib` / `#func` / `#cfunc` を使用します。
+
+`--compath` を省略すると、インストール先ではなく作業ディレクトリの `common/` を参照します。別ディレクトリから実行する場合は、上のように絶対パスと末尾の `/` を指定してください。`--chsp-compile=none` は生成 C コードの確認や外部コンパイラでのビルドに使います。通常の hspcmp への委譲は行われますが、実行に必要な共有ライブラリは別途用意する必要があります。
 
 ### 3. テストの実行
 
@@ -122,6 +157,9 @@ double c_distance(double x, double y) {
 ```
 
 ### 現在の主な制約
+
+- `#include` 先の `#chsp_*` 定義は変換されません。入口ファイルに直接記述してください。入口に空の `#chsp_module` を追加しても解決しません。
+- この制限は現状コンパイルエラーとして検出されず、コンパイルが成功しても未初期化変数の警告や実行時 Error 10 になる場合があります。通常の HSP の include は委譲先の hspcmp が処理します。詳細と分割ビルドの回避策は [include の制限](docs/chsp.md#include-の制限と分割ビルド) を参照してください。
 
 - HSP 側のグローバル変数はネイティブ側から直接アクセスできません（関数の引数経由で渡す必要があります）。
 - cHSP ブロック内から通常の HSP ユーザー定義関数や標準 GUI 命令（`mes`, `pos` 等）は呼び出せません。
