@@ -11,20 +11,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{56775D30-4CDD-48E3-80EE-1CF2956D36B6}</ProjectGuid>
-    <RootNamespace>hspcmp</RootNamespace>
+    <ProjectGuid>{4B1F2D6C-774A-49E8-9B27-9109724128D8}</ProjectGuid>
+    <RootNamespace>chsp</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -45,11 +45,13 @@
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>chsp</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>chsp</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -68,7 +70,6 @@
     <Link>
       <AdditionalDependencies>libtcc.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\hspcmp\extlib\tcc\libtcc;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -91,7 +92,6 @@
     <Link>
       <AdditionalDependencies>libtcc.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\hspcmp\extlib\tcc\libtcc;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -120,7 +120,7 @@
     <ClCompile Include="..\..\hspcmp\hspcmd.cpp" />
     <ClCompile Include="..\..\hspcmp\label.cpp" />
     <ClCompile Include="..\..\hspcmp\membuf.cpp" />
-    <ClCompile Include="hspcmp3.cpp" />
+    <ClCompile Include="..\chsp_main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\hsp3\strbuf.h" />

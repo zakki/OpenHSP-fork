@@ -8,3 +8,6 @@ cd ..
 cd hspcmp
 call vsbuild.bat
 cd ..
+cd chsp
+call vsbuild.bat
+cd ..

@@ -9,6 +9,8 @@
 #if defined(__unix__) || defined(__APPLE__)
 #include <sys/wait.h>
 #include <unistd.h>
+#elif defined(_WIN32)
+#include <process.h>
 #endif
 
 #include "../hspcmp/chsp/chsp_pipeline.h"
@@ -61,7 +63,14 @@ static std::string find_hspcmp_executable( const char *specified_path, const cha
 	if ( std::filesystem::exists( "./hspcmp" ) ) {
 		return std::filesystem::absolute( "./hspcmp" ).string();
 	}
+#ifdef _WIN32
+	if ( std::filesystem::exists( "./hspcmp.exe" ) ) {
+		return std::filesystem::absolute( "./hspcmp.exe" ).string();
+	}
+	return "hspcmp.exe";
+#else
 	return "hspcmp";
+#endif
 }
 
 int main( int argc, char *argv[] )
@@ -192,8 +201,18 @@ int main( int argc, char *argv[] )
 	int status = 0;
 	waitpid( pid, &status, 0 );
 	int exit_code = WIFEXITED( status ) ? WEXITSTATUS( status ) : 1;
+#elif defined(_WIN32)
+	intptr_t ret = _spawnvp( _P_WAIT, resolved_hspcmp.c_str(), exec_argv.data() );
+	if ( ret == -1 ) {
+		std::string cmdline;
+		for ( const auto &s : cmd_args ) {
+			cmdline += "\"" + s + "\" ";
+		}
+		ret = system( cmdline.c_str() );
+	}
+	int exit_code = static_cast<int>( ret );
 #else
-	// Windows fallback (system / spawn)
+	// Other fallback
 	std::string cmdline;
 	for ( const auto &s : cmd_args ) {
 		cmdline += "\"" + s + "\" ";
