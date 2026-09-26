@@ -216,7 +216,7 @@ target=pluginとtarget=cの両方で使用できます。
 対象環境のTCCから参照できるライブラリを指定してください。
 Linux専用ライブラリの指定をWindowsでそのまま使用することはできません。
 %sample
-#chsp_module "native_math" target=c
+#chsp_module "native_math" target=plugin
 #chsp_clink "msvcrt"
 #chsp_defcfunc double calc_root double p_value
     return sqrt(p_value)

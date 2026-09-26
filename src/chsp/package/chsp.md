@@ -243,7 +243,7 @@ stop
 生成DLLが追加のCライブラリを必要とする場合は、モジュール内に `#chsp_clink "ライブラリ名"` を記述します。
 
 ```hsp
-#chsp_module "native_math" target=c
+#chsp_module "native_math" target=plugin
 #chsp_clink "msvcrt"
 #chsp_defcfunc double calc_root double p_value
     return sqrt(p_value)
