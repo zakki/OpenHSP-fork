@@ -33,7 +33,7 @@ class ChspLibraryTest(unittest.TestCase):
 
     def module(self, name, function, value):
         return f'''#chsp_module "{name}"
-#chsp_defcfunc int {function} int p_value
+#chsp_defcfunc {function} int p_value -> int
     return p_value + {value}
 #chsp_end
 #chsp_module_end

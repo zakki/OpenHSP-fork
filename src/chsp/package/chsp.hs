@@ -1,4 +1,6 @@
 ; cHSP help source. Maintained in UTF-8; packaged as CP932/CRLF.
+%dll
+chsp
 %type
 cHSP拡張ディレクティブ
 %ver
@@ -8,9 +10,11 @@ cHSP追加パッケージ (Win32)
 %date
 2026/09/26
 %author
-OpenHSP contributors
+zakki
 %port
 Win
+%portinfo
+Windows/Linuxなど共有ライブラリやプラグイン対応環境動作します
 
 %index
 #chsp_module
@@ -85,6 +89,7 @@ dimtypeも使用でき、型番号は引数配列の型に一致する整数リ�
 これらの再確保命令はローカル配列やtarget=cでは使用できません。
 ^
 target=pluginでは、HSP側のラベルを受け取るlabel型引数と、gosub 命令によるサブルーチン呼び出し（コールバック）が使用できます。呼び出し先のサブルーチンがend等で終了した場合は安全に関数を脱出します（target=cでは使用できません）。
+コールバック内では、まだ実行中のcHSP関数（呼び出し元の関数も含む）にarray引数として渡した配列の再確保・型変更はできません。dim・ddim・dimtype、配列の自動拡張、別の関数を介した変更も対象です。古い領域へのアクセスやメモリ破壊の原因になります。同じ型の既存要素への代入は可能です。必要な領域はcHSP呼び出し前に確保し、再確保・型変更は配列を受け取ったcHSP関数がすべて戻った後に行ってください。
 通常のHSPグローバル変数を直接参照できません。必要な値・配列を引数で渡してください。
 通常のHSPユーザー関数やGUI命令は直接呼び出せません。
 関数内では代入、カンマ区切り代入、複合代入（+=, -=, *=, /=）、if/else、repeat/loop、break、continue、gosub、returnなどを使用できます。repeat/loop内ではループカウンタcntを参照できます。
