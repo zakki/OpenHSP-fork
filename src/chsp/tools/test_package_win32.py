@@ -93,7 +93,8 @@ class SwitchTest(unittest.TestCase):
         return result
 
     def test_enable_restore_repeat_and_update(self):
-        self.switch("disable")
+        self.switch("disable", False)
+        self.assertEqual(self.active.read_bytes(), self.original)
         for _ in range(2):
             self.switch("enable")
             self.switch("enable")
@@ -124,11 +125,41 @@ class SwitchTest(unittest.TestCase):
 
     def test_existing_backup_is_never_overwritten(self):
         self.backup.write_bytes(b"existing backup")
-        self.switch("enable")
-        self.assertEqual(self.active.read_bytes(), self.chsp)
+        self.switch("enable", False)
+        self.assertEqual(self.active.read_bytes(), self.original)
         self.assertEqual(self.backup.read_bytes(), b"existing backup")
+        self.assertEqual(list(self.root.glob("chsp-switch-*.old")), [])
+
+    def test_restore_with_missing_or_damaged_payload(self):
+        payload = self.root / "hspcmp_chsp.dll"
+        for state in ("missing", "damaged"):
+            with self.subTest(state=state):
+                payload.write_bytes(self.chsp)
+                self.switch("enable")
+                if state == "missing":
+                    payload.unlink()
+                else:
+                    payload.write_bytes(b"damaged")
+                self.switch("disable")
+                self.switch("disable")
+                self.assertEqual(self.active.read_bytes(), self.original)
+                self.assertEqual(self.backup.read_bytes(), self.original)
+
+    def test_restore_after_overlaying_new_package(self):
+        self.switch("enable")
+        updated = b"new chsp fixture"
+        (self.root / "hspcmp_chsp.dll").write_bytes(updated)
+        path = self.root / "chsp-package.json"
+        manifest = json.loads(path.read_text())
+        manifest["files"]["hspcmp_chsp.dll"] = package.sha256(updated)
+        path.write_text(json.dumps(manifest), encoding="ascii")
+        self.switch("enable", False)
+        self.assertEqual(self.active.read_bytes(), self.chsp)
         self.switch("disable")
-        self.assertEqual(self.active.read_bytes(), b"existing backup")
+        self.assertEqual(self.active.read_bytes(), self.original)
+        self.switch("enable")
+        self.assertEqual(self.active.read_bytes(), updated)
+        self.assertEqual(self.backup.read_bytes(), self.original)
 
     def test_missing_or_damaged_payload(self):
         payload = self.root / "hspcmp_chsp.dll"
