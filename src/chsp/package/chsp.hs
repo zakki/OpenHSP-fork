@@ -35,7 +35,7 @@ HSPエディタから使用するにはenable_chsp.batでchsp版コンパイラ�
 詳細はdoclib/chsp.txtを参照してください。
 %sample
 #chsp_module "answer_native" target=plugin
-#chsp_defcfunc int answer int p_value
+#chsp_defcfunc answer int p_value -> int
     return p_value + 1
 #chsp_end
 #chsp_module_end
@@ -71,11 +71,12 @@ stop
 %group
 cHSPディレクティブ
 %prm
-name 型 引数名, ...
+name 型 引数名, ... [-> void]
 name : 公開する命令名
-型 : int、double、array[int]、array[double]など
+型 : int、double、array[int]、array[double]、labelなど
 %inst
 モジュール内で戻り値のない命令を定義します。定義の終わりに#chsp_endを記述します。
+引数リストの末尾に -> void を指定することも可能です。
 引数には型を指定します。ローカル変数は引数リストの末尾にlocal[int]やlocal[double]で宣言します。
 固定長ローカル配列はlocal[int[n]]、local[double[n]]で宣言します。
 引数配列・ローカル配列ともに最大4次元に対応します（例: local[int[2][3]]）。
@@ -83,9 +84,10 @@ target=pluginでは、array[int]の引数配列をdim、array[double]の引数�
 dimtypeも使用でき、型番号は引数配列の型に一致する整数リテラル（intは4、doubleは3）を指定します。
 これらの再確保命令はローカル配列やtarget=cでは使用できません。
 ^
+target=pluginでは、HSP側のラベルを受け取るlabel型引数と、gosub 命令によるサブルーチン呼び出し（コールバック）が使用できます。呼び出し先のサブルーチンがend等で終了した場合は安全に関数を脱出します（target=cでは使用できません）。
 通常のHSPグローバル変数を直接参照できません。必要な値・配列を引数で渡してください。
-通常のHSPユーザー関数やGUI命令は呼び出せません。
-関数内では代入、カンマ区切り代入、複合代入（+=, -=, *=, /=）、if/else、repeat/loop、break、continue、returnなどを使用できます。repeat/loop内ではループカウンタcntを参照できます。
+通常のHSPユーザー関数やGUI命令は直接呼び出せません。
+関数内では代入、カンマ区切り代入、複合代入（+=, -=, *=, /=）、if/else、repeat/loop、break、continue、gosub、returnなどを使用できます。repeat/loop内ではループカウンタcntを参照できます。
 %sample
 #chsp_module "fill_native"
 #chsp_deffunc fill_seq array[int] p_values, int p_count, local[int] i
@@ -111,18 +113,19 @@ stop
 %group
 cHSPディレクティブ
 %prm
-戻り値型 name 型 引数名, ...
-戻り値型 : int または double
+name 型 引数名, ... -> 戻り値型
 name : 公開する関数名
+戻り値型 : int または double（末尾に -> 戻り値型 として指定）
 %inst
 モジュール内で数値を返す関数を定義します。returnで値を返し、#chsp_endで定義を終了します。
+戻り値型は引数リストの末尾に後置アロー記法（-> 戻り値型）で指定します。
 引数とローカル変数の型指定は#chsp_deffuncと同じです。
 関数は式の中で呼び出します。文字列型の戻り値や引数には対応していません。
 intとdoubleの混在演算・暗黙変換には制限があります。詳細はdoclib/chsp.txtを参照してください。
 ※int64などの64bit整数機能はHSP 3.8開発版向けであり、HSP 3.7環境では利用できません。
 %sample
 #chsp_module "square_native"
-#chsp_defcfunc double square double p_value
+#chsp_defcfunc square double p_value -> double
     return p_value * p_value
 #chsp_end
 #chsp_module_end
@@ -145,7 +148,7 @@ cHSPディレクティブ
 モジュール全体の終了には#chsp_module_endを使用します。
 %sample
 #chsp_module "identity_native"
-#chsp_defcfunc int identity int p_value
+#chsp_defcfunc identity int p_value -> int
     return p_value
 #chsp_end
 #chsp_module_end
@@ -176,7 +179,7 @@ static int plus_one(int value) {
 }
 "}
 #chsp_cdecl plus_one
-#chsp_defcfunc int answer int p_value
+#chsp_defcfunc answer int p_value -> int
     return plus_one(p_value)
 #chsp_end
 #chsp_module_end
@@ -221,7 +224,7 @@ Linux専用ライブラリの指定をWindowsでそのまま使用すること�
 %sample
 #chsp_module "native_math" target=plugin
 #chsp_clink "msvcrt"
-#chsp_defcfunc double calc_root double p_value
+#chsp_defcfunc calc_root double p_value -> double
     return sqrt(p_value)
 #chsp_end
 #chsp_module_end

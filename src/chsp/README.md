@@ -65,7 +65,7 @@ make chsp
 
 ```hsp
 #chsp_module "answer_native"
-#chsp_defcfunc int answer int p_value
+#chsp_defcfunc answer int p_value -> int
     return p_value + 1
 #chsp_end
 #chsp_module_end
@@ -140,7 +140,7 @@ make test-chsp
     return v0(0) * v1(0) + v0(1) * v1(1) + v0(2) * v1(2)
 #chsp_end
 
-// 戻り値のない命令 (#chsp_deffunc <命令名> <引数...>)
+// 戻り値のない命令 (#chsp_deffunc <命令名> <引数...> [-> void])
 #chsp_deffunc vcross array[double] c, array[double] v0, array[double] v1
     c(0) = v0(1) * v1(2) - v0(2) * v1(1)
     c(1) = v0(2) * v1(0) - v0(0) * v1(2)
@@ -158,6 +158,7 @@ cHSP ブロック内の引数およびローカル変数は型指定が必須で
 - **基本型**: `int`, `double`, `int64`
 - **引数配列**: `array[int]`, `array[double]`, `array[int64]`
   - 多次元配列アクセス（`a(i, j)` や `a(i, j, k)` 等）に対応しています。
+- **ラベル引数**: `label` (HSP 側のラベルを受け取り、`gosub` によるサブルーチンコールバックに利用。`target=plugin` のみ)
 - **ローカル変数・固定長配列**:
   - `local[int]`, `local[double]`, `local[int64]`
   - `local[int[n]]`, `local[double[n]]`, `local[int64[n]]` (固定長配列)
@@ -190,7 +191,7 @@ double c_distance(double x, double y) {
 - この制限は現状コンパイルエラーとして検出されず、コンパイルが成功しても未初期化変数の警告や実行時 Error 10 になる場合があります。通常の HSP の include は委譲先の hspcmp が処理します。詳細と分割ビルドの回避策は [include の制限](docs/chsp.md#include-の制限と分割ビルド) を参照してください。
 
 - HSP 側のグローバル変数はネイティブ側から直接アクセスできません（関数の引数経由で渡す必要があります）。
-- cHSP ブロック内から通常の HSP ユーザー定義関数や標準 GUI 命令（`mes`, `pos` 等）は呼び出せません。
+- cHSP ブロック内から通常の HSP ユーザー定義関数や標準 GUI 命令（`mes`, `pos` 等）は呼び出せません（ただし `target=plugin` では `label` 引数を介した `gosub` サブルーチンコールバック呼び出しに対応しています）。
 
 ---
 

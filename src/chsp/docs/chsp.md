@@ -24,16 +24,20 @@ cHSPは、HSPスクリプトの一部をネイティブコードに変換し、�
 - 型
   - `int`
   - `double`
+  - `int64`
   - `array[int]`
   - `array[double]`
+  - `array[int64]`
   - `local[int]`
   - `local[double]`
+  - `local[int64]`
   - `local[int[n]]`
   - `local[double[n]]`
+  - `local[int64[n]]`
   - `label` (`target=plugin` のみ。HSP側のラベルを引数として受け取り、コールバック呼び出しに利用可能)
 - 関数
-  - `#chsp_deffunc`
-  - `#chsp_defcfunc`
+  - `#chsp_deffunc <name> <params...> [-> void]`
+  - `#chsp_defcfunc <name> <params...> -> <rettype>`
 - 文
   - 代入 (`+=`, `-=`, `*=`, `/=` の複合代入を含む)
   - `if` / `else if` / `else`

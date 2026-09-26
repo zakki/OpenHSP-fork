@@ -77,6 +77,47 @@ static void *reffunc(int *type_res, int cmd);
   - `HspFunc_free`
   - `HspFunc_expand`
 
+### label 型引数と gosub によるコールバック呼び出し (`target=plugin`)
+
+`target=plugin` では、仮引数として HSP のラベルを受け取る `label` 型に対応しています。
+ディスパッチ関数（`cmdfunc` / `reffunc`）では `code_getlb()` を用いてラベルポインタ（`unsigned short *`）を取得します。
+
+関数内からは `gosub <label>` 命令により、`code_call(label)` を介して HSP 側のサブルーチンを直接コールバック呼び出しできます。
+
+#### 終了状態 (RUNMODE_END) の伝搬ガード
+
+HSP 側のサブルーチンが `end` 命令等によって終了した場合、ランタイム状態が `ctx->runmode == RUNMODE_END` に遷移します。
+このとき、コールバック呼び出し元のネイティブ関数が後続処理や副作用を継続して実行しないよう、以下の位置に終了伝搬ガード（`if ( ctx->runmode == RUNMODE_END ) return;`）を自動生成します。
+
+- ネイティブ関数の先頭
+- ネイティブ関数・コールバック呼び出し文の直後
+- 連続代入における各代入評価の直後
+- `dim` / `dimtype` 命令の引数式評価後
+- `if` 条件式や `repeat` 回数式にネイティブ呼び出しが含まれる場合（評価結果を一時変数へ退避し、ガード実行後に条件判定やループへ進行）
+- プラグインディスパッチ関数:
+  - `cmdfunc`: `return ctx->runmode` を返却
+  - `reffunc`: `ctx->runmode == RUNMODE_END` を検知した場合、`puterror(HSPERR_NONE)` を呼び出して後続の引数パーシングを行わずに即時復帰
+
+### 64bit / int64_t 対応と ABI 定義
+
+64bit 環境でのプラグイン ABI 整合性を確保するため、`common/chsp/hsp3struct.h` を更新しています。
+
+- `HSPINT64` (`ptrdiff_t`), `HSPPTRINT` (64bit時: `ptrdiff_t`, 32bit時: `int`), `HSPCTX_STAT_FLAG` の定義を追加
+- `HSPCTX` の `stat`, `strsize`, `iparam` 等のフィールド型を `HSPPTRINT` に更新
+- `IRQDAT` コールバックや `HSPEXINFO30` / `HSPEXINFO` / `HSP3TYPEINFO` の型をポインタサイズに対応
+
+#### HSP64 定義制御
+
+プラグイン生成時の C ソース preamble および `libtcc` シンボル定義において、アーキテクチャやポインタ幅（`__x86_64__`, `__UINTPTR_MAX__` 等）からの自動推論による `HSP64` 強制定義を廃止しました。
+ホストコンパイラ/ランタイムのビルド時に明示的に設定された `HSP64` 定義状態を引き継ぐ設計となっており、非 64bit ビルド環境での誤定義を防止しています。
+
+### 関数シグネチャのパース（後置アロー記法）
+
+`#cfunc ... -> <type>` との記法整合を図るため、`#chsp_defcfunc` の構文を `#chsp_defcfunc <name> <params...> -> <rettype>` に統一しています。
+- 引数リスト末尾の `-> <rettype>` をパーサーで検証
+- 旧来の前置型指定はコンパイルエラーとして拒絶
+- `#chsp_deffunc` においては、末尾の `-> void` 指定を許容
+
 ## `chsp_builtins.tsv` の形式とロード
 
 組み込み関数マッピングは `{compath}/chsp/chsp_builtins.tsv` に置かれます (`common/chsp/chsp_builtins.tsv`)。
@@ -162,7 +203,7 @@ plugin backend は `HSPEXINFO` 経由でこれらの多くをすでに扱える�
 
 - `str` / `array[str]`
 - cHSP ブロック内の `ddim` / `sdim`
-- cHSP ブロックから通常の HSP 関数や標準命令を呼ぶこと
+- cHSP ブロックから通常の HSP 関数や標準命令を呼ぶこと（ただし `target=plugin` では `label` 引数を受け取り `code_call` による `gosub` コールバック呼出に対応）
 - cHSP ブロック内部での HSP プリプロセッサのマクロ展開
 - `gettime` の cHSP ブロック内利用
 - HSP の一般的な「任意位置の引数省略」
@@ -170,7 +211,7 @@ plugin backend は `HSPEXINFO` 経由でこれらの多くをすでに扱える�
 
 #### cHSP からの HSP 関数・標準命令呼び出し制限の理由
 
-HSP3 の命令 (`cmdfunc`) や関数は引数スタックを持たず、実行中のバイトコードストリーム (`mcs`) から `code_get` / `code_next` を介して式を逐次評価・消費する構造になっています。そのため、C ネイティブ側から引数を渡して直接呼ぶ手段が存在しません。擬似バイトコード生成やサブルーチンブリッジ (`HspFunc_call`) などの回避策も大きなオーバーヘッドや状態破壊のリスクを伴うため、非対応としています（詳細は [decisions/chsp-plugin-call-investigation.md](decisions/chsp-plugin-call-investigation.md) を参照）。
+HSP3 の命令 (`cmdfunc`) や関数は引数スタックを持たず、実行中のバイトコードストリーム (`mcs`) から `code_get` / `code_next` を介して式を逐次評価・消費する構造になっています。そのため、C ネイティブ側から引数を渡して直接呼ぶ手段が存在しません。擬似バイトコード生成やサブルーチンブリッジ (`HspFunc_call`) などの回避策も大きなオーバーヘッドや状態破壊のリスクを伴うため、非対応としています（詳細は [decisions/chsp-plugin-call-investigation.md](decisions/chsp-plugin-call-investigation.md) を参照。なお、引数を持たないサブルーチンへのコールバック呼び出しについては `target=plugin` の `gosub <label>` として実装済みです）。
 
 ### 将来の拡張方針
 

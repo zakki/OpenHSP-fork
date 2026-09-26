@@ -45,12 +45,12 @@ cHSPは、HSPスクリプトの一部をネイティブCコードに変換し、
 ```hsp
 #chsp_module "my_math"
 
-// 戻り値のある関数 (#chsp_defcfunc 戻り値型 関数名 型 引数名, ...)
-#chsp_defcfunc double vdot array[double] v0, array[double] v1
+// 戻り値のある関数 (#chsp_defcfunc <関数名> <引数...> -> <戻り値型>)
+#chsp_defcfunc vdot array[double] v0, array[double] v1 -> double
     return v0(0) * v1(0) + v0(1) * v1(1) + v0(2) * v1(2)
 #chsp_end
 
-// 戻り値のない命令 (#chsp_deffunc 命令名 型 引数名, ...)
+// 戻り値のない命令 (#chsp_deffunc <命令名> <引数...> [-> void])
 #chsp_deffunc vcross array[double] c, array[double] v0, array[double] v1
     c(0) = v0(1) * v1(2) - v0(2) * v1(1)
     c(1) = v0(2) * v1(0) - v0(0) * v1(2)
@@ -74,10 +74,10 @@ stop
 - `#chsp_module "モジュール名"`:
   ネイティブ化するモジュールを開始します。モジュール名（文字列）は必須です。モジュール名を基にCソースとDLLを生成します。
   - 出力方式として `target=plugin`（既定値）と `target=c` を指定できます。通常のスクリプト記述では省略（plugin）で使用します（両者の詳細な違いは後述の「出力ターゲットの違いと使い分け」を参照）。
-- `#chsp_defcfunc 戻り値型 関数名 ...`:
-  数値を返す関数を定義します。式の中で呼び出します。
-- `#chsp_deffunc 命令名 ...`:
-  戻り値のない命令を定義します。文として呼び出します。
+- `#chsp_defcfunc 関数名 引数... -> 戻り値型`:
+  数値を返す関数を定義します。戻り値型は末尾に `-> 戻り値型` として指定します。式の中で呼び出します。
+- `#chsp_deffunc 命令名 引数... [-> void]`:
+  戻り値のない命令を定義します。文として呼び出します（末尾に `-> void` を明示することも可能です）。
 - `#chsp_end`:
   各関数の定義を終了します。
 - `#chsp_module_end`:
@@ -91,6 +91,7 @@ cHSPブロック内の引数およびローカル変数は型指定が必要で�
 | :--- | :--- | :--- |
 | 基本型 | `int`, `double` | 整数、実数値を受け取るスカラー引数 |
 | 引数配列 | `array[int]`, `array[double]` | HSP側の配列を受け取る引数（最大4次元までアクセス可能） |
+| ラベル引数 | `label` | HSP側のラベルを受け取る引数（`target=plugin` のみ、コールバック用） |
 | ローカル変数 | `local[int]`, `local[double]` | 関数内でのみ使用する作業用スカラー変数 |
 | 固定長ローカル配列 | `local[int[n]]`, `local[double[n]]` | 関数内でのみ使用する固定長配列（最大4次元まで宣言可能） |
 
@@ -141,6 +142,7 @@ cHSP関数内では、以下のHSP構文・式を使用できます。
   - `repeat ループ回数` 〜 `loop`
   - ループ制御: `break`, `continue`
   - ループカウンタ `cnt`: `repeat` 内で現在のループ回数（0始まり）を参照できます。
+  - `gosub <label>`: `target=plugin` 専用。引数として渡された `label` 型変数に対して HSP 側のサブルーチン（コールバック）を呼び出します。コールバック先で `end` 等により終了した場合は安全に関数を早期脱出します。
   - `return`（命令では単独、関数では `return 式`）
 - 演算子:
   - 四則演算（`+`, `-`, `*`, `/`）
@@ -181,8 +183,9 @@ cHSP関数内では、以下のHSP構文・式を使用できます。
 | 主な用途 | HSP スクリプトの高速化（通常はこちらを推奨） | 汎用 C ライブラリ化・他言語とのコード共有 |
 | HSP 連携方式 | `#regcmd` による HSP3 プラグイン登録 | `#uselib` / `#func` / `#cfunc` による DLL 関数呼出 |
 | 戻り値型 (`#chsp_defcfunc`) | `int`, `double`, `int64` に対応 | `int` のみ推奨（`double` や `int64` は HSP 側の `#cfunc` 制約により直接呼出不可） |
-| 引数なし関数 (引数0個) | 対応 (`#chsp_defcfunc int sample`) | 非対応（HSP の `#cfunc` の制約により 1 つ以上の引数が必要） |
+| 引数なし関数 (引数0個) | 対応 (`#chsp_defcfunc sample -> int`) | 非対応（HSP の `#cfunc` の制約により 1 つ以上の引数が必要） |
 | 引数配列の再確保 | 対応（`dim`, `ddim`, `dimtype` でリサイズ可能） | 非対応（コンパイルエラー） |
+| label 型引数・gosub | 対応（HSP サブルーチンへのコールバック呼出に対応） | 非対応（コンパイルエラー） |
 | 多次元配列の受け渡し | 直接 `PVal` 構造体経由で次元・要素数を参照 | 次元ごとの要素数を引数として展開して受け渡し |
 | 生成される DLL | HSP3 プラグイン専用 DLL（`hsp3cmdinit` 等を実装） | 標準 C ABI の共有ライブラリ（C 関数を直接エクスポート） |
 | 他言語からの呼出 | 不可（HSP3 ランタイム専用） | 可能（C/C++、C#、Python 等から通常の DLL として呼出可能） |
@@ -196,6 +199,8 @@ HSP スクリプトの高速化を目的とする場合は、基本的に `targe
   HSP3 のプラグインインターフェース（`reffunc`）を介して値を返すため、整数（`int`）だけでなく実数（`double`）や 64bit 整数（`int64`）を返す関数を定義して HSP 側から自然に呼び出すことができます。引数のない関数（引数 0 個の `defcfunc`）も定義可能です。
 - 配列変数の再確保に対応:
   引数として受け取った配列変数（`array[int]`, `array[double]`）の内部管理情報（`PVal` 構造体）を直接参照できます。これにより、関数内から `dim` や `ddim` を使って呼び出し元の配列サイズを動的に変更（再確保）することが可能です。
+- label 型引数とサブルーチンコールバックに対応:
+  HSP のラベルを引数として受け取り、関数内から `gosub` 命令を実行して HSP 側のサブルーチンをコールバック呼び出しできます。サブルーチン内で `end` 等により実行が終了した場合も検知して安全に関数を終了します。
 
 ### target=c の特徴
 
@@ -283,7 +288,7 @@ double c_distance(double x, double y) {
 // 埋め込んだC関数をcHSPから呼べるように登録
 #chsp_cdecl c_distance
 
-#chsp_defcfunc double calc_dist double x, double y
+#chsp_defcfunc calc_dist double x, double y -> double
     return c_distance(x, y)
 #chsp_end
 
@@ -303,7 +308,7 @@ stop
 ```hsp
 #chsp_module "native_math" target=plugin
 #chsp_clink "msvcrt"
-#chsp_defcfunc double calc_root double p_value
+#chsp_defcfunc calc_root double p_value -> double
     return sqrt(p_value)
 #chsp_end
 #chsp_module_end
