@@ -89,6 +89,23 @@ jobs:
       run: |
         cmd /c vsbuild.bat
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Build and test cHSP package
+      run: |
+        python src/chsp/tools/package_win32.py
+        python -m unittest discover -s src/chsp/tools -p "test_package_win32.py"
+      shell: cmd
+
+    - name: Archive cHSP package
+      uses: actions/upload-artifact@v4
+      with:
+        name: chsp-hsp37-win32
+        path: dist/chsp_hsp37_win32.zip
+
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -103,3 +120,4 @@ jobs:
           src/chsp/Release/**/*
           src/chsp/extlib/tcc
           common
+          dist/chsp_hsp37_win32.zip

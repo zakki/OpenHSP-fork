@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the cHSP overlay for the official HSP 3.7 Win32 package."""
+"""Build the cHSP distribution package for HSP Win32."""
 from __future__ import annotations
 
 import argparse
@@ -42,7 +42,7 @@ def windows_text(path: Path, encoding: str = "cp932") -> bytes:
         "\n", "\r\n").encode(encoding)
 
 
-def collect(release: Path, tcc: Path, official: Path) -> dict[str, bytes]:
+def collect(release: Path, tcc: Path, official: Path | None = None) -> dict[str, bytes]:
     files: dict[str, bytes] = {}
 
     def add(name: str, data: bytes) -> None:
@@ -62,12 +62,15 @@ def collect(release: Path, tcc: Path, official: Path) -> dict[str, bytes]:
                 raise ValueError(f"Symbolic link in input: {path}")
             copy(path, name + "/" + path.relative_to(source).as_posix())
 
-    with zipfile.ZipFile(official) as archive:
-        original = archive.read("hsp37/hspcmp.dll")
-        win32_pe(original, "official hspcmp.dll")
-        for required in ("hsp37/hspcmp.exe", "hsp37/hsed3.exe", "hsp37/common/hspdef.as"):
-            archive.getinfo(required)
-        official_names = {item.filename.casefold() for item in archive.infolist()}
+    official_names: set[str] = set()
+    original: bytes | None = None
+    if official is not None and official.exists():
+        with zipfile.ZipFile(official) as archive:
+            original = archive.read("hsp37/hspcmp.dll")
+            win32_pe(original, "official hspcmp.dll")
+            for required in ("hsp37/hspcmp.exe", "hsp37/hsed3.exe", "hsp37/common/hspdef.as"):
+                archive.getinfo(required)
+            official_names = {item.filename.casefold() for item in archive.infolist()}
 
     for source, destination in (("chsp.exe", "chsp.exe"),
                                 ("hspcmp.dll", "hspcmp_chsp.dll"),
@@ -77,7 +80,7 @@ def collect(release: Path, tcc: Path, official: Path) -> dict[str, bytes]:
         add(destination, data)
     if files["libtcc.dll"] != (tcc / "libtcc.dll").read_bytes():
         raise ValueError("Release/libtcc.dll does not match the supplied TCC runtime")
-    if sha256(original) == sha256(files["hspcmp_chsp.dll"]):
+    if original is not None and sha256(original) == sha256(files["hspcmp_chsp.dll"]):
         raise ValueError("The cHSP DLL is identical to the official DLL")
 
     tree(ROOT / "common/chsp", "common/chsp")
@@ -102,7 +105,7 @@ def collect(release: Path, tcc: Path, official: Path) -> dict[str, bytes]:
     if set(indices) != DIRECTIVES or len(indices) != len(DIRECTIVES):
         raise ValueError("Help must document each cHSP directive exactly once")
     add("hsphelp/chsp.hs", windows_text(help_source))
-    # ao_opt.hsp in the source tree is old generated output, not the input.
+    # Package ao_opt.chsp as sample/chsp/ao_opt.hsp.
     copy(CHSP / "sample/ao_opt.chsp", "sample/chsp/ao_opt.hsp")
     copy(CHSP / "sample/ao_original.hsp", "sample/chsp/ao_original.hsp")
     copy(ASSETS / "hello.hsp", "sample/chsp/hello.hsp")
@@ -120,18 +123,20 @@ def collect(release: Path, tcc: Path, official: Path) -> dict[str, bytes]:
 
     manifest = {
         "format": 1,
-        "target": "HSP 3.7 Win32",
-        "official_hspcmp_sha256": sha256(original),
+        "target": "HSP Win32",
+        "official_hspcmp_sha256": sha256(original) if original is not None else None,
         "files": {name: sha256(data) for name, data in sorted(files.items())},
     }
     add("chsp-package.json", (json.dumps(manifest, indent=2) + "\n").encode("ascii"))
+    forbidden = {"hsp37/hspcmp.dll", "hsp37/hspcmp.exe", "hsp37/hsed3.exe", "hsp37/common/hspdef.as"}
     for name in files:
-        if "hsp37/" + name.casefold() in official_names:
-            raise ValueError(f"Package would overwrite an official file: {name}")
+        lowered = "hsp37/" + name.casefold()
+        if lowered in official_names or lowered in forbidden:
+            raise ValueError(f"Package would overwrite a protected file: {name}")
     return files
 
 
-def build(release: Path, tcc: Path, official: Path, output: Path) -> tuple[int, str]:
+def build(release: Path, tcc: Path, official: Path | None, output: Path) -> tuple[int, str]:
     # Gather and validate everything before touching an existing output ZIP.
     files = collect(release, tcc, official)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -154,15 +159,20 @@ def build(release: Path, tcc: Path, official: Path, output: Path) -> tuple[int, 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--release-dir", type=Path, default=CHSP / "Release")
-    parser.add_argument("--tcc-dir", type=Path, default=CHSP / "extlib/tcc")
-    parser.add_argument("--official-zip", type=Path, default=ROOT / "dist/hsp37.zip")
-    parser.add_argument("--output", type=Path, default=ROOT / "dist/chsp_hsp37_win32.zip")
+    parser.add_argument("--release-dir", type=Path, default=CHSP / "Release",
+                        help="Path to directory containing built binaries (chsp.exe, hspcmp.dll, libtcc.dll)")
+    parser.add_argument("--tcc-dir", type=Path, default=CHSP / "extlib/tcc",
+                        help="Path to directory containing TCC runtime (headers, libraries, doc)")
+    parser.add_argument("--official-zip", type=Path, default=ROOT / "dist/hsp37.zip",
+                        help="Path to official HSP ZIP archive for conflict validation and hash recording (optional)")
+    parser.add_argument("--output", type=Path, default=ROOT / "dist/chsp_hsp37_win32.zip",
+                        help="Output path for the generated ZIP package")
     args = parser.parse_args()
     try:
-        if args.output.resolve() == args.official_zip.resolve():
+        official_zip = args.official_zip if (args.official_zip and args.official_zip.exists()) else None
+        if official_zip is not None and args.output.resolve() == official_zip.resolve():
             raise ValueError("Output must not replace the official ZIP")
-        count, digest = build(args.release_dir, args.tcc_dir, args.official_zip, args.output)
+        count, digest = build(args.release_dir, args.tcc_dir, official_zip, args.output)
     except (OSError, ValueError, KeyError, zipfile.BadZipFile) as error:
         parser.exit(1, f"Packaging failed: {error}\n")
     print(f"Created {args.output} ({count} files)\nSHA256 {digest}")

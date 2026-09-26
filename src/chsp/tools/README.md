@@ -1,60 +1,79 @@
-# HSP 3.7 Win32 配布パッケージ
+# HSP Win32 用 cHSP 配布パッケージ作成ツール
 
-Python 3.10以降の標準ライブラリだけで、公式HSP 3.7への追加ZIPを作成します。
-ビルドは別工程です。`src/chsp/vsbuild.bat`等で現在のソースをWin32 Releaseとして
-ビルドし、`src/chsp/Release/`に`chsp.exe`、`hspcmp.dll`、`libtcc.dll`を用意してください。
+Python 3.10 以降の標準ライブラリのみを使用し、HSP Win32 環境へ追加可能な cHSP 配布パッケージ（ZIP）を生成するスクリプトです。
 
-リポジトリルートで実行:
+コンパイル成果物のビルド自体は別工程です。事前に `src/chsp/vsbuild.bat` 等で Win32 Release ビルドを実行し、`src/chsp/Release/` に `chsp.exe`、`hspcmp.dll`、`libtcc.dll` を用意してください。
+
+## 実行方法
+
+リポジトリルートで実行します:
 
 ```powershell
 python src/chsp/tools/package_win32.py
 ```
 
-入力の既定値:
+### コマンドライン引数
 
-- 公式パッケージ: `dist/hsp37.zip`
-- ビルド成果物: `src/chsp/Release/`
-- TCCランタイム: `src/chsp/extlib/tcc/`
-- 配布用原稿: `src/chsp/package/`
-- ヘッダー: `common/chsp/`
+| 引数 | 既定値 | 説明 |
+| --- | --- | --- |
+| `--release-dir` | `src/chsp/Release/` | ビルド成果物（`chsp.exe`, `hspcmp.dll`, `libtcc.dll`）が配置されたフォルダー |
+| `--tcc-dir` | `src/chsp/extlib/tcc/` | TCC ランタイムフォルダー（ヘッダー、ライブラリ、ドキュメント） |
+| `--official-zip` | `dist/hsp37.zip` | 検証用公式 HSP パッケージ ZIP（省略可能） |
+| `--output` | `dist/chsp_hsp37_win32.zip` | 生成する配布パッケージ ZIP の出力パス |
 
-出力は`dist/chsp_hsp37_win32.zip`です。ZIP最上位の`hsp37/`を公式ZIPと同じ場所へ
-展開します。公式ファイルと衝突する収録内容はエラーにします。
-`hspcmp.dll`は`hspcmp_chsp.dll`へ改名して収録し、公式コンパイラは転載しません。
+- `--official-zip` を指定した（または既定のパスに存在する）場合、公式パッケージ内の保護対象ファイルとの上書き衝突検査を行い、公式 `hspcmp.dll` の SHA256 ハッシュを記録します。存在しない場合でも単体でパッケージ ZIP を生成可能です。
+- 相対パス引数は実行時のカレントディレクトリを基準とし、既定値はスクリプトの位置（リポジトリルート）を基準とします。
+- 収録順序および ZIP 内ファイルのタイムスタンプを固定しているため、同一入力からは常に同一ハッシュの ZIP が生成されます。
+- 入力検査と ZIP 整合性検証が完了するまで、既存の出力ファイルを置き換えません。
 
-引数で`--release-dir`、`--tcc-dir`、`--official-zip`、`--output`を変更できます。
-相対パス引数は起動時の作業ディレクトリを基準とし、既定値はスクリプトの位置を基準にします。
-同じ入力から同じZIPを生成するため、収録順とZIPタイムスタンプは固定しています。
-入力検査とZIP検証が終わるまでは既存出力を置き換えません。
+## パッケージ構成
 
-配布専用の利用者向け文書`src/chsp/package/chsp.md`を、バイト列を保って
-`doclib/chsp.txt`にコピーします。`src/chsp/README.md`と`src/chsp/docs/`の2文書は
-収録しません。利用時に必要な構文・手順・制限は配布専用文書にまとめます。
-既存の開発用文書との重複整理は別作業とします。Markdown変換やリンク書き換えは行いません。
-ヘルプと配布READMEはUTF-8原稿をCP932/CRLFへ変換します。変換不能文字はエラーです。
-切替バッチと補助PowerShellはASCII/CRLFで収録します。
+出力される ZIP の最上位は `hsp37/` ディレクトリとなっており、HSP インストールフォルダーにそのまま上書き展開して利用する構造です。公式コンパイラ自体は転載せず、公式ファイルと衝突する収録内容はエラーとして除外されます。
 
-`sample/ao_opt.chsp`を`sample/chsp/ao_opt.hsp`として収録します。
-ソースツリーの古い生成済み`sample/ao_opt.hsp`は使いません。
-比較サンプルは`test/test_chsp_compare/generate_templates.py`を利用し、
-スクリプト内の`SAMPLES`に列挙したテンプレートから各3形式を生成します。
-テストの全件や生成済みバイナリは収録しません。
+- **実行ファイル・DLL**:
+  - `chsp.exe`: コマンドライン用 cHSP コンパイラ
+  - `hspcmp_chsp.dll`: cHSP 対応コンパイラ DLL（切替スクリプトにより `hspcmp.dll` として配置）
+  - `libtcc.dll`: TCC ランタイム DLL
+- **ヘッダー・ライブラリ**:
+  - `common/chsp/`: cHSP 用ヘッダーおよびテーブル（`chsp_runtime.h`, `chsp_builtins.tsv` 等）
+  - `tcc/include/`, `tcc/lib/`: TCC ランタイムの C ヘッダーおよびライブラリ
+- **ドキュメント・ライセンス**:
+  - `README_CHSP.txt`: 配布用 README（CP932/CRLF）
+  - `doclib/chsp.txt`: cHSP 利用ガイド（Markdown 原稿 `src/chsp/package/chsp.md` のテキスト）
+  - `doclib/chsp-license/`: OpenHSP および TCC のライセンス文書
+  - `hsphelp/chsp.hs`: HSP ディレクティブ用ヘルプ（CP932/CRLF）
+- **切替スクリプト**:
+  - `enable_chsp.bat`, `disable_chsp.bat`, `switch_chsp.ps1`: コンパイラ DLL の有効化・無効化バッチおよびスクリプト（ASCII/CRLF）
+- **サンプル**:
+  - `sample/chsp/`: `hello.hsp`, `ao_opt.hsp` 等のサンプル
+  - `sample/chsp_test/`: 構文比較サンプル（`test/test_chsp_compare/` のテンプレートから生成された `hsp`, `chsp_c`, `chsp_p` 各形式）
+- **パッケージマニフェスト**:
+  - `chsp-package.json`: 収録ファイルの SHA256 ハッシュリスト（DLL 切替時の改ざん・破損検出に使用）
 
-`chsp-package.json`には全収録ファイル（manifest自身以外）と公式DLLのSHA256を記録します。
-切替処理はその値を検証し、未知のDLLと既存の不正なバックアップを拒否します。
-更新前には旧パッケージの`disable_chsp.bat`で公式版へ戻してください。
-過去のdelegateパッケージからの自動移行は行いません。
+## コンパイラ DLL の切替機構
 
-TCCのライセンス本文は旧配布物の`docs/TCC_COPYING`を`package/TCC_COPYING`へ移して
-管理します。TCCを更新する際は実際に同梱するランタイムのライセンスも確認してください。
+HSP スクリプトエディタはフォルダー内の `hspcmp.dll` を呼び出してコンパイルを行うため、本パッケージでは既存の環境を壊さずに切り替えられる安全機構を備えています。
 
-検証:
+- **有効化 (`enable_chsp.bat`)**:
+  既存の `hspcmp.dll` を `hspcmp_original.dll` としてバックアップ退避し、`hspcmp_chsp.dll` を `hspcmp.dll` に配置します。配置前に `chsp-package.json` を照合し、`hspcmp_chsp.dll` の破損や改ざんがないことを確認します。既存のバックアップ（`hspcmp_original.dll`）が既に存在する場合は、元のコンパイラを保護するため上書きしません。
+- **無効化 (`disable_chsp.bat`)**:
+  退避されていた `hspcmp_original.dll` を `hspcmp.dll` に復元し、元のコンパイラ状態に戻します。
+- **対応環境**:
+  元のコンパイラ DLL のハッシュ値を固定的に制限しないため、HSP 3.7 正式版だけでなく、開発版（HSP 3.8 等）やカスタム版の環境でも安全に退避・復元して利用可能です。
+
+## テストと検証
+
+以下のコマンドでテストを実行できます:
 
 ```powershell
 python -m unittest discover -s src/chsp/tools -p "test_package_win32.py"
 ```
 
-このテストは現在の配布入力と公式ZIPを使用します。Windowsでは隔離した一時フォルダーで
-有効化・復元・繰り返し・不明DLL・バックアップ破損・使用中ファイルも検査します。
-配布前には公式ZIPに重ねた環境でエディタのF5、ヘルプ検索、CLIの通常スクリプトと
-chspスクリプトの実行も確認してください。通常の利用環境では切替テストを行いません。
+- パッケージ生成処理、収録ファイルの構成、マニフェストハッシュ、ZIP 生成の再現性をテストします。
+- Windows 環境では、一時フォルダー上で以下のような DLL 切替シナリオの検証を実行します:
+  - 有効化・無効化の繰り返しや冪等性
+  - 任意バージョンの `hspcmp.dll` からのバックアップ退避と復元
+  - 既存バックアップ保護（上書き防止）
+  - ペイロード（`hspcmp_chsp.dll`）破損や欠落時の安全なロールバック
+  - ファイルロック（使用中）時の保護
+- 公式パッケージ（`dist/hsp37.zip`）が存在する場合は、公式環境への重ね合わせ、CLI 実行、エディタ連携用 DLL インターフェース、ヘルプ検索の動作確認（スモークテスト）も自動実行されます。

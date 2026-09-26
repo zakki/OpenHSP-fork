@@ -18,6 +18,8 @@ class PackageTest(unittest.TestCase):
         cls.release = package.CHSP / "Release"
         cls.tcc = package.CHSP / "extlib/tcc"
         cls.official = package.ROOT / "dist/hsp37.zip"
+        if not cls.official.exists():
+            cls.official = None
         cls.files = package.collect(cls.release, cls.tcc, cls.official)
 
     def test_contents_and_manifest(self):
@@ -27,9 +29,12 @@ class PackageTest(unittest.TestCase):
             self.assertEqual(digest, package.sha256(self.files[name]), name)
         for forbidden in ("hspcmp.dll", "hspcmp_original.dll", "hspcmp.exe", "hsp3.exe"):
             self.assertNotIn(forbidden, self.files)
-        with zipfile.ZipFile(self.official) as archive:
-            self.assertEqual(manifest["official_hspcmp_sha256"],
-                             package.sha256(archive.read("hsp37/hspcmp.dll")))
+        if self.official is not None:
+            with zipfile.ZipFile(self.official) as archive:
+                self.assertEqual(manifest["official_hspcmp_sha256"],
+                                 package.sha256(archive.read("hsp37/hspcmp.dll")))
+        else:
+            self.assertIsNone(manifest["official_hspcmp_sha256"])
         self.assertEqual((package.ASSETS / "chsp.md").read_bytes(), self.files["doclib/chsp.txt"])
         self.assertEqual({name for name in self.files if name.startswith("doclib/")
                           and not name.startswith("doclib/chsp-license/")}, {"doclib/chsp.txt"})
@@ -109,19 +114,21 @@ class SwitchTest(unittest.TestCase):
         self.switch("disable")
         self.assertEqual(self.active.read_bytes(), self.original)
 
-    def test_unknown_active_is_untouched(self):
-        self.active.write_bytes(b"unknown")
-        self.switch("enable", False)
-        self.switch("disable", False)
-        self.assertEqual(self.active.read_bytes(), b"unknown")
-        self.assertFalse(self.backup.exists())
+    def test_arbitrary_active_can_be_enabled_and_restored(self):
+        self.active.write_bytes(b"custom 3.8 active")
+        self.switch("enable")
+        self.assertEqual(self.active.read_bytes(), self.chsp)
+        self.assertEqual(self.backup.read_bytes(), b"custom 3.8 active")
+        self.switch("disable")
+        self.assertEqual(self.active.read_bytes(), b"custom 3.8 active")
 
     def test_existing_backup_is_never_overwritten(self):
-        self.backup.write_bytes(b"unknown backup")
-        self.switch("enable", False)
-        self.switch("disable", False)
-        self.assertEqual(self.active.read_bytes(), self.original)
-        self.assertEqual(self.backup.read_bytes(), b"unknown backup")
+        self.backup.write_bytes(b"existing backup")
+        self.switch("enable")
+        self.assertEqual(self.active.read_bytes(), self.chsp)
+        self.assertEqual(self.backup.read_bytes(), b"existing backup")
+        self.switch("disable")
+        self.assertEqual(self.active.read_bytes(), b"existing backup")
 
     def test_missing_or_damaged_payload(self):
         payload = self.root / "hspcmp_chsp.dll"
@@ -146,7 +153,8 @@ class SwitchTest(unittest.TestCase):
         self.assertEqual(list(self.root.glob("chsp-switch-*.tmp")), [])
 
 
-@unittest.skipUnless(os.name == "nt", "Windows binaries required")
+@unittest.skipUnless(os.name == "nt" and (package.ROOT / "dist/hsp37.zip").exists(),
+                     "Windows binaries and official ZIP required")
 class RuntimeTest(unittest.TestCase):
     def test_official_overlay_cli_proxy_and_help(self):
         # Current CLI delegation cannot handle spaces in its executable path.

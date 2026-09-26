@@ -22,41 +22,57 @@ try {
     # Serialize concurrent switch operations. The empty lock file may remain.
     $lockStream = [IO.File]::Open((Join-Path $PSScriptRoot 'chsp-switch.lock'),
         [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
-    $manifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'chsp-package.json') -Raw | ConvertFrom-Json
-    if ($manifest.format -ne 1) { throw 'Unsupported package manifest.' }
-    $originalHash = $manifest.official_hspcmp_sha256
-    $chspHash = $manifest.files.'hspcmp_chsp.dll'
-    if ($originalHash -notmatch '^[0-9a-f]{64}$' -or $chspHash -notmatch '^[0-9a-f]{64}$' -or $originalHash -eq $chspHash) {
-        throw 'Invalid DLL hashes in the package manifest.'
+    $manifestPath = Join-Path $PSScriptRoot 'chsp-package.json'
+    $chspExpectedHash = $null
+    if (Test-Path -LiteralPath $manifestPath) {
+        try {
+            $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+            if ($manifest.files -and $manifest.files.'hspcmp_chsp.dll') {
+                $chspExpectedHash = $manifest.files.'hspcmp_chsp.dll'
+            }
+        } catch { }
     }
+
     $active = Join-Path $PSScriptRoot 'hspcmp.dll'
     $backup = Join-Path $PSScriptRoot 'hspcmp_original.dll'
     $chsp = Join-Path $PSScriptRoot 'hspcmp_chsp.dll'
+
+    if (-not (Test-Path -LiteralPath $active)) {
+        throw 'hspcmp.dll is missing. Please extract cHSP into your HSP directory.'
+    }
+    if (-not (Test-Path -LiteralPath $chsp)) {
+        throw 'hspcmp_chsp.dll is missing.'
+    }
+
     $activeHash = Get-Hash $active
+    $chspHash = Get-Hash $chsp
+    if ($chspExpectedHash -and $chspHash -ne $chspExpectedHash) {
+        throw 'hspcmp_chsp.dll does not match the package manifest (damaged file).'
+    }
+
     $hasBackup = Test-Path -LiteralPath $backup
-    if ($hasBackup -and (Get-Hash $backup) -ne $originalHash) {
-        throw 'The existing hspcmp_original.dll is not the expected official DLL. No DLLs changed.'
-    }
-    if ($activeHash -ne $originalHash -and $activeHash -ne $chspHash) {
-        throw 'Unknown active hspcmp.dll. Restore the previous package before updating. No DLLs changed.'
-    }
+
     if ($Mode -eq 'Enable') {
-        if ((Get-Hash $chsp) -ne $chspHash) { throw 'hspcmp_chsp.dll does not match the package.' }
         if ($activeHash -eq $chspHash) {
-            if (-not $hasBackup) { throw 'cHSP is active but its official delegate DLL is missing.' }
+            if (-not $hasBackup) {
+                throw 'cHSP is active but its delegate DLL (hspcmp_original.dll) is missing.'
+            }
             Write-Output 'cHSP is already enabled.'
             exit 0
         }
         $source = $chsp
         $expected = $chspHash
     } else {
-        if ($activeHash -eq $originalHash) {
-            Write-Output 'The official compiler is already enabled.'
+        if ($activeHash -ne $chspHash) {
+            Write-Output 'The original compiler is already enabled.'
             exit 0
         }
-        if (-not $hasBackup) { throw 'Cannot restore: hspcmp_original.dll is missing.' }
+        if (-not $hasBackup) {
+            throw 'Cannot restore: hspcmp_original.dll is missing.'
+        }
+        $backupHash = Get-Hash $backup
         $source = $backup
-        $expected = $originalHash
+        $expected = $backupHash
     }
 
     $stage = Join-Path $PSScriptRoot ('chsp-switch-' + [guid]::NewGuid().ToString('N') + '.tmp')
