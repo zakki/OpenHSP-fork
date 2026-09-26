@@ -1,0 +1,9 @@
+; Open this file in the HSP editor after running enable_chsp.bat.
+#chsp_module "hello_native"
+#chsp_defcfunc int answer int p_value
+    return p_value + 1
+#chsp_end
+#chsp_module_end
+
+mes answer(41)
+stop
