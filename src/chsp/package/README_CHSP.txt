@@ -28,15 +28,12 @@ hspcmp_original.dll は復元後も保持します。
 
 ドキュメント
 ------------
-doclib/chsp.txt           言語仕様 (src/chsp/docs/chsp.md)
-doclib/chsp-guide.txt     CLI、ライブラリ生成、利用方法 (src/chsp/README.md)
-doclib/chsp-internals.txt 内部仕様
+doclib/chsp.txt           利用方法・構文・制限
 doclib/chsp-license/      ライセンス
 
-上記3文書はUTF-8のMarkdown本文を、内容を変えずtxtとして収録しています。
-文中のMarkdownリンクやソースツリーのパスは原文のままです。
-README.mdへの参照はchsp-guide.txt、chsp.mdはchsp.txt、
-chsp-internals.mdはchsp-internals.txtを参照してください。
+chsp.txtはUTF-8のMarkdown本文を、内容を変えずtxtとして収録しています。
+原稿はsrc/chsp/package/chsp.mdで管理しています。
+開発用のsrc/chsp/README.mdとsrc/chsp/docs/の2文書はZIPに収録していません。
 
 hsphelp/chsp.hs に8つのディレクティブのヘルプを収録しています。
 ヘルプビューアーを再起動して検索してください。

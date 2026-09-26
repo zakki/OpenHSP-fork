@@ -27,8 +27,10 @@ python src/chsp/tools/package_win32.py
 同じ入力から同じZIPを生成するため、収録順とZIPタイムスタンプは固定しています。
 入力検査とZIP検証が終わるまでは既存出力を置き換えません。
 
-`docs/chsp.md`、`README.md`、`docs/chsp-internals.md`はバイト列を保って
-doclibの`.txt`にコピーします。Markdown変換やリンク書き換えは行いません。
+配布専用の利用者向け文書`src/chsp/package/chsp.md`を、バイト列を保って
+`doclib/chsp.txt`にコピーします。`src/chsp/README.md`と`src/chsp/docs/`の2文書は
+収録しません。利用時に必要な構文・手順・制限は配布専用文書にまとめます。
+既存の開発用文書との重複整理は別作業とします。Markdown変換やリンク書き換えは行いません。
 ヘルプと配布READMEはUTF-8原稿をCP932/CRLFへ変換します。変換不能文字はエラーです。
 切替バッチと補助PowerShellはASCII/CRLFで収録します。
 

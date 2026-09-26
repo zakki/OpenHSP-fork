@@ -30,9 +30,9 @@ class PackageTest(unittest.TestCase):
         with zipfile.ZipFile(self.official) as archive:
             self.assertEqual(manifest["official_hspcmp_sha256"],
                              package.sha256(archive.read("hsp37/hspcmp.dll")))
-        for source, dest in (("docs/chsp.md", "chsp.txt"), ("README.md", "chsp-guide.txt"),
-                             ("docs/chsp-internals.md", "chsp-internals.txt")):
-            self.assertEqual((package.CHSP / source).read_bytes(), self.files["doclib/" + dest])
+        self.assertEqual((package.ASSETS / "chsp.md").read_bytes(), self.files["doclib/chsp.txt"])
+        self.assertEqual({name for name in self.files if name.startswith("doclib/")
+                          and not name.startswith("doclib/chsp-license/")}, {"doclib/chsp.txt"})
         self.assertEqual((package.CHSP / "sample/ao_opt.chsp").read_bytes(),
                          self.files["sample/chsp/ao_opt.hsp"])
         help_text = self.files["hsphelp/chsp.hs"].decode("cp932")

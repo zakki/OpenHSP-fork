@@ -89,10 +89,7 @@ def collect(release: Path, tcc: Path, official: Path) -> dict[str, bytes]:
             raise ValueError(f"Missing runtime file: {required}")
 
     # Deliberately preserve the Markdown bytes; only the extension changes.
-    for source, destination in ((CHSP / "docs/chsp.md", "chsp.txt"),
-                                (CHSP / "README.md", "chsp-guide.txt"),
-                                (CHSP / "docs/chsp-internals.md", "chsp-internals.txt")):
-        copy(source, "doclib/" + destination)
+    copy(ASSETS / "chsp.md", "doclib/chsp.txt")
     copy(ROOT / "LICENSE", "doclib/chsp-license/LICENSE.OpenHSP")
     copy(ASSETS / "TCC_COPYING", "doclib/chsp-license/TCC_COPYING")
     copy(tcc / "doc/tcc-win32.txt", "doclib/chsp-license/tcc-win32.txt")

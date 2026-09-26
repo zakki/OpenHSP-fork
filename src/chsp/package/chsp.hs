@@ -32,7 +32,7 @@ target=pluginはHSP3プラグイン形式、target=cは通常のC関数を公開
 HSPエディタから使用するにはenable_chsp.batでchsp版コンパイラを有効にします。
 変換する定義は入口ファイルへ直接記述してください。#include先のchsp定義は変換されません。
 分割する場合はchsp.exe --libraryでinclude用ライブラリを先に生成します。
-詳細はdoclib/chsp.txtとdoclib/chsp-guide.txtを参照してください。
+詳細はdoclib/chsp.txtを参照してください。
 %sample
 #chsp_module "answer_native" target=plugin
 #chsp_defcfunc int answer int p_value
