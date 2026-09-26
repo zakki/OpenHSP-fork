@@ -2,148 +2,55 @@
 
 ## 概要
 
-cHSPは、HSPスクリプトの一部をネイティブCコードに変換し、コンパイル・実行することでスクリプトの実行速度を向上させるための拡張フロントエンドです。
+cHSPは、HSPスクリプトの一部をネイティブCコードに変換し、内蔵コンパイラで自動コンパイル・実行することで、スクリプトの実行速度を向上させるための拡張フロントエンドです。
 
-cHSPを有効にしたHSPエディタ、またはコマンドラインの`chsp.exe`から使用できます。この文書ではHSP 3.7 Win32追加パッケージの利用方法を説明します。以下の配置パスは、特に断りがなければ展開先の`hsp37/`を基準とします。
+この文書ではHSP 3.7 Win32追加パッケージの利用方法を説明します。以下の配置パスは、特に断りがなければ展開先の `hsp37/` を基準とします。cHSPを有効にしたHSPエディタ、またはコマンドラインの `chsp.exe` から使用できます。
 
 ### 主な特徴
 
-- **ネイティブCへの変換と内蔵コンパイラ**:
+- ネイティブCへの変換と内蔵コンパイラ:
   - 高速化したい関数ブロックをネイティブCコードに変換します。
-  - バックエンドとして **`libtcc` (Tiny C Compiler)** を内蔵しており、外部C/C++コンパイラを別途インストールすることなく共有ライブラリ（Linux: `.so`, Windows: `.dll`）を自動ビルドします。
-- **HSP3プラグインアーキテクチャによるシームレスな統合**:
-  - 生成されたネイティブコードは既定でHSP3プラグインバックエンド（`hsp3cmdinit` / `#regcmd`）形式を採用しており、オーバーヘッドを最小限に抑えつつ配列や数値データを安全にやり取りできます。
-- **既存スクリプトとの互換性と透過的委譲**:
-  - 通常の `.hsp` はそのまま `hspcmp` へ素通しします。
-  - `#chsp_*` ブロックを含むスクリプトは、ネイティブライブラリ生成および中間コード生成後、`hspcmp` を実行して `.ax` を出力します。
-  - 空行・マーカー埋め込みにより、エラー発生時も元の `.chsp` の行番号が正確に保持されます。
+  - バックエンドとして `libtcc` (Tiny C Compiler) を内蔵しており、外部Cコンパイラを別途インストールすることなく共有ライブラリ（DLL）を自動ビルドします。
+- HSP3プラグイン形式による連携:
+  - 生成されたネイティブコードは既定でHSP3プラグイン形式（`target=plugin`）を採用しており、オーバーヘッドを抑えて配列や数値をやり取りできます。
+- 既存スクリプトとの互換性:
+  - 通常のHSPコードはそのまま公式の `hspcmp` へ素通しします。
+  - 空行・マーカー埋め込みにより、エラー発生時も元のスクリプトの行番号が保持されます。
 
 ---
 
-## 導入と使い方
+## 導入とクイックスタート（エディタでの利用）
 
-### Windows配布パッケージの導入
+### 導入手順
 
 配布ZIPは公式HSP 3.7の32bit版に追加して使います。cHSP自体のビルドや外部Cコンパイラのインストールは不要です。
 
-1. 公式の`hsp37.zip`を展開します。
-2. cHSPのZIPを同じ場所に展開し、最上位の`hsp37/`を重ねます。
-3. HSPエディタを終了して、`hsp37/enable_chsp.bat`を実行します。
-4. エディタで`sample/chsp/hello.hsp`を開き、F5で`42`と表示されることを確認します。
+1. 公式の `hsp37.zip` を展開します。
+2. cHSPのZIPを展開し、最上位の `hsp37/` フォルダを重ねます。
+3. HSPエディタを終了して、`hsp37/enable_chsp.bat` を実行します。
+4. HSPエディタで `sample/chsp/hello.hsp` を開き、F5キーを押して `42` と表示されることを確認します。
 
-ZIPの展開だけでは公式コンパイラは変更されません。有効化バッチは公式`hspcmp.dll`を`hspcmp_original.dll`にリネームし、`hspcmp_chsp.dll`を`hspcmp.dll`へコピーします。退避DLLはchspからの委譲にも必要なので削除しないでください。
-
-公式版に戻す場合はエディタを終了して`disable_chsp.bat`を実行します。更新は「旧パッケージで無効化 → 新ZIPを展開 → 有効化」の順です。CLIだけを使う場合はDLLの切替は不要です。
-
-この文書は配布ZIPの`doclib/chsp.txt`にも収録しています。ディレクティブ別のヘルプは`hsphelp/chsp.hs`にあり、ヘルプビューアーを再起動して検索できます。詳しい導入手順はパッケージ直下の`README_CHSP.txt`を参照してください。
-
-### CLIからの実行
-
-通常の `hspcmp` と同様のオプションで実行可能です。
-
-```text
-chsp.exe [options] <source.chsp|source.hsp>
-```
-
-**主なオプション:**
-
-| オプション | 説明 |
-| :--- | :--- |
-| `-o<file>` | 出力ファイル名を指定（通常は `.ax`、`--library` では `.as`） |
-| `--library` | include 用の `.as` とネイティブライブラリを生成。hspcmp への委譲・`.ax` 生成は行わない |
-| `-d` | デバッグ情報を付加 |
-| `-i` | 入力ソースをUTF-8として読み込む |
-| `-u` | 文字列をUTF-8で出力する（対応するランタイムで実行） |
-| `--compath=<path>` | 共通ディレクトリを指定。CLI の既定値は作業ディレクトリ基準の `common/` |
-| `--chsp-compile=libtcc\|none` | `libtcc` は共有ライブラリまで生成（既定）。`none` は C ソースを生成し、共有ライブラリのコンパイルを省略 |
-| `--keep-tmp` | CLI が通常削除する `<入力名>.chsp.tmp.hsp` を保持。生成された `.c` と共有ライブラリは指定なしでも残る |
-| `--hspcmp=<path>` | 委譲先の `hspcmp` バイナリのパスを指定 |
-
-#### Windows CLI の必要ファイルと実行例
-
-以下は `C:\hsp37` に cHSP を配置し、ソースのある別ディレクトリから実行する例です。実際の配置先に合わせてパスを変更してください。
-
-- `chsp.exe` と、それが使用する `libtcc.dll`。
-- 委譲先の通常版 `hspcmp.exe` と、実行用の HSP ランタイム（この例では `hsp3cl.exe`）。生成コード・使用機能に対応するバージョンとアーキテクチャを揃えます。
-- `common/` 一式。標準 HSP ヘッダーに加え、`common/chsp/chsp_builtins.tsv`、`chsp_runtime.h`、プラグイン SDK ヘッダーなどの `common/chsp/` 一式が必要です。
-- libtcc のヘッダー・ライブラリを含むランタイム一式。`chsp.exe` と同じディレクトリの `tcc/` に配置するか、環境変数 `LIBTCC_DIR` でそのディレクトリを指定します。`libtcc.dll` だけでは生成 C コードのコンパイルに必要なファイルが揃いません。
-
-作業ディレクトリに `answer.hsp` を作成します。現状は高速化対象の定義も入口ファイルに直接記述します。
-
-```hsp
-#chsp_module "answer_native"
-#chsp_defcfunc int answer int p_value
-    return p_value + 1
-#chsp_end
-#chsp_module_end
-
-mes answer(41)
-end
-```
-
-PowerShell で実行します。
-
-```powershell
-& "C:/hsp37/chsp.exe" --compath=C:/hsp37/common/ --hspcmp=C:/hsp37/hspcmp.exe -i -u -d --keep-tmp answer.hsp
-if ($LASTEXITCODE -eq 0) {
-    & "C:/hsp37/hsp3cl.exe" answer.ax
-}
-```
-
-実行結果は `42` です。`answer.ax`、`answer_native.c`、`answer_native.dll` と、`--keep-tmp` により保持される `answer.chsp.tmp.hsp` を確認できます。Windows の libtcc は `.def` を生成する場合もあります。既定の `target=plugin` では `#regcmd` / `#cmd` を含む呼び出しコードを生成し、`target=c` では `#uselib` / `#func` / `#cfunc` を使用します。
-
-`--compath` を省略すると、インストール先ではなく作業ディレクトリの `common/` を参照します。別ディレクトリから実行する場合は、上のように絶対パスと末尾の `/` を指定してください。`--chsp-compile=none` は生成 C コードの確認や外部コンパイラでのビルドに使います。通常の hspcmp への委譲は行われますが、実行に必要な共有ライブラリは別途用意する必要があります。
-
-現在のWindows CLIには、空白を含む配置パスで委譲先の`hspcmp.exe`を起動できない制限があります。CLIを使う場合は空白を含まない場所へ展開してください。配布版はWin32用で、生成DLLも32bitランタイムで使用します。
-
-`LIBTCC_DIR`を設定すると同梱の`tcc/`より指定先が優先されます。Proxy DLLでは`HSPCMP_ORIGINAL`で指定した委譲先DLLも優先されます。同梱構成を使う場合は、これらの環境変数を未設定にしてください。
-
-#### include 用ライブラリの生成
-
-`--library` を指定すると、入口ファイルの cHSP 定義をネイティブ化し、通常の HSP から include できる `.as` を出力します。`--keep-tmp` と委譲先の `hspcmp.exe` は不要です。
-
-例えば上の `answer.hsp` から末尾の `mes answer(41)` と `end` を除いた定義を `answer.chsp` に保存し、次を実行します。
-
-```powershell
-& "C:/hsp37/chsp.exe" --library --compath=C:/hsp37/common/ answer.chsp
-```
-
-`answer.as` と `answer_native.c`、`answer_native.dll` が生成されます。通常の hspcmp でビルドする利用側は次のように記述できます。
-
-```hsp
-#include "answer.as"
-mes answer(41)
-end
-```
-
-- `.as` は入力名を基に生成します。`-oout/answer.as` で出力先を指定すると、`.c` と共有ライブラリもそのディレクトリに生成します。出力先ディレクトリは事前に作成してください。
-- 共有ライブラリ名は各 `#chsp_module` の名前に従います。1入力に複数の module があれば複数の共有ライブラリを生成します。別ライブラリと module 名・公開関数名が重複しないようにしてください。
-- module 外の HSP コードは順序を保って `.as` に残します。初期化呼び出しなどは生成時には実行されず、利用側で include した位置のコードとして実行されます。`end` などもそのまま残る点に注意してください。
-- include ガードにより、同じ生成 `.as` の重複登録・コードの重複挿入を防ぎます。実行時に include 位置へ繰り返し制御が戻る場合の「初期化を一度だけ実行する」保証ではありません。
-- `.as` の探索と実行時の DLL 探索は別です。最初は `.as`・DLL・利用側の実行ファイルを同じディレクトリに配置してください。元コードの相対 `#include` やリソース参照は書き換えません。出力先を変更する場合は関連ファイルの配置も調整してください。
-- `--chsp-compile=none` と併用すると `.as` と `.c` だけを生成します。実行前に共有ライブラリを別途ビルドしてください。
-
-これは include **先のソースを自動変換する機能ではありません**。元の `.chsp` を変更したらライブラリを再生成し、利用側も再コンパイルしてください。生成される `.as` は UTF-8 なので、利用側も `-i` を指定してビルドします。
+> 有効化・復元の仕組み:
+> ZIPの展開だけでは公式コンパイラは変更されません。`enable_chsp.bat` は公式 `hspcmp.dll` を `hspcmp_original.dll` にバックアップし、chsp版コンパイラを配置します。退避DLLは委譲実行にも必要ですので削除しないでください。
+> 公式版に戻す場合はエディタを終了して `disable_chsp.bat` を実行します。
 
 ---
 
-## 基本仕様と構文
+## cHSPスクリプトの書き方
 
-`.hsp`と`.chsp`のどちらでもcHSPの拡張構文を使用できます。エディタで開く配布サンプルは`.hsp`です。拡張構文を含まないファイルは通常のHSPとしてコンパイルします。
+通常の `.hsp` スクリプト内に、高速化したい処理を `#chsp_module` 〜 `#chsp_module_end` で囲んで記述します。
 
-### モジュールと関数定義
-
-高速化対象の処理を `#chsp_module` 〜 `#chsp_module_end` で囲み、その中に関数を定義します。
+### モジュールと関数の基本定義
 
 ```hsp
 #chsp_module "my_math"
 
-// 戻り値のある関数 (#chsp_defcfunc <戻り値型> <関数名> <引数...>)
+// 戻り値のある関数 (#chsp_defcfunc 戻り値型 関数名 型 引数名, ...)
 #chsp_defcfunc double vdot array[double] v0, array[double] v1
     return v0(0) * v1(0) + v0(1) * v1(1) + v0(2) * v1(2)
 #chsp_end
 
-// 戻り値のない命令 (#chsp_deffunc <命令名> <引数...>)
+// 戻り値のない命令 (#chsp_deffunc 命令名 型 引数名, ...)
 #chsp_deffunc vcross array[double] c, array[double] v0, array[double] v1
     c(0) = v0(1) * v1(2) - v0(2) * v1(1)
     c(1) = v0(2) * v1(0) - v0(0) * v1(2)
@@ -152,56 +59,170 @@ end
 #chsp_end
 
 #chsp_module_end
+
+// 通常のHSPコードから呼び出し
+ddim v1, 3 : v1(0) = 1.0, 2.0, 3.0
+ddim v2, 3 : v2(0) = 4.0, 5.0, 6.0
+ddim c, 3
+
+vcross c, v1, v2
+mes "cross product: " + c(0) + ", " + c(1) + ", " + c(2)
+mes "dot product: " + vdot(v1, v2)
+stop
 ```
 
-`#chsp_defcfunc`の戻り値型は`int`または`double`です。`#chsp_deffunc`は戻り値のない命令を定義します。各関数の定義は`#chsp_end`、モジュール全体は`#chsp_module_end`で終了します。
+- `#chsp_module "モジュール名"`:
+  ネイティブ化するモジュールを開始します。モジュール名（文字列）は必須です。モジュール名を基にCソースとDLLを生成します。
+  - 出力方式として `target=plugin`（既定値）と `target=c` を指定できます。通常のスクリプト記述では省略（plugin）で使用します。
+- `#chsp_defcfunc 戻り値型 関数名 ...`:
+  数値を返す関数を定義します。式の中で呼び出します。
+- `#chsp_deffunc 命令名 ...`:
+  戻り値のない命令を定義します。文として呼び出します。
+- `#chsp_end`:
+  各関数の定義を終了します。
+- `#chsp_module_end`:
+  モジュールブロックを終了します。
 
-### モジュールの出力名とtarget指定
+### サポートする型とローカル変数
 
-`#chsp_module "my_math" target=plugin`のように、モジュールごとに出力名と方式を指定できます。
+cHSPブロック内の引数およびローカル変数は型指定が必要です。
 
-- `target=plugin`（省略時の既定値）: HSP3プラグイン形式で生成します。通常はこちらを使用します。
-- `target=c`: 通常のC関数を公開する形式で生成します。
-- モジュール名の文字列は省略可能です。例えば`math.hsp`内の名前なしモジュールは、出現順に`math_1`、`math_2`などの出力名になります。
-- 1ファイルに複数のモジュールを定義でき、異なるtargetを混在させられます。モジュールごとに`.c`と共有ライブラリ（Windowsでは`.dll`、Linuxでは`.so`）を生成します。出力名は重複させないでください。
+| 分類 | 指定形式 | 説明 |
+| :--- | :--- | :--- |
+| 基本型 | `int`, `double` | 整数、実数値を受け取るスカラー引数 |
+| 引数配列 | `array[int]`, `array[double]` | HSP側の配列を受け取る引数（最大4次元までアクセス可能） |
+| ローカル変数 | `local[int]`, `local[double]` | 関数内でのみ使用する作業用スカラー変数 |
+| 固定長ローカル配列 | `local[int[n]]`, `local[double[n]]` | 関数内でのみ使用する固定長配列（最大4次元まで宣言可能） |
 
-targetは`#chsp_module`行で指定します。CLIの`--chsp-compile=libtcc|none`は、生成Cコードから共有ライブラリをビルドするかどうかの指定です。既定では`libtcc`で共有ライブラリまで生成します。
+#### ローカル変数の宣言と使用例
 
-### サポートする型
+ローカル変数は、引数リストの末尾に `local[...]` として並べて宣言します。
 
-cHSP ブロック内の引数およびローカル変数は型指定が必須です。
+```hsp
+#chsp_module "calc_sample"
 
-- **基本型**: `int`, `double`
-- **引数配列**: `array[int]`, `array[double]`
-  - `a(i)`から`a(i, j, k, l)`まで、最大4次元の配列アクセスに対応しています。
-- **ローカル変数・固定長配列**:
-  - `local[int]`, `local[double]`
-  - `local[int[n]]`, `local[double[n]]` (1次元の固定長配列)
+// 引数2つ、ローカル変数2つ（スカラー sum と 2次元ローカル配列 table）を持つ命令
+#chsp_deffunc process_matrix array[int] out_arr, int count, local[int] sum, local[int[4][4]] table
+    // ローカル配列への代入
+    table(0, 0) = 10 : table(1, 1) = 20
 
-### 対応する文・式・組み込み関数
+    // 計算処理
+    sum = 0
+    repeat count
+        sum += table(0, 0) * cnt
+    loop
 
-- 代入、`+=`、`-=`、`*=`、`/=`などの複合代入
-- `if` / `else if` / `else`、`if 条件 : 文`の1行形式
-- `repeat` / `loop` / `continue` / `break`、`return`
-- 算術・比較・ビット・シフト演算、数値配列アクセス、関数呼び出し
+    out_arr(0) = sum
+    return
+#chsp_end
 
-主な組み込み関数は`int`、`double`、`length`、`length2`、`length3`、`length4`、`abs`、`absf`、`sin`、`cos`、`tan`、`atan`、`sqrt`、`expf`、`logf`、`powf`、`limit`、`limitf`、`rnd`です。`randomize`も使用できます。
+#chsp_module_end
 
-`rnd` / `randomize`の乱数状態は通常のHSP側とは独立しています。HSP側の`randomize`ではcHSP側の乱数状態を初期化できません。`target=c`はCの`rand` / `srand`を使用し、Mersenne Twisterには対応しません。両側で同じ乱数列になることを前提にしないでください。
+dim result, 1
+process_matrix result, 5
+mes "result = " + result(0)
+stop
+```
+
+- スカラーのローカル変数は `local[int] 変数名` や `local[double] 変数名` と記述します（初期値は `0` / `0.0`）。
+- 固定長ローカル配列は `local[int[10]]`（1次元）や `local[int[4][4]]`（2次元）、`local[double[2][3][4]]`（3次元）のように最大4次元まで宣言できます。
+
+### 対応する構文・演算子・組み込み関数
+
+cHSP関数内では、以下のHSP構文・式を使用できます。
+
+- 代入・演算:
+  - 通常の代入（`x = 10`）
+  - カンマ区切りの連続代入（`arr = 1, 2, 3` や `arr(0) = 10, 20`）
+  - 複合代入（`+=`, `-=`, `*=`, `/=`）
+  - インクリメント・デクリメント（`x++`, `x--`）
+- 制御構文:
+  - `if` / `else if` / `else`（ブロック形式および `if 条件 : 文` の1行形式）
+  - `repeat ループ回数` 〜 `loop`
+  - ループ制御: `break`, `continue`
+  - ループカウンタ `cnt`: `repeat` 内で現在のループ回数（0始まり）を参照できます。
+  - `return`（命令では単独、関数では `return 式`）
+- 演算子:
+  - 四則演算（`+`, `-`, `*`, `/`）
+  - 剰余演算子 `\`（例: `a \ b`）
+  - 比較演算子（`==`, `=`, `!=`, `!`, `<`, `>`, `<=`, `>=`）
+  - 論理演算・ビット演算（`&`, `|`, `^`）
+  - シフト演算（`<<`, `>>`）
+- 配列要素数の取得:
+  - `length(a)`, `length2(a)`, `length3(a)`, `length4(a)`
+- 主な組み込み関数:
+  - 数学関数: `abs`, `absf`, `sin`, `cos`, `tan`, `atan`, `sqrt`, `expf`, `logf`, `powf`, `limit`, `limitf`
+  - 型変換: `int(x)`, `double(x)`
+  - 乱数: `rnd(範囲)`, `randomize`（引数省略または `randomize シード値`）
+
+> 乱数に関する注意:
+> cHSPブロック内の `rnd` / `randomize` はCランタイムの標準乱数（`rand` / `srand`）を使用します。HSP側の標準乱数（Mersenne Twister）やHSP側の `randomize` とは独立して動作します。両側で同じ乱数列になることを前提にしないでください。
+
+---
+
+## HSPスクリプト高速化のポイント（実践ガイド）
+
+### 高速化に適した処理
+
+HSPのボトルネックになりやすい以下の処理を `#chsp_module` 化すると効果的です。
+
+- ピクセル単位・頂点単位のループ計算（画像処理、3D演算、レイトレーシング）
+- 多次元配列の走査やデータ変換
+- 物理シミュレーションや数値計算
+
+### 既存コードを移植する際のチェックリスト
+
+1. グローバル変数を直接参照しない:
+   cHSPブロック内からHSP側のグローバル変数は直接参照できません。必要な値・配列は引数で渡してください。
+2. GUI命令や文字列処理を含めない:
+   `mes`、`color`、`redraw` などのGUI描画命令や文字列操作は呼び出せません。描画や画面更新はHSP側で行い、計算処理をcHSP関数に切り出してください。
+3. 作業用変数は `local[...]` で宣言する:
+   関数内で使う変数は、引数リストの末尾に `local[int] i` などの形式で宣言してください。
+4. 配列型を明示する:
+   引数配列には `array[int]` または `array[double]` を指定してください。
+
+### サンプル: aobench (アンビエントオクルージョン)
+
+パッケージ内の `sample/chsp/ao_opt.hsp` は、3DCGのレンダリングベンチマークプログラムです。
+比較用の通常HSP版 `sample/chsp/ao_original.hsp` のうち、ピクセルごとに繰り返し実行されるベクトル演算およびレイ交差判定を `#chsp_module` 化しています。
+
+HSPエディタで `ao_opt.hsp` を開いて F5 を押すことで、ネイティブ実行の効果を比較できます。
+
+---
+
+## 注意事項と現在の主な制約
+
+- `#include` 先の `#chsp_*` 定義は変換されません:
+  高速化する定義は入口の `.hsp` ファイルへ直接記述してください。`#include` 先の chsp 定義は自動変換されず、未初期化エラーや実行時エラーの原因になります。分割する場合は、後述の「include 用ライブラリの生成」の手順で先にライブラリを生成してください。
+- HSP 3.7 との組み合わせに関する制約:
+  - `int64` 型や `lldim` などの 64bit 整数機能は HSP 3.8 開発版向けであり、HSP 3.7 環境では利用できません（`int` または `double` を使用してください）。
+  - 配布パッケージは 32bit (Win32) 向けです。64bit ランタイム用 DLL は生成しません。
+- 未対応の型・機能:
+  - 文字列型（`str`）および文字列配列、ブロック内での `sdim` / `ddim`、`gettime` には対応していません。
+  - cHSPブロック内でのHSPマクロ展開や、任意位置の引数省略には対応していません。
+- 型変換・演算の規則:
+  - `int` と `double` の混在演算や暗黙の型変換は、バックエンドの C 言語の型変換規則に準拠します。厳密な型精度が求められる計算では、明示的に `int()` や `double()` でキャストしてください。
+
+---
+
+## 高度な使い方
 
 ### インライン C コードの埋め込み
 
-`#chsp_c` を使うことで、ネイティブ C コードを直接記述して標準ライブラリ（`math.h` 等）や最適化ルーチンを利用できます。
+`#chsp_c` を使うことで、モジュール内にネイティブ C コードを直接記述し、Cの標準関数や外部最適化ルーチンを利用できます。
 
 ```hsp
 #chsp_module "native_sample"
 
+// Cコードをそのまま埋め込む
 #chsp_c {"
 #include <math.h>
 double c_distance(double x, double y) {
     return sqrt(x * x + y * y);
 }
 "}
+
+// 埋め込んだC関数をcHSPから呼べるように登録
 #chsp_cdecl c_distance
 
 #chsp_defcfunc double calc_dist double x, double y
@@ -209,45 +230,76 @@ double c_distance(double x, double y) {
 #chsp_end
 
 #chsp_module_end
+
+mes "dist = " + calc_dist(3.0, 4.0)
+stop
 ```
 
-`#chsp_c`はモジュール内で使用します。C関数をcHSPから呼ぶには`#chsp_cdecl`で名前を登録し、Cの定義と同じ大文字・小文字で記述してください。`#chsp_cdecl`はモジュール内かつcHSP関数本体の外に置きます。どちらも`target=plugin`と`target=c`で利用できます。
+- `#chsp_c` はモジュール内に記述します。
+- C関数を呼び出すには、モジュール内・関数定義の外に `#chsp_cdecl C関数名` を記述して登録します（大文字・小文字を厳密に一致させてください）。
 
 ### 追加ライブラリのリンク
 
-生成DLLが追加のライブラリを必要とする場合は、モジュール内に`#chsp_clink "name"`を記述します。指定はそのモジュールだけに適用され、1行に1ライブラリ、複数必要なら複数行で指定します。両方のtargetで使用できます。
+生成DLLが追加のCライブラリを必要とする場合は、モジュール内に `#chsp_clink "ライブラリ名"` を記述します。
 
-WindowsではTCCから参照できるライブラリ名（例: `"msvcrt"`）、Linuxでは`-l`に続ける名前（例: `"dl"`）を指定します。対象OS向けのライブラリが必要です。`--chsp-compile=none`で出力したCコードを外部コンパイラでビルドする場合は、対応するリンク指定も自分で追加してください。
+```hsp
+#chsp_module "native_math" target=c
+#chsp_clink "msvcrt"
+#chsp_defcfunc double calc_root double p_value
+    return sqrt(p_value)
+#chsp_end
+#chsp_module_end
 
-### 現在の主な制約
+mes "calc_root(16.0) = " + calc_root(16.0)
+stop
+```
 
-- `#include` 先の `#chsp_*` 定義は変換されません。入口ファイルに直接記述してください。入口に空の `#chsp_module` を追加しても解決しません。
-- この制限はCLIとProxy DLLの両方にあり、現状コンパイルエラーとして検出されず、コンパイルが成功しても未初期化変数の警告や実行時 Error 10 になる場合があります。通常の HSP の include は委譲先の hspcmp が処理します。分割する場合は、この文書の「include 用ライブラリの生成」の手順で`--library`から`.as`とDLLを先に生成してください。終了コード0だけではinclude先がネイティブ化されたことを確認できません。
+### コマンドライン（CLI）からの実行
 
-- HSP 側のグローバル変数はネイティブ側から直接アクセスできません（関数の引数経由で渡す必要があります）。
-- cHSP ブロック内から通常の HSP ユーザー定義関数や標準 GUI 命令（`mes`, `pos` 等）は呼び出せません。
-- `str` / `array[str]`、cHSPブロック内の`ddim` / `sdim`、`gettime`には対応していません。
-- cHSPブロック内部でのHSPプリプロセッサによるマクロ展開と、一般的な任意位置の引数省略には対応していません。
-- `int`と`double`の混在演算、および戻り値・代入時の暗黙変換の意味は仕様策定中です。現状はCの型変換規則に依存する場合があるため、通常のHSPと同じ結果になることを前提にしないでください。
+コマンドプロンプトや PowerShell から `chsp.exe` を直接実行することも可能です。CLI利用時はDLLの切り替え（`enable_chsp.bat`）は不要です。
+
+```text
+chsp.exe [options] <source.chsp|source.hsp>
+```
+
+主なオプション:
+
+| オプション | 説明 |
+| :--- | :--- |
+| `-o<file>` | 出力ファイル名を指定（通常は `.ax`、`--library` では `.as`） |
+| `--library` | include用の `.as` とネイティブライブラリを生成（`.ax` は生成しない） |
+| `-d` | デバッグ情報を付加 |
+| `-i` | 入力ソースを UTF-8 として読み込む |
+| `-u` | 文字列を UTF-8 で出力する |
+| `--compath=<path>` | 共通ディレクトリを指定（既定値は作業ディレクトリ基準の `common/`） |
+| `--chsp-compile=libtcc\|none` | `libtcc` は共有ライブラリまで自動ビルド（既定）。`none` はCソースの出力のみ |
+| `--keep-tmp` | 中間ファイル `<入力名>.chsp.tmp.hsp` を削除せず保持する |
+| `--hspcmp=<path>` | 委譲先の `hspcmp` バイナリのパスを指定 |
+
+> CLI利用時の注意:
+> - 別の作業ディレクトリから実行する場合は、`chsp.exe`、`--compath`、`--hspcmp` に絶対パスを指定してください（末尾の `/` も必要です）。
+> - 現在の Windows CLI には、空白を含むパスで委譲先の `hspcmp.exe` を起動できない制限があります。CLI を使う場合は、空白を含まないディレクトリへ展開してください。
+
+### include 用ライブラリの生成（`--library`）
+
+複数のスクリプトからネイティブ関数を共通利用したい場合や、ファイルを分割したい場合は、`--library` オプションを使って事前に `.as` とネイティブ DLL を生成します。
+
+1. 高速化対象の定義だけを記述したファイル（例: `answer.chsp`）を作成します。
+2. 次のコマンドを実行します：
+   ```powershell
+   chsp.exe --library --compath=C:/hsp37/common/ answer.chsp
+   ```
+3. `answer.as` と `answer_native.dll` が生成されます。
+4. 通常の HSP スクリプトから `#include "answer.as"` することで、通常の `hspcmp` でコンパイル・実行が可能になります。
 
 ---
 
-## サンプル: aobench
+## 配布サンプルとヘルプ一覧
 
-`sample/chsp/ao_opt.hsp`は、アンビエントオクルージョンの3DCGレンダリングベンチマークプログラムです。
-
-比較用の通常HSP版`sample/chsp/ao_original.hsp`のうち、ピクセルごとに繰り返し呼び出されるベクトル計算およびレイと球・平面の交差判定を`#chsp_module`化しています。
-
-### Windows配布版での実行
-
-cHSPを有効にしたエディタで`sample/chsp/ao_opt.hsp`を開き、F5で実行してください。画面描画を使うため、GUI版のHSPランタイムで実行します。
-
-計算負荷の高い部分をネイティブ実行する効果を比較できます。実行速度は環境や設定によって異なります。
-
----
-
-## その他の配布サンプルとヘルプ
-
-`sample/chsp/hello.hsp`は最小例です。`sample/chsp_test/`には数値・配列・分岐の比較例があります。`*_hsp.hsp`は通常HSP、`*_chsp_c.hsp`は`target=c`、`*_chsp_p.hsp`は`target=plugin`です。同じ名前の`.gt`には期待するテキスト出力を収録しています。
-
-ヘルプビューアーでは、`#chsp_module`、`#chsp_module_end`、`#chsp_deffunc`、`#chsp_defcfunc`、`#chsp_end`、`#chsp_c`、`#chsp_cdecl`、`#chsp_clink`を検索できます。
+- サンプルスクリプト:
+  - `sample/chsp/hello.hsp`: 導入確認用の最小例
+  - `sample/chsp/ao_opt.hsp`: 高速化した aobench
+  - `sample/chsp/ao_original.hsp`: 比較用の通常 HSP 版 aobench
+  - `sample/chsp_test/`: 数値・配列・分岐等の網羅的な比較テスト例
+- HSPヘルプビューアー:
+  - `hsphelp/chsp.hs` が同梱されており、ヘルプビューアー（またはエディタで F1 キー）から `#chsp_module`、`#chsp_deffunc`、`#chsp_defcfunc` などの各ディレクティブを直接検索できます。

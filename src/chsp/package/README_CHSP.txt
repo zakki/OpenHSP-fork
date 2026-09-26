@@ -31,13 +31,8 @@ hspcmp_original.dll は復元後も保持します。
 doclib/chsp.txt           利用方法・構文・制限
 doclib/chsp-license/      ライセンス
 
-chsp.txtはUTF-8のMarkdown本文を、内容を変えずtxtとして収録しています。
-原稿はsrc/chsp/package/chsp.mdで管理しています。
-開発用のsrc/chsp/README.mdとsrc/chsp/docs/の2文書はZIPに収録していません。
-
 hsphelp/chsp.hs に8つのディレクティブのヘルプを収録しています。
 ヘルプビューアーを再起動して検索してください。
-ヘルプソースはCP932/CRLFで収録しています。
 
 サンプル
 --------
@@ -63,6 +58,7 @@ CLIの利用にDLL切替は不要です。
 対象・制限
 ----------
 HSP 3.7の32bit版向けです。64bitランタイム用DLLは生成しません。
+int64などの64bit整数機能はHSP 3.8開発版向けであり、本パッケージでは使用できません。
 高速化する定義は入口のhspファイルへ直接記述してください。
 include先のchsp定義は自動変換されません。
 分割する場合はchsp.exe --libraryで先にライブラリを生成します。

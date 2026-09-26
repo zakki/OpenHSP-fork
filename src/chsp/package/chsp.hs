@@ -19,13 +19,13 @@ Win
 cHSPディレクティブ
 %prm
 "name" target=plugin
-"name" : 出力するネイティブライブラリ名 (省略可能)
+"name" : 出力するネイティブライブラリ名 (必須)
 target : plugin または c (省略時はplugin)
 %inst
 #chsp_module_endまでをネイティブ化の対象モジュールとします。
 モジュール内に#chsp_deffuncや#chsp_defcfuncで関数を定義します。
-nameを省略すると、ソースファイル名とモジュールの出現順から出力名を生成します。
-target=pluginはHSP3プラグイン形式、target=cは通常のC関数を公開する形式です。
+"name"には出力するライブラリ名を文字列で必ず指定してください。
+target=pluginはHSP3プラグイン形式（通常はこちらを使用）、target=cは通常のC関数を公開する形式です。
 1ファイルに複数のモジュールを記述でき、それぞれ独立したCソースとDLLを生成します。
 出力名と公開関数名が重複しないようにしてください。
 ^
@@ -59,6 +59,8 @@ cHSPディレクティブ
 %sample
 #chsp_module "empty_native"
 #chsp_module_end
+mes "empty module ok"
+stop
 %href
 #chsp_module
 #chsp_end
@@ -74,23 +76,26 @@ name : 公開する命令名
 型 : int、double、array[int]、array[double]など
 %inst
 モジュール内で戻り値のない命令を定義します。定義の終わりに#chsp_endを記述します。
-引数には型を指定します。ローカル変数は引数リストにlocal[int]やlocal[double]で宣言します。
+引数には型を指定します。ローカル変数は引数リストの末尾にlocal[int]やlocal[double]で宣言します。
 固定長ローカル配列はlocal[int[n]]、local[double[n]]で宣言します。
-引数配列は最大4次元のアクセス、ローカル配列は1次元に対応します。
+引数配列・ローカル配列ともに最大4次元に対応します（例: local[int[2][3]]）。
 ^
 通常のHSPグローバル変数を直接参照できません。必要な値・配列を引数で渡してください。
 通常のHSPユーザー関数やGUI命令は呼び出せません。
-関数内では代入、if/else、repeat/loop、break、continue、returnなどを使用できます。
+関数内では代入、カンマ区切り代入、複合代入（+=, -=, *=, /=）、if/else、repeat/loop、break、continue、returnなどを使用できます。repeat/loop内ではループカウンタcntを参照できます。
 %sample
 #chsp_module "fill_native"
-#chsp_deffunc fill array[int] p_values, int p_value
-    p_values(0) = p_value
+#chsp_deffunc fill_seq array[int] p_values, int p_count, local[int] i
+    repeat p_count
+        i = cnt
+        p_values(i) = (i + 1) * 10
+    loop
     return
 #chsp_end
 #chsp_module_end
-dim values, 1
-fill values, 42
-mes values(0)
+dim values, 3
+fill_seq values, 3
+mes "" + values(0) + ", " + values(1) + ", " + values(2)
 stop
 %href
 #chsp_module
@@ -111,6 +116,7 @@ name : 公開する関数名
 引数とローカル変数の型指定は#chsp_deffuncと同じです。
 関数は式の中で呼び出します。文字列型の戻り値や引数には対応していません。
 intとdoubleの混在演算・暗黙変換には制限があります。詳細はdoclib/chsp.txtを参照してください。
+※int64などの64bit整数機能はHSP 3.8開発版向けであり、HSP 3.7環境では利用できません。
 %sample
 #chsp_module "square_native"
 #chsp_defcfunc double square double p_value
@@ -140,6 +146,8 @@ cHSPディレクティブ
     return p_value
 #chsp_end
 #chsp_module_end
+mes identity(42)
+stop
 %href
 #chsp_deffunc
 #chsp_defcfunc
@@ -210,10 +218,12 @@ Linux専用ライブラリの指定をWindowsでそのまま使用すること�
 %sample
 #chsp_module "native_math" target=c
 #chsp_clink "msvcrt"
-#chsp_defcfunc double root double p_value
+#chsp_defcfunc double calc_root double p_value
     return sqrt(p_value)
 #chsp_end
 #chsp_module_end
+mes "calc_root(16.0) = " + calc_root(16.0)
+stop
 %href
 #chsp_c
 #chsp_module
