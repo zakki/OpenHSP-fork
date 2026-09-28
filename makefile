@@ -502,8 +502,8 @@ SYSFS_INSTALL = $(INSTALL) -m 0755 libhsp3gpio_sysfs.so $(DESTDIR)$(OPENHSPDIR)/
 TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax $(GPIOD_TARGET) $(SYSFS_TARGET)
 CLEAN_TARGETS = hsp3dish hsp3gp hsp3cl hspcmp hsed helpmes.ax libhsp3gpio_gpiod.so libhsp3gpio_sysfs.so
 
-LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lstdc++fs -lcurl -lgpiod -lpthread -lffi
-LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lstdc++fs -lcurl -lgpiod -lpthread -lffi
+LIBS1 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lstdc++fs -lcurl -ldl -lpthread -lffi
+LIBS2 = -lm -lGL -lEGL -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lstdc++ -lstdc++fs -lcurl -ldl -lpthread -lffi
 LIBS_GP = \
 	libgameplay.a \
 	libBulletDynamics.a \
