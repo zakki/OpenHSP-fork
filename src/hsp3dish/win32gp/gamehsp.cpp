@@ -1764,8 +1764,6 @@ int gamehsp::setObjectPrm( int objid, int prmid, int value, int method )
 		break;
 	}
 
-	if ((prmid == GPOBJ_PRMSET_USEGPMAT) && (newvalue == *base_i)) return 0;
-
 	if (prmid == GPOBJ_PRMSET_FLAG) {
 		obj->_flag = (short)newvalue;
 	} else {
@@ -2060,6 +2058,7 @@ int gamehsp::makeFloorNode( float xsize, float ysize, int color, int matid )
 		//if (_curlight < 0) matopt |= GPOBJ_MATOPT_NOLIGHT;
 		material = makeMaterialColor(color, matopt);
 		makeNewModel(obj, floorMesh, material);
+		SAFE_RELEASE(material);
 	}
 	else {
 		material = getMaterial(matid);
@@ -2069,6 +2068,7 @@ int gamehsp::makeFloorNode( float xsize, float ysize, int color, int matid )
 		else {
 			material = makeMaterialColor(-1, GPOBJ_MATOPT_NOLIGHT);
 			makeNewModel(obj, floorMesh, material);
+			SAFE_RELEASE(material);
 		}
 	}
 
@@ -2107,6 +2107,7 @@ int gamehsp::makePlateNode( float xsize, float ysize, int color, int matid )
 		//if ( _curlight < 0 ) matopt |= GPOBJ_MATOPT_NOLIGHT;
 		material = makeMaterialColor(color, matopt);
 		makeNewModel(obj, mesh, material);
+		SAFE_RELEASE(material);
 	}
 	else {
 		material = getMaterial(matid);
@@ -2116,6 +2117,7 @@ int gamehsp::makePlateNode( float xsize, float ysize, int color, int matid )
 		else {
 			material = makeMaterialColor(-1, GPOBJ_MATOPT_NOLIGHT);
 			makeNewModel(obj, mesh, material);
+			SAFE_RELEASE(material);
 		}
 	}
 
@@ -2148,6 +2150,7 @@ int gamehsp::makeBoxNode( float size, int color, int matid )
 		//if ( _curlight < 0 ) matopt |= GPOBJ_MATOPT_NOLIGHT;
 		material = makeMaterialColor( color, matopt );
 		makeNewModel(obj, mesh, material);
+		SAFE_RELEASE(material);
 	}
 	else {
 		material = getMaterial(matid);
@@ -2157,6 +2160,7 @@ int gamehsp::makeBoxNode( float size, int color, int matid )
 		else {
 			material = makeMaterialColor(-1, GPOBJ_MATOPT_NOLIGHT);
 			makeNewModel(obj, mesh, material);
+			SAFE_RELEASE(material);
 		}
 	}
 
@@ -2496,8 +2500,6 @@ gpobj *gamehsp::getSceneObj(int id)
 
 int gamehsp::deleteObj( int id )
 {
-	Model *model;
-	Material *material;
 	gpobj *obj = getObj( id );
 	if ( obj == NULL ) return -1;
 
@@ -2510,13 +2512,7 @@ int gamehsp::deleteObj( int id )
 		delete obj->_phy;
 		obj->_phy = NULL;
 	}
-	model = obj->_model;
-
-	if ( model ) {
-			material = model->getMaterial();
-			SAFE_RELEASE(material);		// マテリアルはモデルに個別で用意されるので削除
-	}
-
+	// Model owns its materials regardless of the current _usegpmat value.
 	if (obj->_node) {
 		obj->_node->setUserObject(NULL);
 		if (_curscene >= 0) {
@@ -3901,6 +3897,7 @@ int gamehsp::makeFreeVertexNode(int color, int matid)
 		//if ( _curlight < 0 ) matopt |= GPOBJ_MATOPT_NOLIGHT;
 		material = makeMaterialColor(color, matopt);
 		makeNewModel(obj, mesh, material);
+		SAFE_RELEASE(material);
 	}
 	else {
 		material = getMaterial(matid);
@@ -3910,6 +3907,7 @@ int gamehsp::makeFreeVertexNode(int color, int matid)
 		else {
 			material = makeMaterialColor(-1, GPOBJ_MATOPT_NOLIGHT);
 			makeNewModel(obj, mesh, material);
+			SAFE_RELEASE(material);
 		}
 	}
 
