@@ -1884,10 +1884,12 @@ void hgio_scale_point( int xx, int yy, int &x, int & y )
 
 void hgio_touch( int xx, int yy, int button )
 {
-    Bmscr *bm;
+	Bmscr *bm;
 	hgio_scale_point( xx,yy,mouse_x,mouse_y );
 	hgio_cnvview( mainbm, &mouse_x, &mouse_y );
 	mouse_btn = button;
+	// Preserve all mouse keys, but only the left button presses GUI objects.
+	button &= SDL_BUTTON_LMASK;
     if ( mainbm != NULL ) {
         mainbm->savepos[BMSCR_SAVEPOS_MOSUEX] = mouse_x;
         mainbm->savepos[BMSCR_SAVEPOS_MOSUEY] = mouse_y;
