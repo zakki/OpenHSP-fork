@@ -4,9 +4,73 @@
 #include <string.h>
 #include <type_traits>
 #include <string>
+#include <filesystem>
+#include <set>
 
 #include "../src/hsp3/hsp3pathio.h"
 #include "../src/hsp3/strbuf.h"
+
+#if !defined(HSPWIN) && !defined(_WIN32)
+static void expect_dirlist(const std::string& pattern, int flags,
+	const std::set<std::string>& expected)
+{
+	char* result = sbAlloc(0x1000);
+	assert(dirlist(pattern.c_str(), &result, flags) == (int)expected.size());
+	std::set<std::string> names;
+	std::string listing(result);
+	for (size_t start = 0; start < listing.size();) {
+		size_t end = listing.find('\n', start);
+		assert(end != std::string::npos);
+		names.insert(listing.substr(start, end - start));
+		start = end + 1;
+	}
+	assert(names == expected);
+	sbFree(result);
+}
+
+static void test_dirlist_directory_patterns()
+{
+	namespace fs = std::filesystem;
+	char temporary[] = "hsp3pathio-dirlist-XXXXXX";
+	assert(mkdtemp(temporary) != NULL);
+	fs::path root(temporary);
+	fs::path directory = root / fs::u8path("日本語-😀");
+	assert(fs::create_directory(directory));
+	assert(fs::create_directory(directory / "subdir"));
+	assert(fs::create_directory(directory / ".hidden-dir"));
+	for (const char* name : {"file.txt", "other.bin", ".hidden.txt", "日本語.txt"}) {
+		FILE* file = fopen((directory / fs::u8path(name)).c_str(), "wb");
+		assert(file != NULL);
+		assert(fclose(file) == 0);
+	}
+	// A same-named directory in the working directory would produce the wrong
+	// type if stat() used just the entry name instead of the search directory.
+	std::string collision = root.filename().string();
+	FILE* file = fopen((directory / collision).c_str(), "wb");
+	assert(file != NULL);
+	assert(fclose(file) == 0);
+
+	fs::path cwd = fs::current_path();
+	for (const fs::path& prefix : {directory, fs::absolute(directory), root / "." / directory.filename()}) {
+		expect_dirlist((prefix / "*.txt").u8string(), 1,
+			{"file.txt", ".hidden.txt", "日本語.txt"});
+		expect_dirlist((prefix / "file.txt").u8string(), 0, {"file.txt"});
+		expect_dirlist((prefix / "*").u8string(), 3,
+			{"file.txt", "other.bin", "日本語.txt", collision});
+		expect_dirlist((prefix / "*").u8string(), 5, {"subdir"});
+		expect_dirlist((prefix / "*").u8string(), 6, {".hidden.txt"});
+		expect_dirlist((prefix / "*").u8string(), 7, {"subdir", ".hidden.txt", ".hidden-dir"});
+		expect_dirlist((prefix / "no-match-*").u8string(), 0, {});
+	}
+	expect_dirlist((directory / "subdir" / ".." / "file.txt").u8string(), 1, {"file.txt"});
+	expect_dirlist(directory.u8string() + "/", 0, {});
+	char* result = sbAlloc(0x1000);
+	assert(dirlist((directory / "missing" / "*").c_str(), &result, 0) == -1);
+	sbFree(result);
+	assert(fs::current_path() == cwd);
+	fs::remove_all(root);
+}
+#endif
 
 int main()
 {
@@ -29,6 +93,9 @@ int main()
 	assert(fclose(input) == 0);
 	assert(strcmp(buffer, expected) == 0);
 	sbInit();
+#if !defined(HSPWIN) && !defined(_WIN32)
+	test_dirlist_directory_patterns();
+#endif
 	char* dirlist_result = sbAlloc(0x1000);
 	assert(dirlist("hsp3pathio-*.tmp", &dirlist_result, 1) >= 1);
 	assert(strstr(dirlist_result, path) != NULL);
