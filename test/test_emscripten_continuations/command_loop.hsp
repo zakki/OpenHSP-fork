@@ -1,0 +1,21 @@
+#include "test_api.as"
+#module
+#deffunc worker int p_count, local value
+value = 0
+repeat p_count
+    check_step
+    value += cnt
+    await 1
+loop
+return value
+#deffunc outer
+worker 4
+emit stat
+worker 3
+emit stat
+return
+#global
+outer
+emit sublev
+emit looplev
+end

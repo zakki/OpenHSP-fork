@@ -1,0 +1,7 @@
+#include "test_api.as"
+enqueue_pair *callback, 1
+emit "must not reach"
+end
+*callback
+await 1
+return

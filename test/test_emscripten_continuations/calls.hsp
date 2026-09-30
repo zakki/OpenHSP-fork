@@ -1,0 +1,11 @@
+#include "test_api.as"
+enqueue_pair *callback, 0
+check_callback 0
+emit "caller"
+end
+*callback
+check_snapshot
+check_callback 0
+emit iparam
+wait 1
+return

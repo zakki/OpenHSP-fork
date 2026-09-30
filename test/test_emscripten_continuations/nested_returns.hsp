@@ -1,0 +1,37 @@
+#include "test_api.as"
+#module
+#deffunc leaf var p_value
+p_value += 2
+return 999
+#deffunc middle var p_value
+leaf p_value
+p_value += 3
+return
+#defcfunc calculate int p_depth, local value
+value = 10
+middle value
+gosub *bump
+if p_depth > 0 {
+    value += calculate(p_depth - 1)
+}
+return value
+*bump
+value += 5
+return
+#defcfunc text_result local value
+value = 0
+middle value
+return "text=" + value
+#defcfunc real_result local value
+value = 0
+middle value
+return 0.5 + value
+#global
+repeat 3
+    emit calculate(2) + 7
+    emit text_result()
+    emit real_result()
+loop
+emit sublev
+emit looplev
+end

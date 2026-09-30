@@ -1,0 +1,23 @@
+#include "test_api.as"
+#module
+#deffunc nested_command
+check_callback 1
+emit "nested"
+return
+#global
+enqueue_pair *callback, 1
+check_callback 0
+emit "caller"
+end
+*callback
+check_snapshot
+check_callback 1
+emit iparam
+nested_command
+gosub *nested_label
+check_callback 1
+return
+*nested_label
+check_callback 1
+emit "gosub"
+return

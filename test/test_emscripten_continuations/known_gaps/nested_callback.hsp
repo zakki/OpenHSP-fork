@@ -1,0 +1,11 @@
+#include "test_api.as"
+enqueue_pair *outer, 1
+emit "caller"
+end
+*outer
+enqueue_pair *inner, 1
+emit "outer"
+return
+*inner
+emit "inner"
+return

@@ -19,7 +19,10 @@ rundish: $(TARGET).ax
 runcl: $(TARGET).ax
 	$(HSP3CL) $<
 
-.PHONY: unicode-path
+.PHONY: unicode-path emscripten-continuations
+
+emscripten-continuations:
+	$(MAKE) -C test_emscripten_continuations test
 
 unicode-path:
 	@if [ -z "$(HSPCMP_EXE)" ]; then \

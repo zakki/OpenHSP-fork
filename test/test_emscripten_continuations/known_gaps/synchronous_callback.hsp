@@ -1,0 +1,13 @@
+#include "test_api.as"
+#module
+#defcfunc synchronous
+; Layer-object registration and objprm can enqueue callbacks in the same way.
+enqueue_pair *callback, 1
+return 7
+*callback
+emit "callback"
+return
+#global
+emit synchronous()
+emit "caller"
+end
