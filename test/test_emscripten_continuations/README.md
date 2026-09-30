@@ -28,6 +28,9 @@ make -C test/test_emscripten_continuations test HSPCMP=/absolute/path/to/hspcmp
 - `callbacks.hsp`: 複数callbackのFIFO順序、iparam/wparam/lparam/stat/strsize/refstr/refdvalの保存、deffunc/gosubから復帰してもcallback_flagを保持すること、最後に呼び出し元へ戻ること。
 - `calls.hsp`: code_callのFIFO順序と引数保存、callback_flag=0でのwait許可。
 - `invalid_callback.hsp`: callback内のawaitをエラー42にすること。
+- `on_gosub.hsp`: 選択されたラベルの同期呼び出し、入れ子、wait後の復帰、範囲外インデックスの無操作。
+- `on_gosub_function.hsp`: defcfunc内のon gosubと関数呼び出し後の式の継続。
+- `on_gosub_callback.hsp`: callback内のon gosubの実行順序とcallback_flagの保持。
 - 正常終了時はsublev、looplev、評価スタック、保留callback、callback_flagが残っていないことを確認する。その後、実行中・待機中のcallbackがある状態でHsp3::Resetし、継続状態が消去されることも確認する。
 - `redraw.cpp`: redraw 0/2の描画開始→BG→NORMAL、redraw 1/3のPOSTEFF→オブジェクト→MAX→描画完了、フォント復元、メイン画面だけのsprite更新、アイドル時の無操作。
 
@@ -40,6 +43,12 @@ make -C test/test_emscripten_continuations test HSPCMP=/absolute/path/to/hspcmp
 `redraw.cpp` は本体の `hsp3gr_dish.cpp` をincludeし、非公開の描画開始関数も検証する。描画先のBmscr/hgio/spriteメソッドを記録用の偽物に置き換え、未使用のグラフィックス関数はリンク時に除外する。継続処理自体のコピーは作らない。
 
 ブラウザ/Wasm、実際の描画結果、Emscriptenのフレームスケジューラと描画callbackの結合は、このテストでは検証しない。PlatformWindows.cppのHSPUTF8定義ガードもWindowsビルド未検証。
+
+`on gosub`の3ケースは実際のHSPスクリプトを実行する。修正前のHEAD
+`1edbe08c`ではそれぞれエラー10、40、5で失敗した。通常のルートからの単一呼び出しは
+キューが次の命令より先に処理されるため、順序逆転しない。入れ子・同期関数内・callback内が
+問題になる。`code_getlb2()`は次の命令を先読みしているため、修正時の復帰先は
+通常のgosubの`mcs`ではなく`mcsbak`でなければならない。
 
 ## 調査で見つかった未対応経路
 

@@ -1,0 +1,15 @@
+#include "test_api.as"
+enqueue_pair *callback, 1
+emit "caller"
+end
+*callback
+check_callback 1
+emit "before"
+on 0 gosub *subroutine
+check_callback 1
+emit "after"
+return
+*subroutine
+check_callback 1
+emit "sub"
+return

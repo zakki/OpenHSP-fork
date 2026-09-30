@@ -2602,7 +2602,12 @@ static int cmdfunc_prog( int cmd )
 			p2++;
 		}
 		if ( otbak != NULL ) {
+#ifdef HSPEMSCRIPTEN
+			// code_getlb2 has already decoded the next instruction.
+			cmdfunc_gosub( otbak, mcsbak );
+#else
 			code_call( otbak );
+#endif
 			return hspctx->runmode;
 		}
 		break;

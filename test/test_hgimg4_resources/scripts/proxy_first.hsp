@@ -1,0 +1,6 @@
+#include "hgimg4.as"
+gpnodeinfo material_id, 0, GPNODEINFO_MATERIAL, "root"
+delobj material_id
+gpmatprm1 0, "alpha", 0.5
+delobj 0
+end

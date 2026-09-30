@@ -19,7 +19,13 @@ rundish: $(TARGET).ax
 runcl: $(TARGET).ax
 	$(HSP3CL) $<
 
-.PHONY: unicode-path emscripten-continuations
+.PHONY: unicode-path emscripten-continuations hgimg4-resources sdl-input
+
+hgimg4-resources:
+	$(MAKE) -C .. -f test/test_hgimg4_resources/Makefile test-resources
+
+sdl-input:
+	$(MAKE) -C test_sdl_input test
 
 emscripten-continuations:
 	$(MAKE) -C test_emscripten_continuations test

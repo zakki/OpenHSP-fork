@@ -34,6 +34,7 @@
 
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
+#include "../sdl_key.h"
 #include "SDL2/SDL_opengl.h"
 
 #include <emscripten.h>
@@ -114,36 +115,16 @@ static int handleEvent( void ) {
 	while (SDL_PollEvent(&event)) {
 		switch(event.type) {
 		case SDL_FINGERDOWN:
-			//Alertf("down: %f,%f  %d\n", event.tfinger.x,event.tfinger.y,event.tfinger.fingerId);
 		case SDL_FINGERMOTION:
-			{
-				int xx,yy;
-				float x,y;
-				Bmscr *bm;
-				bm = (Bmscr *)exinfo->HspFunc_getbmscr(0);
-				x = event.tfinger.x * hsp_sx;
-				y = event.tfinger.y * hsp_sy;
-				int id = event.tfinger.fingerId;
-				xx = (int)x; yy = (int)y;
-				hgio_cnvview((BMSCR *)bm,&xx,&yy);
-				hgio_mtouchid( id, xx, yy, 1, 0 );
-				//hgio_touch( xx, yy, 1 );
-				break;
-			}
 		case SDL_FINGERUP:
 			{
-				int xx,yy;
-				float x,y;
-				Bmscr *bm;
-				bm = (Bmscr *)exinfo->HspFunc_getbmscr(0);
-				x = event.tfinger.x * hsp_sx;
-				y = event.tfinger.y * hsp_sy;
-				int id = event.tfinger.fingerId;
-				xx = (int)x; yy = (int)y;
-				hgio_cnvview((BMSCR *)bm,&xx,&yy);
-				hgio_mtouchid( id, xx, yy, 0, 0 );
-				//hgio_touch( xx, yy, 0 );
-				//Alertf("up  : %f,%f  %d\n", event.tfinger.x,event.tfinger.y,event.tfinger.fingerId);
+				if (window == NULL) break;
+				int width, height;
+				SDL_GetWindowSize(window, &width, &height);
+				// hgio_mtouchid converts window coordinates to logical/view coordinates.
+				int x = (int)(event.tfinger.x * width);
+				int y = (int)(event.tfinger.y * height);
+				hgio_mtouchid((int)event.tfinger.fingerId, x, y, event.type != SDL_FINGERUP, 0);
 				break;
 			}
 
@@ -333,6 +314,7 @@ static int handleEvent( void ) {
 					bm->SendHSPObjectNotice(wparam);
 				}
 			}
+			hsp_sdl_send_key_irq(event.key);
 			//printf("key down: sym %d scancode %d\n", event.key.keysym.sym, event.key.keysym.scancode);
 			break;
 			}

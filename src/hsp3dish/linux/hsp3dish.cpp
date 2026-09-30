@@ -43,6 +43,7 @@ struct engine;
 
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
+#include "../sdl_key.h"
 
 //#define USE_OBAQ
 
@@ -169,31 +170,17 @@ static int handleEvent( void ) {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		switch(event.type) {
-		case SDL_FINGERMOTION:
 		case SDL_FINGERDOWN:
-			{
-				//int id;
-				float x,y;
-				Bmscr *bm;
-				bm = (Bmscr *)exinfo->HspFunc_getbmscr(0);
-				x = event.tfinger.x * bm->sx;
-				y = event.tfinger.y * bm->sy;
-				//id = event.tfinger.touchId;
-				//hgio_mtouchid( id, (int)x, (int)y, 1, 0 );
-				hgio_touch( (int)x, (int)y, 1 );
-				break;
-			}
+		case SDL_FINGERMOTION:
 		case SDL_FINGERUP:
 			{
-				//int id;
-				float x,y;
-				Bmscr *bm;
-				bm = (Bmscr *)exinfo->HspFunc_getbmscr(0);
-				x = event.tfinger.x * bm->sx;
-				y = event.tfinger.y * bm->sy;
-				//id = event.tfinger.touchId;
-				//hgio_mtouchid( id, (int)x, (int)y, 1, 0 );
-				hgio_touch( (int)x, (int)y, 0 );
+				if (window == NULL) break;
+				int width, height;
+				SDL_GetWindowSize(window, &width, &height);
+				// hgio_mtouchid converts window coordinates to logical/view coordinates.
+				int x = (int)(event.tfinger.x * width);
+				int y = (int)(event.tfinger.y * height);
+				hgio_mtouchid((int)event.tfinger.fingerId, x, y, event.type != SDL_FINGERUP, 0);
 				break;
 			}
 
@@ -373,6 +360,7 @@ static int handleEvent( void ) {
 					bm->SendHSPObjectNotice(wparam);
 				}
 			}
+			hsp_sdl_send_key_irq(event.key);
 			//printf("key down: sym %d scancode %d\n", event.key.keysym.sym, event.key.keysym.scancode);
 			break;
 			}

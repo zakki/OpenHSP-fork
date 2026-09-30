@@ -1,0 +1,13 @@
+#include "test_api.as"
+#module
+#defcfunc calculate local value
+value = 2
+on 0 gosub *bump
+return value
+*bump
+value += 5
+return
+#global
+emit calculate() + 3
+emit "caller"
+end

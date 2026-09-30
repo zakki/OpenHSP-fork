@@ -1,0 +1,19 @@
+#include "test_api.as"
+emit "before"
+on 1 gosub *wrong, *outer
+emit "after"
+on -1 gosub *wrong
+on 2 gosub *wrong, *wrong
+end
+*outer
+emit "outer-before"
+on 0 gosub *inner
+emit "outer-after"
+return
+*inner
+emit "inner"
+wait 1
+return
+*wrong
+emit "wrong"
+return

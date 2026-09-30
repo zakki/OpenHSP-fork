@@ -307,7 +307,7 @@ void gamehsp::deleteAll( void )
 
 	if (_gpmat) {
 		int i;
-		for (i = 0; i<_maxmat; i++) { deleteMat(i); }
+		for (i = 0; i<_maxmat; i++) { deleteMat(i | GPOBJ_ID_MATFLAG); }
 		delete[] _gpmat;
 		_gpmat = NULL;
 	}
@@ -2294,6 +2294,10 @@ int gamehsp::makeModelNode(char *fname, char *idname, char *defs)
 	}
 
 	Bundle *bundle = Bundle::create(fn);
+	if (bundle == NULL) {
+		deleteObj(obj->_id);
+		return -1;
+	}
 	Node *rootNode;
 	Animation *animation;
 	Node *node;
@@ -2310,6 +2314,7 @@ int gamehsp::makeModelNode(char *fname, char *idname, char *defs)
 
 	Material* boxMaterial = Material::create(fn2,gamehsp::passCallback,NULL);
 	if (boxMaterial == NULL) {
+		SAFE_RELEASE(bundle);
 		deleteObj(obj->_id);
 		return -1;
 	}
@@ -2319,6 +2324,8 @@ int gamehsp::makeModelNode(char *fname, char *idname, char *defs)
 		rootNode = bundle->loadNode(idname);
 		if (rootNode == NULL) {
 			Alertf("Node not found.(%s#%s)", fname, idname);
+			SAFE_RELEASE(boxMaterial);
+			SAFE_RELEASE(bundle);
 			deleteObj(obj->_id);
 			return -1;
 		}
@@ -2331,6 +2338,9 @@ int gamehsp::makeModelNode(char *fname, char *idname, char *defs)
 		scene = bundle->loadScene(NULL, gamehsp::passCallback);
 		if (scene == NULL) {
 			Alertf("Scene not found.(%s)", fname);
+			SAFE_RELEASE(rootNode);
+			SAFE_RELEASE(boxMaterial);
+			SAFE_RELEASE(bundle);
 			deleteObj(obj->_id);
 			return -1;
 		}

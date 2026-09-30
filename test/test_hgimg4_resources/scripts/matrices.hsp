@@ -1,0 +1,22 @@
+#include "hgimg4.as"
+#regcmd 18
+#cmd check 0
+#cmd inspect_matrices 1
+gpnodeinfo material_id, 0, GPNODEINFO_MATERIAL, "root"
+ddim data, 32
+repeat 32
+    data(cnt) = double(cnt + 1)
+loop
+gpmatprm16 material_id, "bones", data, 2
+check stat == 0
+inspect_matrices material_id, "bones", 1
+repeat 32
+    data(cnt) = double(cnt + 101)
+loop
+gpmatprm16 material_id, "other", data, 2
+inspect_matrices material_id, "bones", 1
+inspect_matrices material_id, "other", 101
+delobj material_id
+inspect_matrices 0, "bones", 1
+inspect_matrices 0, "other", 101
+end

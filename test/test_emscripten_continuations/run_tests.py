@@ -13,6 +13,9 @@ CASES = {
     "callbacks": (0, ["1", "nested", "gosub", "2", "nested", "gosub", "caller", "DONE waits=0"]),
     "calls": (0, ["1", "2", "caller", "DONE waits=2"]),
     "invalid_callback": (1, ["ERROR 42"]),
+    "on_gosub": (0, ["before", "outer-before", "inner", "outer-after", "after", "DONE waits=1"]),
+    "on_gosub_function": (0, ["10", "caller", "DONE waits=0"]),
+    "on_gosub_callback": (0, ["before", "sub", "after"] * 2 + ["caller", "DONE waits=0"]),
 }
 
 

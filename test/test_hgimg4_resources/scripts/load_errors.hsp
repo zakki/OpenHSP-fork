@@ -1,0 +1,12 @@
+#include "hgimg4.as"
+#regcmd 18
+#cmd check 0
+gpload result_id, "empty", "missing"
+check result_id == -1
+gpload result_id, "empty"
+check result_id == -1
+gpload result_id, "no_material"
+check result_id == -1
+gpload result_id, "missing"
+check result_id == -1
+end

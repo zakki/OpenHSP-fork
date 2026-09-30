@@ -1,0 +1,7 @@
+#include "hgimg4.as"
+#regcmd 18
+#cmd check 0
+gpnodeinfo material_id, 0, GPNODEINFO_MATERIAL, "missing"
+check stat == -1
+check material_id == -1
+end

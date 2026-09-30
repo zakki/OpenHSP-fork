@@ -1954,6 +1954,9 @@ void hgio_mtouchid( int pointid, int xx, int yy, int button, int opt )
     bm = (Bmscr *)mainbm;
 	x = ( xx - _originX ) * _rateX;
 	y = ( yy - _originY ) * _rateY;
+#if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
+	hgio_cnvview(mainbm, &x, &y);
+#endif
     if ( opt == 0 ) {
         mouse_x = x;
         mouse_y = y;
