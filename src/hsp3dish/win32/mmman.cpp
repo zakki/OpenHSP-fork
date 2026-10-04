@@ -63,6 +63,7 @@ MMMan::MMMan()
 	mem_snd = NULL;
 	mm_cur = 0;
 	hwm = NULL;
+	res[0] = 0;
 }
 
 
@@ -188,22 +189,22 @@ void MMMan::ClearAllBank( void )
 
 int MMMan::SendMCI( char *mci_commands )
 {
-	int a;
 	HspToApiStr command { mci_commands };
-	TCHAR res[256];
-	a=mciSendString( command,res,256,(HWND)hwm );
-	if (a) return -1;
-	return _ttoi(res);
+	return SendMCIT( command );
 }
 
 
 int MMMan::SendMCIT( TCHAR *mci_commands )
 {
 	int a;
-	TCHAR res[256];
-	a=mciSendString( mci_commands,res,256,(HWND)hwm );
+	TCHAR api_result[256] = {};
+	res[0] = 0;
+	a=mciSendString( mci_commands,api_result,256,(HWND)hwm );
 	if (a) return -1;
-	return _ttoi(res);
+	ApiToHspStr result { api_result };
+	strncpy( res, result, sizeof(res) - 1 );
+	res[sizeof(res) - 1] = 0;
+	return _ttoi(api_result);
 }
 
 
