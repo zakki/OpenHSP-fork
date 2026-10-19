@@ -2662,12 +2662,9 @@ int gamehsp::overwriteNodeMaterialByMatID(Node *node, int matid, int objid)
 	Material* material = mat->_material->clone(context);		// 元のマテリアルをクローンして適用する
 	setMaterialDefaultBinding(material, mat->_matcolor, mat->_matopt);		// 正しくクローンされないBinding情報を上書きする
 
-	//model->setMaterial(material);
-
-	if (model->getMeshPartCount() == 0) {
-		model->setMaterial(material);
-	}
-	else {
+	// gpmatprm系命令が操作する共通マテリアルと、各パーツの描画用マテリアルを揃える。
+	model->setMaterial(material);
+	if (model->getMeshPartCount() > 0) {
 		int part = model->getMeshPartCount();
 		for (int i = 0; i < part; i++) {
 			model->setMaterial(material, i);
@@ -2784,6 +2781,13 @@ int gamehsp::makeCloneNode( int objid, int mode, int eventID )
 			else {
 				overwriteNodeMaterialByColor(mynode, -1, 0);
 			}
+		}
+
+		// gpmatprm系命令が複製先のマテリアルを操作できるよう、モデルを設定する。
+		// マテリアルの差し替え完了後に、透明度制御で使用するパラメーター参照を設定する。
+		newobj->_model = dynamic_cast<Model*>(newobj->_node->getDrawable());
+		if (newobj->_model) {
+			newobj->updateParameter(newobj->_model->getMaterial());
 		}
 
 		newobj->_animation = newobj->_node->getAnimation("animations");
