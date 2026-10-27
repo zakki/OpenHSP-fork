@@ -598,7 +598,7 @@ HSPOBJINFO *Bmscr::AddHSPJumpEventObject( int id, HWND handle, int mode, int val
 void Bmscr::SetButtonImage( int id, int bufid, int x1, int y1, int x2, int y2, int x3, int y3 )
 {
 	HSPOBJINFO *obj;
-	HSP3BTNSET *bset;
+	HSP3VARSET *bset;
 
 	obj = GetHSPObjectSafe( id );
 
@@ -613,13 +613,14 @@ void Bmscr::SetButtonImage( int id, int bufid, int x1, int y1, int x2, int y2, i
 		SetWindowLongPtr( obj->hCld , GWLP_WNDPROC , (LONG_PTR)MyButtonProc );
 	}
 
-	bset = (HSP3BTNSET *)(&obj->varset);
-	bset->normal_x = x1;
-	bset->normal_y = y1;
-	bset->push_x = x2;
-	bset->push_y = y2;
-	bset->focus_x = x3;
-	bset->focus_y = y3;
+	bset = &obj->varset;
+	bset->pval = NULL;	// 座標を書き込む前に上位ビットもクリアする
+	bset->normal.x = x1;
+	bset->normal.y = y1;
+	bset->push.x = x2;
+	bset->push.y = y2;
+	bset->focus.x = x3;
+	bset->focus.y = y3;
 }
 
 
@@ -762,7 +763,7 @@ void Bmscr::DrawHSPCustomButton( HSPOBJINFO *obj, HDC drawhdc, int flag )
 	int xx,yy;
 	Bmscr *src;
 	HspWnd *wnd;
-	HSP3BTNSET *bset;
+	HSP3VARSET *bset;
 	RECT rect;
 	HFONT hFont;
 	COLORREF col;
@@ -774,21 +775,21 @@ void Bmscr::DrawHSPCustomButton( HSPOBJINFO *obj, HDC drawhdc, int flag )
 	if ( obj->owid < 0 ) {
 
 	} else {
-		bset = (HSP3BTNSET *)(&obj->varset);
+		bset = &obj->varset;
 		wnd = (HspWnd *)master_hspwnd;
 		src = wnd->GetBmscrSafe( obj->owid );
 		switch( flag ) {
 		case 1:
-			xx = bset->focus_x;
-			yy = bset->focus_y;
+			xx = bset->focus.x;
+			yy = bset->focus.y;
 			break;
 		case 2:
-			xx = bset->push_x;
-			yy = bset->push_y;
+			xx = bset->push.x;
+			yy = bset->push.y;
 			break;
 		default:
-			xx = bset->normal_x;
-			yy = bset->normal_y;
+			xx = bset->normal.x;
+			yy = bset->normal.y;
 			break;
 		}
 		BitBlt( drawhdc, rect.left, rect.top, rect.right, rect.bottom, src->hdc, xx, yy, SRCCOPY );
@@ -1042,8 +1043,7 @@ static void Object_LayerDelete(HSPOBJINFO *info)
 	info->hspctx->iparam = info->owsize;
 	info->hspctx->wparam = info->owid;
 	info->hspctx->lparam = HSPOBJ_LAYER_CMD_TERM;
-	HSP3BTNSET *bset = (HSP3BTNSET *)(&info->varset);
-	code_callback((unsigned short *)bset->ptr);
+	code_callback((unsigned short *)info->varset.ptr);
 }
 
 static void Object_LayerNotice(HSPOBJINFO *info, int wparam)
@@ -1051,8 +1051,7 @@ static void Object_LayerNotice(HSPOBJINFO *info, int wparam)
 	info->hspctx->iparam = info->exinfo2;
 	info->hspctx->wparam = info->owid;
 	info->hspctx->lparam = wparam;
-	HSP3BTNSET *bset = (HSP3BTNSET *)(&info->varset);
-	code_callback((unsigned short *)bset->ptr);
+	code_callback((unsigned short *)info->varset.ptr);
 	info->exinfo2++;
 }
 
@@ -1079,8 +1078,7 @@ static void Object_SetLayerObject(HSPOBJINFO *info, int type, void *ptr)
 	info->hspctx->iparam = iparam;
 	info->hspctx->wparam = info->owid;
 	info->hspctx->lparam = ptype;
-	HSP3BTNSET *bset = (HSP3BTNSET *)(&info->varset);
-	code_callback((unsigned short *)bset->ptr);
+	code_callback((unsigned short *)info->varset.ptr);
 }
 
 
@@ -1117,13 +1115,14 @@ int Bmscr::AddHSPObjectLayer(int sizex, int sizey, int layer, int val, int mode,
 	obj->exinfo1 = val;
 	obj->exinfo2 = 0;
 
-	HSP3BTNSET *bset = (HSP3BTNSET *)(&obj->varset);
-	bset->normal_x = cx;
-	bset->normal_y = cy;
-	bset->push_x = sizex;
-	bset->push_y = sizey;
-	bset->focus_x = 0;
-	bset->focus_y = 0;
+	HSP3VARSET *bset = &obj->varset;
+	bset->pval = NULL;	// 座標を書き込む前に上位ビットもクリアする
+	bset->normal.x = cx;
+	bset->normal.y = cy;
+	bset->push.x = sizex;
+	bset->push.y = sizey;
+	bset->focus.x = 0;
+	bset->focus.y = 0;
 	bset->ptr = callptr;
 
 	obj->func_notice = Object_LayerNotice;

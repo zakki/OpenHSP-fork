@@ -57,26 +57,29 @@
 #define HSPMES_LIGHT (8)
 #define HSPMES_GMODE (16)
 
+typedef struct HSP3OBJCOORD
+{
+	short x, y;
+} HSP3OBJCOORD;
+
 typedef struct HSP3VARSET
 {
-	//	HSP3VARSET structure
+	//	変数情報とボタン・レイヤーの座標情報を共有する
 	//
-	int type;
-	PVal *pval;
-	APTR aptr;
-	void *ptr;
+	union {
+		int type;
+		HSP3OBJCOORD normal;		// 通常時
+	};
+	union {
+		PVal *pval;
+		HSP3OBJCOORD push;		// 押下時
+	};
+	union {
+		APTR aptr;
+		HSP3OBJCOORD focus;		// フォーカス時
+	};
+	void *ptr;	// 変数データ、または呼び出し先
 } HSP3VARSET;
-
-typedef struct HSP3BTNSET
-{
-	//	HSP3BTNSET structure
-	//	(HSP3VARSETと同サイズにすること)
-	//
-	short normal_x, normal_y;	// 通常時
-	short push_x, push_y;		// 押下時
-	short focus_x, focus_y;		// フォーカス時
-	void *ptr;	// 呼び出し先
-} HSP3BTNSET;
 
 typedef struct HSPOBJINFO
 {
@@ -89,7 +92,7 @@ typedef struct HSPOBJINFO
 	int		owid;		// objectのValue(汎用)
 	int		owsize;		// objectの使用サイズ(汎用)
 
-	HSP3VARSET varset;	// objectから設定される変数の情報
+	HSP3VARSET varset;	// 変数、またはボタン・レイヤーの情報
 
 	//		callback function
 	void	(*func_notice)( struct HSPOBJINFO *, int );
